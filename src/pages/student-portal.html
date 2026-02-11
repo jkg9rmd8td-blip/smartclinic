@@ -63,6 +63,21 @@ body {
 }
 .hero h1 { margin: 0; font-size: 32px; }
 .hero p { margin: 6px 0 0; color: var(--soft); }
+.hero-meta {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.status-pill {
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.04);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: var(--soft);
+}
+.status-pill strong { color: var(--text); }
 .stats {
   margin-top: 10px;
   display: grid;
@@ -162,6 +177,11 @@ textarea, select {
   border-radius: 12px;
   padding: 10px;
 }
+.inline-help {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--soft);
+}
 </style>
 </head>
 <body>
@@ -170,6 +190,7 @@ textarea, select {
     <div class="chip">الدور الحالي: <strong data-session-role>الطالب</strong></div>
     <div style="display:flex;gap:8px;">
       <button class="btn" onclick="window.location.href='../../index.html'">الرئيسية</button>
+      <button class="btn" data-permission="view.notifications" onclick="window.location.href='notifications-center.html'">الإشعارات</button>
       <button class="btn" data-action="logout">تسجيل الخروج</button>
     </div>
   </div>
@@ -177,6 +198,11 @@ textarea, select {
   <section class="hero">
     <h1>بوابة الطالب الصحية المتقدمة</h1>
     <p>ملفك الصحي المباشر، طلبات الزيارة، التنبيهات، والمراسلة مع العيادة في مكان واحد.</p>
+    <div class="hero-meta">
+      <div class="status-pill">النمط: <strong id="status-mode">-</strong></div>
+      <div class="status-pill">آخر مزامنة: <strong id="status-sync">-</strong></div>
+      <div class="status-pill">مستوى الخطر: <strong id="status-risk">-</strong></div>
+    </div>
     <div id="stats" class="stats"></div>
   </section>
 
@@ -198,7 +224,13 @@ textarea, select {
         <option value="normal">عادي</option>
         <option value="urgent">مستعجل</option>
       </select>
-      <textarea id="visit-reason" rows="3" placeholder="اكتب سبب الطلب..."></textarea>
+      <div class="inline-row" style="margin-top:8px;">
+        <button class="muted-btn" type="button" onclick="useVisitTemplate('صداع شديد')">صداع شديد</button>
+        <button class="muted-btn" type="button" onclick="useVisitTemplate('ضيق تنفس متكرر')">ضيق تنفس</button>
+        <button class="muted-btn" type="button" onclick="useVisitTemplate('ألم في الصدر أثناء النشاط')">ألم صدر</button>
+      </div>
+      <textarea id="visit-reason" rows="3" placeholder="اكتب سبب الطلب..." oninput="updateVisitReasonMeta()"></textarea>
+      <div class="inline-help">تفاصيل السبب: <span id="visit-reason-count">0</span>/220</div>
       <button class="cta" onclick="requestVisit()">إرسال الطلب</button>
     </article>
 
@@ -215,6 +247,7 @@ textarea, select {
     <article class="card" data-permission="view.student">
       <h3>العيادة الافتراضية (صوت وصورة)</h3>
       <p id="telemed-student-status">جارٍ التحقق من وجود جلسة مباشرة...</p>
+      <span id="telemed-student-badge" class="badge b-ok">غير نشطة</span>
       <div class="inline-row">
         <button class="cta" id="telemed-student-join" onclick="joinStudentTelemed()" disabled>انضمام للجلسة</button>
         <button class="muted-btn" onclick="refreshStudentTelemed()">تحديث حالة الجلسة</button>
@@ -224,6 +257,12 @@ textarea, select {
     <article class="card" data-permission="view.alerts">
       <h3>تنبيهات صحية لك</h3>
       <p>آخر التنبيهات المرتبطة بمتابعتك الصحية.</p>
+      <select id="alert-filter" onchange="applyAlertFilter()">
+        <option value="all">كل التنبيهات</option>
+        <option value="critical">حرج</option>
+        <option value="operational">تشغيلي</option>
+        <option value="info">معلوماتي</option>
+      </select>
       <div id="alerts-list" class="list"></div>
     </article>
 
@@ -248,7 +287,10 @@ textarea, select {
       <h3>تقاريري الصحية</h3>
       <p>أحدث التقارير الطبية المتاحة لك.</p>
       <div id="reports-list" class="list"></div>
-      <button class="muted-btn" data-permission="export.report" onclick="notify('يمكنك طباعة التقرير من صفحة الملف الصحي')">تصدير التقرير</button>
+      <div class="inline-row">
+        <button class="muted-btn" onclick="window.location.href='student-profile.html#reports'">عرض كل التقارير</button>
+        <button class="muted-btn" data-permission="export.report" onclick="notify('يمكنك طباعة التقرير من صفحة الملف الصحي')">تصدير التقرير</button>
+      </div>
     </article>
 
     <article class="card" data-permission="view.tips">
@@ -264,6 +306,7 @@ textarea, select {
 <script src="../../assets/js/security.js"></script>
 <script>
 var lastOverview = null;
+var alertsCache = [];
 var tipIndex = 0;
 var studentTelemedSessionId = null;
 var tips = [
@@ -289,6 +332,25 @@ function statusBadgeClass(severity) {
   if (severity === 'critical' || severity === 'high') return 'b-danger';
   if (severity === 'medium') return 'b-warn';
   return 'b-ok';
+}
+
+function riskLabel(risk) {
+  var map = {
+    critical: 'حرج',
+    warning: 'متابعة',
+    stable: 'مستقر',
+    medium: 'متوسط',
+    low: 'منخفض',
+    unknown: 'غير متوفر'
+  };
+  return map[risk] || map.unknown;
+}
+
+function refreshHeroMeta(overview) {
+  var risk = (((overview || {}).snapshot || {}).latestVitalsRisk) || 'unknown';
+  document.getElementById('status-mode').textContent = SmartClinicSecurity.isDemoMode() ? 'Demo' : 'Live';
+  document.getElementById('status-sync').textContent = new Date().toLocaleTimeString('ar-SA');
+  document.getElementById('status-risk').textContent = riskLabel(risk);
 }
 
 function renderStats(snapshot) {
@@ -329,6 +391,15 @@ function renderAlerts(items) {
   }).join('');
 }
 
+function applyAlertFilter() {
+  var mode = document.getElementById('alert-filter') ? document.getElementById('alert-filter').value : 'all';
+  var filtered = alertsCache.slice();
+  if (mode === 'critical' || mode === 'operational' || mode === 'info') {
+    filtered = filtered.filter(function (a) { return (a.type || 'info') === mode; });
+  }
+  renderAlerts(filtered);
+}
+
 function renderReports(items) {
   var wrap = document.getElementById('reports-list');
   if (!items || !items.length) {
@@ -345,19 +416,21 @@ async function loadOverview() {
   var result = await SmartClinicSecurity.apiJson('/student/overview');
   if (!result.ok || !result.data) {
     notify(result.error === 'request_timeout' ? 'انتهت مهلة الاتصال، حاول مرة أخرى.' : 'تعذر تحميل بيانات الطالب.');
-    refreshStudentTelemed();
+    await refreshStudentTelemed();
     return;
   }
   lastOverview = result.data;
   renderStats(result.data.snapshot || {});
   renderLatestCase(result.data.latestCase || null);
-  renderAlerts(result.data.alerts || []);
+  refreshHeroMeta(result.data);
+  alertsCache = result.data.alerts || [];
+  applyAlertFilter();
   renderReports(result.data.reports || []);
-  refreshStudentTelemed();
+  await refreshStudentTelemed();
 }
 
-function refreshStudentTelemed() {
-  var session = SmartClinicSecurity.getLatestTelemedSession({
+async function refreshStudentTelemed() {
+  var session = await SmartClinicSecurity.getLatestTelemedSession({
     role: 'student'
   });
   var status = document.getElementById('telemed-student-status');
@@ -366,6 +439,8 @@ function refreshStudentTelemed() {
   if (!session) {
     studentTelemedSessionId = null;
     status.textContent = 'لا توجد جلسة مباشرة نشطة الآن.';
+    document.getElementById('telemed-student-badge').className = 'badge b-warn';
+    document.getElementById('telemed-student-badge').textContent = 'غير نشطة';
     joinBtn.disabled = true;
     return;
   }
@@ -373,20 +448,37 @@ function refreshStudentTelemed() {
   studentTelemedSessionId = session.id;
   var when = session.createdAt ? new Date(session.createdAt).toLocaleTimeString('ar-SA') : '-';
   status.textContent = 'جلسة متاحة الآن • بدأت عند ' + when;
+  document.getElementById('telemed-student-badge').className = 'badge b-ok';
+  document.getElementById('telemed-student-badge').textContent = 'نشطة الآن';
   joinBtn.disabled = false;
 }
 
-function joinStudentTelemed() {
+async function joinStudentTelemed() {
   if (!studentTelemedSessionId) {
-    refreshStudentTelemed();
+    await refreshStudentTelemed();
     notify('لا توجد جلسة مرئية متاحة حاليًا.');
     return;
   }
-  window.location.href = 'telemed-room.html?sid=' + encodeURIComponent(studentTelemedSessionId);
+  var invite = await SmartClinicSecurity.createTelemedInvite(studentTelemedSessionId, 'student');
+  if (!invite.ok || !invite.item || !invite.item.token) {
+    notify('تعذر إنشاء رابط دخول آمن للجلسة.');
+    return;
+  }
+  window.location.href = SmartClinicSecurity.getTelemedRoomPath(studentTelemedSessionId, invite.item.token);
 }
 
 function jumpToCases() {
   window.location.href = 'student-profile.html#cases';
+}
+
+function updateVisitReasonMeta() {
+  var text = document.getElementById('visit-reason').value || '';
+  document.getElementById('visit-reason-count').textContent = String(text.trim().length);
+}
+
+function useVisitTemplate(text) {
+  document.getElementById('visit-reason').value = text || '';
+  updateVisitReasonMeta();
 }
 
 function renderStudentAi(item) {
@@ -420,8 +512,8 @@ async function askStudentAi() {
 async function requestVisit() {
   var priority = document.getElementById('visit-priority').value;
   var reason = document.getElementById('visit-reason').value.trim();
-  if (!reason) {
-    notify('اكتب سبب الطلب أولًا.');
+  if (!reason || reason.length < 5) {
+    notify('اكتب سببًا أوضح (5 أحرف على الأقل).');
     return;
   }
 
@@ -434,6 +526,7 @@ async function requestVisit() {
     return;
   }
   document.getElementById('visit-reason').value = '';
+  updateVisitReasonMeta();
   notify('تم إرسال طلب الزيارة بنجاح.');
   loadOverview();
 }
@@ -460,6 +553,7 @@ async function sendClinicMessage() {
 window.addEventListener('DOMContentLoaded', function () {
   SmartClinicSecurity.requireAccess(['student', 'admin'], 'بوابة الطالب');
   document.getElementById('tip-text').textContent = tips[tipIndex];
+  updateVisitReasonMeta();
   refreshStudentTelemed();
   SmartClinicSecurity.createAutoRefresh(loadOverview, 20000, { immediate: true });
 });

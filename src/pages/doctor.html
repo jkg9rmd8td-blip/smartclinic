@@ -144,6 +144,36 @@ body {
   border-radius: 14px;
   padding: 10px;
 }
+.active-case-panel { margin-bottom: 14px; }
+.active-case-grid {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+}
+.meta-tile {
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.03);
+  border-radius: 10px;
+  padding: 8px;
+}
+.meta-tile-label { color: var(--text-soft); font-size: 12px; }
+.meta-tile-value { margin-top: 3px; font-size: 14px; font-weight: 700; }
+.case-toolbar {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+}
+.input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+  color: var(--text-main);
+  font: inherit;
+  padding: 8px;
+}
 .ai-panel {
   margin-top: 12px;
 }
@@ -174,6 +204,21 @@ body {
 .queue-name, .case-name { font-weight: 700; }
 .queue-type, .case-type, .mini-log-item { color: var(--text-soft); font-size: 13px; }
 .case-type { margin: 4px 0 8px; }
+.case-card.active {
+  border-color: rgba(56, 189, 248, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.18);
+}
+.pill {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+.pill-critical { background: rgba(239,68,68,.2); color: #fca5a5; }
+.pill-high { background: rgba(251,146,60,.2); color: #fdba74; }
+.pill-medium { background: rgba(245,158,11,.2); color: #fde68a; }
+.pill-low { background: rgba(34,197,94,.2); color: #86efac; }
 .toast {
   position: fixed;
   left: 16px;
@@ -221,6 +266,23 @@ body {
     <button class="btn-danger" id="critical-open" onclick="openCriticalCase()">فتح مسار الطوارئ</button>
   </section>
 
+  <section class="panel active-case-panel">
+    <h2 class="queue-title" style="margin-bottom:0;">الحالة النشطة</h2>
+    <p style="margin:6px 0 0;color:var(--text-soft);">الإجراءات السريعة سيتم تطبيقها على الحالة المختارة أدناه.</p>
+    <div class="active-case-grid">
+      <div class="meta-tile"><div class="meta-tile-label">الطالب</div><div class="meta-tile-value" id="active-student">-</div></div>
+      <div class="meta-tile"><div class="meta-tile-label">الحالة</div><div class="meta-tile-value" id="active-title">-</div></div>
+      <div class="meta-tile"><div class="meta-tile-label">الخطورة</div><div class="meta-tile-value" id="active-severity">-</div></div>
+      <div class="meta-tile"><div class="meta-tile-label">آخر تحديث</div><div class="meta-tile-value" id="active-updated">-</div></div>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn-primary" onclick="openCase(activeCaseId)">فتح تفاصيل الحالة</button>
+      <button class="btn-danger" onclick="openCriticalCase()">فتح الطوارئ</button>
+      <button class="btn-warning" data-permission="update.vitals" onclick="generateActiveCaseVitals()">توليد قراءة حيوية</button>
+      <button class="btn-success" data-permission="start.telemed" onclick="startTelemedSession()">بدء جلسة مرئية</button>
+    </div>
+  </section>
+
   <h2 class="services-title">الخدمات والميزات الطبية</h2>
   <section class="services-grid">
     <article class="service-card" data-permission="view.student">
@@ -264,6 +326,22 @@ body {
   <section class="layout">
     <div class="panel">
       <h2 class="queue-title">قائمة الانتظار</h2>
+      <div class="case-toolbar">
+        <input id="case-search" class="input" type="search" placeholder="بحث باسم الطالب أو عنوان الحالة..." oninput="applyCaseFilters()">
+        <select id="case-severity-filter" class="input" onchange="applyCaseFilters()">
+          <option value="all">كل درجات الخطورة</option>
+          <option value="critical">حرجة</option>
+          <option value="high">عالية</option>
+          <option value="medium">متوسطة</option>
+          <option value="low">منخفضة</option>
+        </select>
+        <select id="case-status-filter" class="input" onchange="applyCaseFilters()">
+          <option value="all">كل الحالات</option>
+          <option value="in_progress">قيد المعالجة</option>
+          <option value="open">مفتوحة</option>
+        </select>
+      </div>
+      <div style="margin-top:8px;color:var(--text-soft);font-size:13px;">عدد الحالات المعروضة: <strong id="cases-count">0</strong></div>
       <div class="queue-list" id="queue-list"></div>
     </div>
 
@@ -290,6 +368,7 @@ body {
 
 <script src="../../assets/js/security.js"></script>
 <script>
+var allCasesCache = [];
 var casesCache = [];
 var activeCaseId = 'case_1';
 var latestDoctorAi = null;
@@ -321,9 +400,45 @@ function formatCaseLine(item) {
   return (item.title || 'حالة عامة') + ' • ' + (item.status || '-') + ' • ' + (item.severity || '-');
 }
 
+function severityPillClass(severity) {
+  var map = {
+    critical: 'pill-critical',
+    high: 'pill-high',
+    medium: 'pill-medium',
+    low: 'pill-low'
+  };
+  return map[severity] || 'pill-low';
+}
+
+function formatWhen(iso) {
+  if (!iso) return '-';
+  return new Date(iso).toLocaleString('ar-SA');
+}
+
+function getActiveCase() {
+  return allCasesCache.find(function (item) { return item.id === activeCaseId; }) || null;
+}
+
+function renderActiveCaseSummary() {
+  var item = getActiveCase();
+  document.getElementById('active-student').textContent = item ? (item.studentName || '-') : '-';
+  document.getElementById('active-title').textContent = item ? (item.title || '-') : '-';
+  document.getElementById('active-severity').textContent = item ? (item.severity || '-') : '-';
+  document.getElementById('active-updated').textContent = item ? formatWhen(item.updatedAt) : '-';
+}
+
+function selectCase(caseId) {
+  if (!caseId) return;
+  activeCaseId = caseId;
+  renderCases(casesCache);
+  renderCritical(casesCache);
+  renderActiveCaseSummary();
+}
+
 function renderCases(items) {
   var queue = document.getElementById('queue-list');
   var grid = document.getElementById('cases-grid');
+  document.getElementById('cases-count').textContent = String(items.length);
   if (!items.length) {
     queue.innerHTML = '<div class="queue-item">لا توجد حالات في الانتظار</div>';
     grid.innerHTML = '<article class="case-card">لا توجد حالات مفتوحة</article>';
@@ -331,12 +446,43 @@ function renderCases(items) {
   }
 
   queue.innerHTML = items.map(function (item) {
-    return '<div class="queue-item"><div><div class="queue-name">' + item.studentName + '</div><div class="queue-type">' + formatCaseLine(item) + '</div></div><button class="btn-primary" onclick="openCase(\'' + item.id + '\')">فتح</button></div>';
+    return '<div class="queue-item"><div><div class="queue-name">' + item.studentName + '</div><div class="queue-type">' + formatCaseLine(item) + '</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;"><button class="ghost-btn" onclick="selectCase(\'' + item.id + '\')">اختيار</button><button class="btn-primary" onclick="openCase(\'' + item.id + '\')">فتح</button></div></div>';
   }).join('');
 
   grid.innerHTML = items.map(function (item) {
-    return '<article class="case-card"><div class="case-name">' + item.studentName + '</div><div class="case-type">' + formatCaseLine(item) + '</div><button class="btn-success" onclick="openCase(\'' + item.id + '\')">استكمال الفحص</button></article>';
+    var activeClass = item.id === activeCaseId ? ' active' : '';
+    return '<article class="case-card' + activeClass + '">' +
+      '<div class="case-name">' + item.studentName + '</div>' +
+      '<div class="case-type">' + formatCaseLine(item) + '</div>' +
+      '<span class="pill ' + severityPillClass(item.severity) + '">' + (item.severity || 'low') + '</span>' +
+      '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">' +
+        '<button class="ghost-btn" onclick="selectCase(\'' + item.id + '\')">تحديد</button>' +
+        '<button class="btn-success" onclick="openCase(\'' + item.id + '\')">استكمال الفحص</button>' +
+      '</div>' +
+    '</article>';
   }).join('');
+}
+
+function applyCaseFilters() {
+  var query = String((document.getElementById('case-search') || {}).value || '').trim().toLowerCase();
+  var severity = String((document.getElementById('case-severity-filter') || {}).value || 'all');
+  var status = String((document.getElementById('case-status-filter') || {}).value || 'all');
+  var filtered = allCasesCache.filter(function (item) {
+    var matchQuery = !query || String(item.studentName || '').toLowerCase().indexOf(query) !== -1 || String(item.title || '').toLowerCase().indexOf(query) !== -1;
+    var matchSeverity = severity === 'all' || item.severity === severity;
+    var matchStatus = status === 'all' || item.status === status;
+    return matchQuery && matchSeverity && matchStatus;
+  });
+  casesCache = filtered;
+  if (filtered.length && !filtered.some(function (c) { return c.id === activeCaseId; })) {
+    activeCaseId = filtered[0].id;
+  }
+  if (!filtered.length) {
+    activeCaseId = '';
+  }
+  renderCases(filtered);
+  renderCritical(filtered);
+  renderActiveCaseSummary();
 }
 
 function renderStats(overview) {
@@ -349,14 +495,25 @@ function renderStats(overview) {
 }
 
 function renderCritical(items) {
+  var criticalBtn = document.getElementById('critical-open');
+  if (!items.length) {
+    activeCaseId = '';
+    document.getElementById('critical-sub').textContent = 'لا توجد حالات نشطة حاليًا.';
+    criticalBtn.disabled = true;
+    return;
+  }
   var critical = items.find(function (item) { return item.severity === 'critical'; });
   if (!critical) {
     document.getElementById('critical-sub').textContent = 'لا توجد حالات حرجة نشطة حاليًا.';
-    activeCaseId = items[0] ? items[0].id : 'case_1';
+    if (!items.some(function (item) { return item.id === activeCaseId; })) {
+      activeCaseId = items[0].id;
+    }
+    criticalBtn.disabled = false;
     return;
   }
   activeCaseId = critical.id;
   document.getElementById('critical-sub').textContent = 'الطالب: ' + critical.studentName + ' | ' + critical.title + ' | يلزم تدخل سريع';
+  criticalBtn.disabled = false;
 }
 
 function renderMiniLog(logs) {
@@ -383,30 +540,65 @@ async function loadDoctorData() {
     return;
   }
 
-  casesCache = (casesResult.data.items || []).filter(function (item) {
+  allCasesCache = (casesResult.data.items || []).filter(function (item) {
     return item.status !== 'closed';
   });
   renderStats(summary.data);
-  renderCases(casesCache);
-  renderCritical(casesCache);
   renderMiniLog(summary.data.recentLogs || []);
+  applyCaseFilters();
 }
 
 function openCase(caseId) {
-  window.location.href = 'case-details.html?id=' + encodeURIComponent(caseId || activeCaseId);
+  var target = caseId || activeCaseId;
+  if (!target) {
+    notify('اختر حالة أولًا.');
+    return;
+  }
+  window.location.href = 'case-details.html?id=' + encodeURIComponent(target);
 }
 
 function openCriticalCase() {
-  window.location.href = 'emergency-flow.html?id=' + encodeURIComponent(activeCaseId || 'case_1');
+  if (!activeCaseId) {
+    notify('لا توجد حالة نشطة حاليًا.');
+    return;
+  }
+  window.location.href = 'emergency-flow.html?id=' + encodeURIComponent(activeCaseId);
+}
+
+async function generateActiveCaseVitals() {
+  var target = getActiveCase();
+  if (!target) {
+    notify('اختر حالة أولًا لتوليد قراءة حيوية.');
+    return;
+  }
+  var result = await SmartClinicSecurity.apiJson('/vitals/generate', {
+    method: 'POST',
+    body: JSON.stringify({
+      studentId: target.studentId || 'u_student_1',
+      profile: target.severity === 'critical' ? 'watch' : 'normal'
+    })
+  });
+  if (!result.ok || !result.data || !result.data.item) {
+    notify(result.error || 'تعذر توليد القراءة الحيوية.');
+    return;
+  }
+  var v = result.data.item;
+  notify('تم توليد قراءة: SpO2 ' + v.spo2 + '% • HR ' + v.hr + ' bpm');
+  await recordCaseAction('vitals_update', 'تم تحديث العلامات الحيوية للحالة');
 }
 
 async function startTelemedSession() {
+  var target = getActiveCase();
+  if (!target) {
+    notify('اختر حالة أولًا قبل بدء الجلسة.');
+    return;
+  }
   var allowGuardian = window.confirm('هل تريد السماح لولي الأمر بالانضمام لهذه الجلسة؟');
-  var telemed = SmartClinicSecurity.createTelemedSession({
-    caseId: activeCaseId || 'case_1',
-    studentId: 'u_student_1',
+  var telemed = await SmartClinicSecurity.createTelemedSession({
+    caseId: target.id,
+    studentId: target.studentId || 'u_student_1',
     allowGuardian: allowGuardian,
-    title: 'جلسة طبية مباشرة للحالة ' + (activeCaseId || 'case_1')
+    title: 'جلسة طبية مباشرة للحالة ' + target.id
   });
 
   if (!telemed.ok || !telemed.item) {
@@ -414,7 +606,7 @@ async function startTelemedSession() {
     return;
   }
 
-  await SmartClinicSecurity.apiJson('/cases/' + encodeURIComponent(activeCaseId || 'case_1') + '/actions', {
+  await SmartClinicSecurity.apiJson('/cases/' + encodeURIComponent(target.id) + '/actions', {
     method: 'POST',
     body: JSON.stringify({
       type: 'telemed',
@@ -431,6 +623,10 @@ async function startTelemedSession() {
 }
 
 async function recordCaseAction(type, note) {
+  if (!activeCaseId) {
+    notify('اختر حالة أولًا.');
+    return;
+  }
   var result = await SmartClinicSecurity.apiJson('/cases/' + encodeURIComponent(activeCaseId) + '/actions', {
     method: 'POST',
     body: JSON.stringify({ type: type, note: note })
@@ -477,6 +673,10 @@ function renderDoctorAi(item) {
 }
 
 async function runDoctorAi() {
+  if (!activeCaseId) {
+    notify('اختر حالة أولًا.');
+    return;
+  }
   var note = document.getElementById('ai-doctor-note').value.trim();
   var result = await SmartClinicSecurity.apiJson('/ai/doctor-support', {
     method: 'POST',
