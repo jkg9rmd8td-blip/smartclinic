@@ -34,54 +34,43 @@ function setMsg(text) {
 async function loadMessages() {
   var list = document.getElementById('messagesList');
   list.innerHTML = 'جاري التحميل...';
-  try {
-    var response = await SmartClinicSecurity.apiRequest('/messages');
-    var payload = await response.json();
-    if (!response.ok) {
-      list.innerHTML = '<div style="color:#fecaca;">تعذر تحميل الرسائل.</div>';
-      return;
-    }
-    var items = payload.items || [];
-    if (!items.length) {
-      list.innerHTML = '<div style="color:#bde4dd;">لا توجد رسائل بعد.</div>';
-      return;
-    }
-    list.innerHTML = items.slice().reverse().map(function (m) {
-      return '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px;">' +
-        '<div style="font-size:12px;color:#bde4dd;">' + new Date(m.createdAt).toLocaleString('ar-SA') + '</div>' +
-        '<div>' + m.text + '</div>' +
-      '</div>';
-    }).join('');
-  } catch (err) {
+  var result = await SmartClinicSecurity.apiJson('/messages');
+  if (!result.ok || !result.data) {
     list.innerHTML = '<div style="color:#fecaca;">تعذر الاتصال بالخادم.</div>';
+    return;
   }
+  var items = result.data.items || [];
+  if (!items.length) {
+    list.innerHTML = '<div style="color:#bde4dd;">لا توجد رسائل بعد.</div>';
+    return;
+  }
+  list.innerHTML = items.slice().reverse().map(function (m) {
+    return '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px;">' +
+      '<div style="font-size:12px;color:#bde4dd;">' + new Date(m.createdAt).toLocaleString('ar-SA') + '</div>' +
+      '<div>' + m.text + '</div>' +
+    '</div>';
+  }).join('');
 }
 
 async function sendMsg(){
   var v = document.getElementById('msg').value.trim();
   if(!v){ setMsg('يرجى كتابة الرسالة قبل الإرسال.'); return; }
-  try {
-    var response = await SmartClinicSecurity.apiRequest('/messages', {
-      method: 'POST',
-      body: JSON.stringify({ text: v })
-    });
-    var payload = await response.json();
-    if (!response.ok) {
-      setMsg(payload.error || 'تعذر إرسال الرسالة.');
-      return;
-    }
-    setMsg('تم إرسال رسالتك بنجاح.');
-    document.getElementById('msg').value='';
-    await loadMessages();
-  } catch (err) {
-    setMsg('تعذر الاتصال بالخادم.');
+  var result = await SmartClinicSecurity.apiJson('/messages', {
+    method: 'POST',
+    body: JSON.stringify({ text: v })
+  });
+  if (!result.ok) {
+    setMsg(result.error || 'تعذر إرسال الرسالة.');
+    return;
   }
+  setMsg('تم إرسال رسالتك بنجاح.');
+  document.getElementById('msg').value='';
+  await loadMessages();
 }
 
 window.addEventListener("DOMContentLoaded", function(){
   SmartClinicSecurity.requireAccess(["parent", "admin"], "رسائل ولي الأمر");
-  loadMessages();
-  setInterval(loadMessages, 25000);
+  SmartClinicSecurity.createAutoRefresh(loadMessages, 25000, { immediate: true });
 });
 </script>
 </body>

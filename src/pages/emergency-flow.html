@@ -191,48 +191,32 @@ function renderEmergency(payload) {
   startTimer(payload.startedAt);
 }
 async function loadEmergency() {
-  try {
-    var response = await SmartClinicSecurity.apiRequest('/emergency/' + encodeURIComponent(currentCaseId));
-    var payload = await response.json();
-    if (!response.ok) {
-      notify(payload.error || 'تعذر تحميل مسار الطوارئ');
-      return;
-    }
-    renderEmergency(payload);
-  } catch (err) {
-    notify('تعذر الاتصال بالخادم.');
-  }
-}
-async function runEmergencyAction(type, note) {
-  try {
-    var response = await SmartClinicSecurity.apiRequest('/cases/' + encodeURIComponent(currentCaseId) + '/actions', {
-      method: 'POST',
-      body: JSON.stringify({ type: type, note: note })
-    });
-    var payload = await response.json();
-    if (!response.ok) {
-      notify(payload.error || 'تعذر تنفيذ الإجراء.');
-      return;
-    }
-    notify(note);
-    loadEmergency();
-  } catch (err) {
-    notify('تعذر الاتصال بالخادم.');
-  }
-}
-function goRoleHome() {
-  var session = SmartClinicSecurity.getSession();
-  if (session && session.role === 'admin') {
-    window.location.href = 'admin-dashboard.html';
+  var result = await SmartClinicSecurity.apiJson('/emergency/' + encodeURIComponent(currentCaseId));
+  if (!result.ok || !result.data) {
+    notify(result.error || 'تعذر تحميل مسار الطوارئ');
     return;
   }
-  window.location.href = 'doctor.html';
+  renderEmergency(result.data);
+}
+async function runEmergencyAction(type, note) {
+  var result = await SmartClinicSecurity.apiJson('/cases/' + encodeURIComponent(currentCaseId) + '/actions', {
+    method: 'POST',
+    body: JSON.stringify({ type: type, note: note })
+  });
+  if (!result.ok) {
+    notify(result.error || 'تعذر تنفيذ الإجراء.');
+    return;
+  }
+  notify(note);
+  loadEmergency();
+}
+function goRoleHome() {
+  SmartClinicSecurity.goToRoleHome();
 }
 window.addEventListener('DOMContentLoaded', function () {
   SmartClinicSecurity.requireAccess(['doctor', 'admin'], 'مسار الطوارئ');
   currentCaseId = normalizeCaseId(qs('id'));
-  loadEmergency();
-  setInterval(loadEmergency, 15000);
+  SmartClinicSecurity.createAutoRefresh(loadEmergency, 15000, { immediate: true });
 });
 </script>
 </body>

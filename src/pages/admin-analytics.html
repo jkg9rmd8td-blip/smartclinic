@@ -203,29 +203,23 @@ function renderRecent(logs) {
 }
 
 async function loadAnalytics() {
-  try {
-    var response = await SmartClinicSecurity.apiRequest('/analytics/overview');
-    var payload = await response.json();
-    if (!response.ok) {
-      document.getElementById('snapshot').innerHTML = '<article class="stat"><div class="label">خطأ</div><div class="value">تعذر التحميل</div></article>';
-      return;
-    }
-
-    renderSnapshot(payload.snapshot || {});
-    renderDist('statusDist', payload.distributions && payload.distributions.statusCounts);
-    renderDist('severityDist', payload.distributions && payload.distributions.severityCounts);
-    renderDist('rolesDist', payload.distributions && payload.distributions.roleCounts);
-    renderDist('todayDist', payload.today || {});
-    renderRecent(payload.recentLogs || []);
-  } catch (err) {
+  var result = await SmartClinicSecurity.apiJson('/analytics/overview');
+  if (!result.ok || !result.data) {
     document.getElementById('snapshot').innerHTML = '<article class="stat"><div class="label">خطأ</div><div class="value">الخادم غير متاح</div></article>';
+    return;
   }
+  var payload = result.data;
+  renderSnapshot(payload.snapshot || {});
+  renderDist('statusDist', payload.distributions && payload.distributions.statusCounts);
+  renderDist('severityDist', payload.distributions && payload.distributions.severityCounts);
+  renderDist('rolesDist', payload.distributions && payload.distributions.roleCounts);
+  renderDist('todayDist', payload.today || {});
+  renderRecent(payload.recentLogs || []);
 }
 
 window.addEventListener('DOMContentLoaded', function () {
   SmartClinicSecurity.requireAccess(['doctor', 'admin'], 'Dashboard التحليلات');
-  loadAnalytics();
-  setInterval(loadAnalytics, 15000);
+  SmartClinicSecurity.createAutoRefresh(loadAnalytics, 15000, { immediate: true });
 });
 </script>
 </body>

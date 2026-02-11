@@ -28,31 +28,25 @@ body{margin:0;font-family:"Tajawal",sans-serif;background:#0a2a25;color:#ecfffb;
 async function loadAlerts() {
   var wrap = document.getElementById('alertsList');
   wrap.innerHTML = '<div class="alert">جاري التحميل...</div>';
-  try {
-    var response = await SmartClinicSecurity.apiRequest('/alerts');
-    var payload = await response.json();
-    if (!response.ok) {
-      wrap.innerHTML = '<div class="alert">تعذر تحميل التنبيهات.</div>';
-      return;
-    }
-    var items = payload.items || [];
-    if (!items.length) {
-      wrap.innerHTML = '<div class="alert">لا توجد تنبيهات حالياً.</div>';
-      return;
-    }
-    wrap.innerHTML = items.map(function (a) {
-      var when = a.createdAt ? new Date(a.createdAt).toLocaleString('ar-SA') : '-';
-      return '<div class="alert"><div>' + a.text + '</div><div class="meta">' + when + '</div></div>';
-    }).join('');
-  } catch (err) {
+  var result = await SmartClinicSecurity.apiJson('/alerts');
+  if (!result.ok || !result.data) {
     wrap.innerHTML = '<div class="alert">تعذر الاتصال بالخادم.</div>';
+    return;
   }
+  var items = result.data.items || [];
+  if (!items.length) {
+    wrap.innerHTML = '<div class="alert">لا توجد تنبيهات حالياً.</div>';
+    return;
+  }
+  wrap.innerHTML = items.map(function (a) {
+    var when = a.createdAt ? new Date(a.createdAt).toLocaleString('ar-SA') : '-';
+    return '<div class="alert"><div>' + a.text + '</div><div class="meta">' + when + '</div></div>';
+  }).join('');
 }
 
 window.addEventListener("DOMContentLoaded", function(){
   SmartClinicSecurity.requireAccess(["parent", "admin"], "تنبيهات ولي الأمر");
-  loadAlerts();
-  setInterval(loadAlerts, 25000);
+  SmartClinicSecurity.createAutoRefresh(loadAlerts, 25000, { immediate: true });
 });
 </script>
 </body>

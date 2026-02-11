@@ -139,8 +139,7 @@ async function loadOverview() {
 
 window.addEventListener("DOMContentLoaded", function () {
   SmartClinicSecurity.requireAccess(["parent", "admin"], "بوابة ولي الأمر");
-  loadOverview();
-  setInterval(loadOverview, 20000);
+  SmartClinicSecurity.createAutoRefresh(loadOverview, 20000, { immediate: true });
 });
 </script>
 </body>

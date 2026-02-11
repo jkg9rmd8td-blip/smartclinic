@@ -686,6 +686,50 @@
         "note": "تم تفعيل بروتوكول الطوارئ الكامل"
       },
       "createdAt": "2026-02-11T01:10:25.233Z"
+    },
+    {
+      "id": "log_7b6aeb86",
+      "action": "auth.login",
+      "actorId": "u_student_1",
+      "actorRole": "student",
+      "target": "session",
+      "details": {
+        "role": "student"
+      },
+      "createdAt": "2026-02-11T01:32:51.927Z"
+    },
+    {
+      "id": "log_44c92cd4",
+      "action": "auth.login",
+      "actorId": "u_doctor_1",
+      "actorRole": "doctor",
+      "target": "session",
+      "details": {
+        "role": "doctor"
+      },
+      "createdAt": "2026-02-11T01:32:56.906Z"
+    },
+    {
+      "id": "log_846fce51",
+      "action": "auth.login",
+      "actorId": "u_parent_1",
+      "actorRole": "parent",
+      "target": "session",
+      "details": {
+        "role": "parent"
+      },
+      "createdAt": "2026-02-11T01:32:59.756Z"
+    },
+    {
+      "id": "log_5849fbbb",
+      "action": "auth.login",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "session",
+      "details": {
+        "role": "admin"
+      },
+      "createdAt": "2026-02-11T01:33:02.072Z"
     }
   ],
   "settings": {
