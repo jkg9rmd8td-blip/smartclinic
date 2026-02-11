@@ -43,6 +43,22 @@ body {
 }
 .header-name { font-size: 18px; font-weight: 600; }
 .header-sub { font-size: 12px; color: #9ca3af; }
+.section-nav {
+  margin-bottom: 12px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.section-btn {
+  border: 1px solid rgba(148,163,184,0.5);
+  background: rgba(255,255,255,0.03);
+  color: #e5e7eb;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
 .btn-ghost {
   padding: 7px 12px;
   border-radius: 999px;
@@ -165,6 +181,15 @@ body {
   font-size:12px;
   cursor:pointer;
 }
+select {
+  width: 100%;
+  border-radius: 12px;
+  border:1px solid rgba(30,64,175,0.85);
+  background: rgba(15,23,42,0.96);
+  color: #e5e7eb;
+  font-size: 12px;
+  padding: 8px;
+}
 textarea {
   width: 100%;
   margin-top: 8px;
@@ -187,6 +212,13 @@ textarea {
   font-size: 12px;
   display: none;
 }
+.stat-value.warn { color: #fcd34d; }
+.report-actions {
+  margin-top: 6px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
 </style>
 </head>
 <body>
@@ -200,6 +232,12 @@ textarea {
       </div>
     </div>
     <button class="btn-ghost" onclick="goRoleHome()">العودة</button>
+  </div>
+  <div class="section-nav">
+    <button class="section-btn" onclick="scrollProfileSection('cases')">سجل الحالات</button>
+    <button class="section-btn" onclick="scrollProfileSection('reports')">التقارير</button>
+    <button class="section-btn" onclick="scrollProfileSection('medication')">الالتزام الدوائي</button>
+    <button class="section-btn" onclick="scrollProfileSection('alerts')">التنبيهات والتواصل</button>
   </div>
 
   <div class="layout">
@@ -231,7 +269,9 @@ textarea {
       <div class="inline-row">
         <button class="btn-primary" data-permission="request.visit" onclick="quickVisitRequest()">طلب زيارة سريع</button>
         <button class="btn-muted" data-permission="send.message" onclick="focusMessageBox()">مراسلة العيادة</button>
-        <button class="btn-muted" data-permission="export.report" onclick="notify('تم تجهيز التقرير للطباعة من المتصفح')">تصدير تقرير</button>
+        <button class="btn-muted" data-permission="view.case" onclick="openLinkedCase()">فتح الحالة المرتبطة</button>
+        <button class="btn-muted" id="profile-telemed-btn" onclick="handleProfileTelemed()">الجلسة المرئية</button>
+        <button class="btn-muted" data-permission="export.report" onclick="exportProfileReport()">تصدير تقرير</button>
       </div>
     </section>
 
@@ -290,7 +330,27 @@ textarea {
       <div id="reports-list" class="list"></div>
     </section>
 
-    <section class="card">
+    <section class="card" id="medication">
+      <div class="card-header">
+        <div>
+          <div class="card-title">الالتزام الدوائي الأسبوعي</div>
+          <div class="card-sub">قياس الجرعات المنفذة ومتابعة الانخفاض قبل وصوله لمستوى خطر.</div>
+        </div>
+        <span class="pill">Medication</span>
+      </div>
+      <div id="med-adherence-stats" class="stats"></div>
+      <div class="inline-row">
+        <select id="med-plan-select"></select>
+        <button class="btn-primary" onclick="logMedicationFromProfile('taken')">تم أخذ الجرعة</button>
+        <button class="btn-muted" onclick="logMedicationFromProfile('skipped')">تم تجاوز الجرعة</button>
+      </div>
+      <div class="inline-row" data-permission="prescribe.medication">
+        <button class="btn-primary" onclick="createMedicationPlanFromProfile()">إضافة خطة دوائية</button>
+      </div>
+      <div id="med-recent-logs" class="list"></div>
+    </section>
+
+    <section class="card" id="alerts">
       <div class="card-header">
         <div>
           <div class="card-title">التنبيهات والتواصل</div>
@@ -311,8 +371,18 @@ textarea {
 <div id="toast" class="toast"></div>
 
 <script src="../../assets/js/security.js"></script>
+<script src="../../assets/js/ui-shell.js"></script>
 <script>
 var latestData = null;
+var latestTelemedSessionId = '';
+var profileStudentId = '';
+var linkedCaseId = '';
+var medPlansCache = [];
+
+function qs(name) {
+  var params = new URLSearchParams(window.location.search || '');
+  return params.get(name);
+}
 
 function notify(text) {
   var el = document.getElementById('toast');
@@ -333,6 +403,49 @@ function fmtNum(value, digits, suffix) {
   return suffix ? (fixed + suffix) : fixed;
 }
 
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function roleAllowsStudentScope(role) {
+  return role === 'doctor' || role === 'admin';
+}
+
+function getScopedStudentId() {
+  var session = SmartClinicSecurity.getSession() || {};
+  var requested = String(qs('studentId') || '').trim();
+  if (requested && roleAllowsStudentScope(session.role)) {
+    return requested;
+  }
+  return '';
+}
+
+function buildStudentScopeQuery() {
+  var session = SmartClinicSecurity.getSession() || {};
+  var scoped = profileStudentId || getScopedStudentId();
+  if (!scoped || !roleAllowsStudentScope(session.role)) {
+    return '';
+  }
+  return '?studentId=' + encodeURIComponent(scoped);
+}
+
+function downloadTextFile(filename, text) {
+  var blob = new Blob([String(text || '')], { type: 'text/plain;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 function riskLabel(risk) {
   var map = {
     stable: 'مستقرة',
@@ -350,6 +463,13 @@ function renderList(id, items, emptyText, mapper) {
     return;
   }
   wrap.innerHTML = items.map(mapper).join('');
+}
+
+function scrollProfileSection(id) {
+  var target = document.getElementById(id);
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 function renderVitals(data) {
@@ -380,6 +500,8 @@ function renderProfile(data) {
   var student = latestData.student || {};
   var snapshot = latestData.snapshot || {};
   var latestCase = latestData.latestCase || null;
+  linkedCaseId = String(qs('caseId') || (latestCase && latestCase.id) || '').trim();
+  profileStudentId = student.id || getScopedStudentId() || 'u_student_1';
 
   var name = student.name || 'طالب';
   document.getElementById('student-name').textContent = name;
@@ -401,7 +523,12 @@ function renderProfile(data) {
   });
 
   renderList('reports-list', latestData.reports, 'لا توجد تقارير متاحة.', function (r) {
-    return '<div class="item"><div class="item-title">' + (r.title || 'تقرير') + '</div><div class="item-meta">' + fmtDate(r.createdAt) + '</div></div>';
+    var id = String((r && r.id) || '');
+    var exportBtn = '';
+    if (id) {
+      exportBtn = '<div class="report-actions"><button class="btn-muted" type="button" onclick="exportProfileReport(\'' + escapeHtml(id) + '\')">تصدير هذا التقرير</button></div>';
+    }
+    return '<div class="item"><div class="item-title">' + escapeHtml(r.title || 'تقرير') + '</div><div class="item-meta">' + fmtDate(r.createdAt) + '</div>' + exportBtn + '</div>';
   });
 
   renderList('alerts-list', latestData.alerts, 'لا توجد تنبيهات جديدة.', function (a) {
@@ -411,15 +538,242 @@ function renderProfile(data) {
   renderVitals(latestData);
 }
 
+function openLinkedCase() {
+  var session = SmartClinicSecurity.getSession() || {};
+  if (session.role !== 'doctor' && session.role !== 'admin') {
+    var target = document.getElementById('cases');
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+  if (!linkedCaseId && latestData && Array.isArray(latestData.cases) && latestData.cases.length) {
+    linkedCaseId = latestData.cases[0].id || '';
+  }
+  if (!linkedCaseId) {
+    notify('لا توجد حالة مرتبطة لفتحها الآن.');
+    return;
+  }
+  window.location.href = 'case-details.html?id=' + encodeURIComponent(linkedCaseId);
+}
+
+async function refreshProfileTelemed() {
+  var session = SmartClinicSecurity.getSession() || {};
+  var role = session.role || 'student';
+  var query = {
+    role: role,
+    caseId: linkedCaseId || undefined,
+    includeEnded: false
+  };
+  var current = await SmartClinicSecurity.getLatestTelemedSession(query);
+  latestTelemedSessionId = current && current.id ? current.id : '';
+
+  var btn = document.getElementById('profile-telemed-btn');
+  if (!btn) return;
+  if (role === 'doctor' || role === 'admin') {
+    btn.disabled = false;
+    btn.textContent = latestTelemedSessionId ? 'فتح الجلسة المرئية' : 'بدء جلسة مرئية';
+    return;
+  }
+  btn.disabled = !latestTelemedSessionId;
+  btn.textContent = latestTelemedSessionId ? 'الانضمام للجلسة المرئية' : 'لا توجد جلسة مرئية';
+}
+
+async function handleProfileTelemed() {
+  var session = SmartClinicSecurity.getSession() || {};
+  var role = session.role || 'student';
+  if (role === 'doctor' || role === 'admin') {
+    if (latestTelemedSessionId) {
+      window.location.href = SmartClinicSecurity.getTelemedRoomPath(latestTelemedSessionId);
+      return;
+    }
+    var caseId = linkedCaseId || ((latestData && latestData.latestCase && latestData.latestCase.id) || '');
+    if (!caseId) {
+      notify('لا توجد حالة نشطة لبدء الجلسة.');
+      return;
+    }
+    var allowGuardian = window.confirm('هل تريد السماح لولي الأمر بالانضمام لهذه الجلسة؟');
+    var create = await SmartClinicSecurity.createTelemedSession({
+      caseId: caseId,
+      studentId: profileStudentId || 'u_student_1',
+      allowGuardian: allowGuardian,
+      title: 'جلسة مرئية من الملف الصحي للحالة ' + caseId
+    });
+    if (!create.ok || !create.item) {
+      notify(create.error || 'تعذر بدء الجلسة المرئية.');
+      return;
+    }
+    latestTelemedSessionId = create.item.id;
+    window.location.href = SmartClinicSecurity.getTelemedRoomPath(create.item.id);
+    return;
+  }
+
+  if (!latestTelemedSessionId) {
+    await refreshProfileTelemed();
+    notify('لا توجد جلسة مرئية متاحة حاليًا.');
+    return;
+  }
+  var inviteRole = role === 'parent' ? 'parent' : 'student';
+  var invite = await SmartClinicSecurity.createTelemedInvite(latestTelemedSessionId, inviteRole);
+  if (!invite.ok || !invite.item || !invite.item.token) {
+    notify(invite.error || 'تعذر تجهيز رابط انضمام آمن.');
+    return;
+  }
+  window.location.href = SmartClinicSecurity.getTelemedRoomPath(latestTelemedSessionId, invite.item.token);
+}
+
+async function exportProfileReport(reportId) {
+  var reqBody = reportId ? { reportId: reportId } : {};
+  var exportResult = await SmartClinicSecurity.apiJson('/reports/export', {
+    method: 'POST',
+    body: JSON.stringify(reqBody)
+  });
+  if (!exportResult.ok || !exportResult.data) {
+    notify(exportResult.error || 'تعذر تصدير التقرير.');
+    return;
+  }
+  var student = (latestData && latestData.student) || {};
+  var snapshot = (latestData && latestData.snapshot) || {};
+  var latestCase = (latestData && latestData.latestCase) || {};
+  var latestVitals = (latestData && latestData.latestVitals) || {};
+  var fileBase = String((exportResult.data.filename || 'student-report').replace(/\.pdf$/i, ''));
+  var body = [
+    'Smart Clinic Student Profile Export',
+    'Generated At: ' + new Date().toISOString(),
+    'Student: ' + (student.name || '-'),
+    'Student ID: ' + (student.id || profileStudentId || '-'),
+    'Grade: ' + (student.grade || '-'),
+    '--- Snapshot ---',
+    'Open Cases: ' + Number(snapshot.openCases || 0),
+    'Pending Visits: ' + Number(snapshot.pendingVisits || 0),
+    'Reports: ' + Number(snapshot.reports || 0),
+    'Alerts: ' + Number(snapshot.alerts || 0),
+    '--- Latest Case ---',
+    (latestCase.title || '-') + ' | ' + (latestCase.severity || '-') + ' | ' + fmtDate(latestCase.updatedAt),
+    '--- Latest Vitals ---',
+    'Temp: ' + fmtNum(latestVitals.temp, 1, '°C'),
+    'SpO2: ' + fmtNum(latestVitals.spo2, 0, '%'),
+    'HR: ' + fmtNum(latestVitals.hr, 0, ' bpm'),
+    'BP: ' + fmtNum(latestVitals.bpSys, 0) + '/' + fmtNum(latestVitals.bpDia, 0),
+    'Risk: ' + riskLabel(latestVitals.risk || 'unknown')
+  ].join('\n');
+  downloadTextFile(fileBase + '-snapshot.txt', body);
+  notify(exportResult.data.message || 'تم تجهيز التقرير للتنزيل.');
+}
+
+function renderMedicationAdherence(data) {
+  var summary = data || {};
+  medPlansCache = Array.isArray(summary.plans) ? summary.plans.slice() : [];
+  var adherence = Number(summary.adherencePercent || 0);
+  var warnClass = adherence < 80 ? ' warn' : '';
+  document.getElementById('med-adherence-stats').innerHTML = [
+    ['نسبة الالتزام', adherence + '%', warnClass],
+    ['الجرعات المتوقعة', Number(summary.expectedDoses || 0), ''],
+    ['الجرعات المنفذة', Number(summary.takenDoses || 0), ''],
+    ['الجرعات المتجاوزة', Number(summary.skippedDoses || 0), '']
+  ].map(function (item) {
+    return '<div class="stat"><div class="stat-label">' + item[0] + '</div><div class="stat-value' + item[2] + '">' + item[1] + '</div></div>';
+  }).join('');
+
+  var select = document.getElementById('med-plan-select');
+  if (!medPlansCache.length) {
+    select.innerHTML = '<option value="">لا توجد خطط دوائية نشطة</option>';
+  } else {
+    select.innerHTML = medPlansCache.map(function (plan) {
+      return '<option value="' + escapeHtml(plan.id) + '">' + escapeHtml(plan.name || plan.id) + ' • ' + Number(plan.dosesPerDay || 1) + ' جرعات/يوم</option>';
+    }).join('');
+  }
+
+  renderList('med-recent-logs', summary.recentLogs, 'لا توجد سجلات جرعات حتى الآن.', function (entry) {
+    var state = entry.status === 'taken' ? 'تم أخذ الجرعة' : 'تم تجاوز الجرعة';
+    return '<div class="item"><div class="item-title">' + escapeHtml(entry.planName || 'خطة دوائية') + ' • ' + state + '</div><div class="item-meta">' + fmtDate(entry.takenAt || entry.createdAt) + '</div></div>';
+  });
+}
+
+async function loadMedicationAdherence() {
+  var result = await SmartClinicSecurity.apiJson('/medications/adherence' + buildStudentScopeQuery());
+  if (!result.ok || !result.data) {
+    renderList('med-recent-logs', [], 'تعذر تحميل بيانات الالتزام الدوائي.', function () { return ''; });
+    document.getElementById('med-adherence-stats').innerHTML = '<div class="stat"><div class="stat-label">الالتزام</div><div class="stat-value">-</div></div>';
+    document.getElementById('med-plan-select').innerHTML = '<option value="">غير متوفر</option>';
+    return;
+  }
+  renderMedicationAdherence(result.data);
+}
+
+async function logMedicationFromProfile(status) {
+  var desired = status === 'skipped' ? 'skipped' : 'taken';
+  var select = document.getElementById('med-plan-select');
+  var planId = select ? String(select.value || '') : '';
+  if (!planId && !profileStudentId) {
+    notify('لا توجد خطة دوائية قابلة للتحديث.');
+    return;
+  }
+  var payload = {
+    status: desired,
+    note: 'تحديث من صفحة الملف الصحي'
+  };
+  if (planId) {
+    payload.planId = planId;
+  } else {
+    payload.studentId = profileStudentId;
+  }
+  var result = await SmartClinicSecurity.apiJson('/medications/logs', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+  if (!result.ok) {
+    notify(result.error || 'تعذر تحديث سجل الجرعات.');
+    return;
+  }
+  notify(desired === 'taken' ? 'تم تسجيل الجرعة كمأخوذة.' : 'تم تسجيل الجرعة كتجاوز.');
+  loadMedicationAdherence();
+}
+
+async function createMedicationPlanFromProfile() {
+  var name = window.prompt('اسم الدواء:', 'Paracetamol 500mg');
+  if (name === null) return;
+  name = String(name || '').trim();
+  if (!name) {
+    notify('اسم الدواء مطلوب.');
+    return;
+  }
+  var dosesRaw = window.prompt('عدد الجرعات اليومية (1-8):', '2');
+  if (dosesRaw === null) return;
+  var doses = Number(dosesRaw);
+  if (!Number.isFinite(doses) || doses < 1 || doses > 8) {
+    notify('عدد الجرعات يجب أن يكون بين 1 و 8.');
+    return;
+  }
+  var instructions = window.prompt('تعليمات الاستخدام:', 'بعد الأكل لمدة 5 أيام') || '';
+  var result = await SmartClinicSecurity.apiJson('/medications/plans', {
+    method: 'POST',
+    body: JSON.stringify({
+      studentId: profileStudentId || getScopedStudentId() || 'u_student_1',
+      name: name,
+      dosesPerDay: Math.round(doses),
+      instructions: String(instructions).trim()
+    })
+  });
+  if (!result.ok) {
+    notify(result.error || 'تعذر إنشاء الخطة الدوائية.');
+    return;
+  }
+  notify('تم إنشاء خطة دوائية جديدة.');
+  loadMedicationAdherence();
+}
+
 async function loadProfile() {
   try {
-    var response = await SmartClinicSecurity.apiRequest('/student/overview');
+    var query = getScopedStudentId();
+    var endpoint = '/student/overview' + (query ? ('?studentId=' + encodeURIComponent(query)) : '');
+    var response = await SmartClinicSecurity.apiRequest(endpoint);
     var payload = await response.json();
     if (!response.ok) {
       notify(payload.error || 'تعذر تحميل الملف الصحي.');
       return;
     }
     renderProfile(payload);
+    await loadMedicationAdherence();
+    await refreshProfileTelemed();
   } catch (err) {
     notify('تعذر الاتصال بالخادم.');
   }
@@ -473,9 +827,10 @@ async function sendMessage() {
 
 async function generateVitalsReading() {
   try {
+    var studentId = profileStudentId || getScopedStudentId() || 'u_student_1';
     var response = await SmartClinicSecurity.apiRequest('/vitals/generate', {
       method: 'POST',
-      body: JSON.stringify({ profile: 'normal' })
+      body: JSON.stringify({ studentId: studentId, profile: 'normal' })
     });
     var payload = await response.json();
     if (!response.ok) {
@@ -505,7 +860,31 @@ function goRoleHome() {
 }
 
 window.addEventListener('DOMContentLoaded', function () {
-  SmartClinicSecurity.requireAccess(['student', 'doctor', 'parent', 'admin'], 'ملف الطالب');
+  var auth = SmartClinicSecurity.requireAccess(['student', 'doctor', 'parent', 'admin'], 'ملف الطالب');
+  if (window.SmartClinicUI) {
+    var links = [
+      { label: 'الملف الصحي', href: 'student-profile.html' },
+      { label: 'بوابة الطالب', href: 'student-portal.html', roles: ['student', 'admin'] },
+      { label: 'لوحة الطبيب', href: 'doctor.html', roles: ['doctor', 'admin'] },
+      { label: 'بوابة ولي الأمر', href: 'parent-portal.html', roles: ['parent', 'admin'] },
+      { label: 'مركز التنسيق', href: 'care-center.html' },
+      { label: 'الإشعارات', href: 'notifications-center.html' }
+    ];
+    if (auth && (auth.role === 'doctor' || auth.role === 'admin')) {
+      links.push({ label: 'تفاصيل الحالة', href: linkedCaseId ? ('case-details.html?id=' + encodeURIComponent(linkedCaseId)) : 'case-details.html?id=case_1' });
+    }
+    SmartClinicUI.mountQuickNav({
+      afterSelector: '.header',
+      onRefresh: loadProfile,
+      links: links
+    });
+  }
+  if (window.location.hash) {
+    var targetId = String(window.location.hash || '').replace('#', '').trim();
+    if (targetId) {
+      window.setTimeout(function () { scrollProfileSection(targetId); }, 120);
+    }
+  }
   SmartClinicSecurity.createAutoRefresh(loadProfile, 20000, { immediate: true });
 });
 </script>

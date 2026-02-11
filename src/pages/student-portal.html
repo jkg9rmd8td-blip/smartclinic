@@ -241,7 +241,7 @@ textarea, select {
       <p id="latest-case-text">جاري تحميل أحدث حالة...</p>
       <span id="latest-case-badge" class="badge b-ok">مستقرة</span>
       <div class="inline-row" style="margin-top:10px;">
-        <button class="cta" onclick="window.location.href='student-profile.html'">فتح الملف الصحي الكامل</button>
+        <button class="cta" onclick="openStudentProfile()">فتح الملف الصحي الكامل</button>
         <button class="muted-btn" data-permission="view.cases" onclick="jumpToCases()">عرض الحالات</button>
       </div>
     </article>
@@ -330,7 +330,7 @@ textarea, select {
       <div id="reports-list" class="list"></div>
       <div class="inline-row">
         <button class="muted-btn" onclick="window.location.href='student-profile.html#reports'">عرض كل التقارير</button>
-        <button class="muted-btn" data-permission="export.report" onclick="notify('يمكنك طباعة التقرير من صفحة الملف الصحي')">تصدير التقرير</button>
+        <button class="muted-btn" data-permission="export.report" onclick="exportStudentReport()">تصدير التقرير</button>
       </div>
     </article>
 
@@ -516,8 +516,58 @@ async function joinStudentTelemed() {
   window.location.href = SmartClinicSecurity.getTelemedRoomPath(studentTelemedSessionId, invite.item.token);
 }
 
+function downloadTextFile(filename, text) {
+  var blob = new Blob([String(text || '')], { type: 'text/plain;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function openStudentProfile() {
+  var target = 'student-profile.html';
+  var latest = lastOverview && lastOverview.latestCase ? lastOverview.latestCase : null;
+  if (latest && latest.id) {
+    target += '?caseId=' + encodeURIComponent(latest.id);
+  }
+  window.location.href = target;
+}
+
 function jumpToCases() {
   window.location.href = 'student-profile.html#cases';
+}
+
+async function exportStudentReport() {
+  var reportId = '';
+  if (lastOverview && Array.isArray(lastOverview.reports) && lastOverview.reports.length) {
+    reportId = String(lastOverview.reports[0].id || '');
+  }
+  var result = await SmartClinicSecurity.apiJson('/reports/export', {
+    method: 'POST',
+    body: JSON.stringify(reportId ? { reportId: reportId } : {})
+  });
+  if (!result.ok || !result.data) {
+    notify(result.error || 'تعذر تصدير التقرير.');
+    return;
+  }
+  var snapshot = (lastOverview && lastOverview.snapshot) || {};
+  var latestCase = (lastOverview && lastOverview.latestCase) || {};
+  var filename = String((result.data.filename || 'student-report').replace(/\.pdf$/i, ''));
+  var body = [
+    'Smart Clinic Student Portal Export',
+    'Generated At: ' + new Date().toISOString(),
+    'Open Cases: ' + Number(snapshot.openCases || 0),
+    'Critical Cases: ' + Number(snapshot.criticalCases || 0),
+    'Pending Visits: ' + Number(snapshot.pendingVisits || 0),
+    'Alerts: ' + Number(snapshot.alerts || 0),
+    'Latest Case: ' + (latestCase.title || '-') + ' | ' + (latestCase.severity || '-') + ' | ' + (latestCase.updatedAt ? new Date(latestCase.updatedAt).toLocaleString('ar-SA') : '-')
+  ].join('\n');
+  downloadTextFile(filename + '-portal.txt', body);
+  notify(result.data.message || 'تم تجهيز التقرير.');
 }
 
 function updateVisitReasonMeta() {

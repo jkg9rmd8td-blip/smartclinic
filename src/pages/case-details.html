@@ -154,6 +154,7 @@ textarea {
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
       <span class="pill"><span class="pill-dot"></span><span id="case-status">قيد المعالجة</span></span>
+      <button class="btn-ghost" onclick="copyCaseId()">نسخ رقم الحالة</button>
       <button class="btn-ghost" onclick="goRoleHome()">العودة</button>
     </div>
   </div>
@@ -201,7 +202,7 @@ textarea {
       <div id="timeline" class="timeline"></div>
       <div class="actions-row">
         <button class="action-btn" onclick="window.location.href='emergency-flow.html?id=' + encodeURIComponent(currentCaseId)">فتح مسار الطوارئ</button>
-        <button class="action-btn" onclick="window.location.href='student-profile.html'">فتح ملف الطالب</button>
+        <button class="action-btn" onclick="openStudentProfile()">فتح ملف الطالب</button>
       </div>
     </section>
   </div>
@@ -212,6 +213,7 @@ textarea {
 <script src="../../assets/js/security.js"></script>
 <script>
 var currentCaseId = 'case_1';
+var currentStudentId = '';
 
 function qs(name) {
   var params = new URLSearchParams(window.location.search);
@@ -248,6 +250,7 @@ function renderTimeline(items) {
 }
 
 function renderCase(item, timeline) {
+  currentStudentId = item.studentId || '';
   document.getElementById('case-title').textContent = 'فتح الحالة - ' + (item.studentName || '-');
   document.getElementById('case-sub').textContent = (item.title || '-') + ' • صلاحية: ' + (SmartClinicSecurity.getSession() || {}).role;
   document.getElementById('case-status').textContent = item.status || '-';
@@ -258,6 +261,30 @@ function renderCase(item, timeline) {
   document.getElementById('case-updated').textContent = item.updatedAt ? new Date(item.updatedAt).toLocaleString('ar-SA') : '-';
   document.getElementById('plan-box').value = item.notes || '';
   renderTimeline(timeline || []);
+}
+
+function openStudentProfile() {
+  var path = 'student-profile.html';
+  if (currentStudentId) {
+    path += '?studentId=' + encodeURIComponent(currentStudentId) + '&caseId=' + encodeURIComponent(currentCaseId);
+  }
+  window.location.href = path;
+}
+
+function copyCaseId() {
+  if (!currentCaseId) {
+    notify('لا يوجد رقم حالة متاح.');
+    return;
+  }
+  if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') {
+    notify('المتصفح لا يدعم النسخ المباشر.');
+    return;
+  }
+  navigator.clipboard.writeText(currentCaseId).then(function () {
+    notify('تم نسخ رقم الحالة: ' + currentCaseId);
+  }).catch(function () {
+    notify('تعذر نسخ رقم الحالة.');
+  });
 }
 
 async function loadCase() {

@@ -175,6 +175,18 @@ body {
 }
 .meta-tile-label { color: var(--text-soft); font-size: 12px; }
 .meta-tile-value { margin-top: 3px; font-size: 14px; font-weight: 700; }
+.service-feedback {
+  margin-top: 10px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.04);
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: var(--text-soft);
+  font-size: 13px;
+}
+.service-feedback.ok { border-color: rgba(34,197,94,.48); color: #86efac; }
+.service-feedback.warn { border-color: rgba(245,158,11,.48); color: #fde68a; }
+.service-feedback.danger { border-color: rgba(239,68,68,.58); color: #fca5a5; }
 .case-toolbar {
   margin-top: 8px;
   display: grid;
@@ -294,7 +306,9 @@ body {
     <p style="margin:6px 0 0;color:var(--text-soft);">الإجراءات السريعة سيتم تطبيقها على الحالة المختارة أدناه.</p>
     <div class="active-case-grid">
       <div class="meta-tile"><div class="meta-tile-label">الطالب</div><div class="meta-tile-value" id="active-student">-</div></div>
+      <div class="meta-tile"><div class="meta-tile-label">معرف الطالب</div><div class="meta-tile-value" id="active-student-id">-</div></div>
       <div class="meta-tile"><div class="meta-tile-label">الحالة</div><div class="meta-tile-value" id="active-title">-</div></div>
+      <div class="meta-tile"><div class="meta-tile-label">معرف الحالة</div><div class="meta-tile-value" id="active-case-id">-</div></div>
       <div class="meta-tile"><div class="meta-tile-label">الخطورة</div><div class="meta-tile-value" id="active-severity">-</div></div>
       <div class="meta-tile"><div class="meta-tile-label">آخر تحديث</div><div class="meta-tile-value" id="active-updated">-</div></div>
     </div>
@@ -304,6 +318,7 @@ body {
       <button class="btn-warning" data-permission="update.vitals" onclick="generateActiveCaseVitals()">توليد قراءة حيوية</button>
       <button class="btn-success" data-permission="start.telemed" onclick="startTelemedSession()">بدء جلسة مرئية</button>
     </div>
+    <div id="service-feedback" class="service-feedback">آخر إجراء: اختر حالة ثم نفّذ خدمة طبية.</div>
   </section>
 
   <h2 id="doctor-services" class="services-title">الخدمات والميزات الطبية</h2>
@@ -311,22 +326,22 @@ body {
     <article class="service-card" data-permission="view.student">
       <h3>ملف الطالب الموحد</h3>
       <p>الوصول إلى التاريخ المرضي والحساسية والزيارات السابقة بشكل فوري.</p>
-      <button class="btn-primary" onclick="go('student-profile.html')">فتح الملف</button>
+      <button class="btn-primary" onclick="openActiveStudentProfile()">فتح الملف</button>
     </article>
     <article class="service-card" data-permission="prescribe.medication">
       <h3>الوصفة الدوائية</h3>
       <p>إصدار وصفة مع تسجيل الحدث مباشرة في سجل الحالة.</p>
-      <button class="btn-success" onclick="recordCaseAction('prescription', 'إصدار وصفة دوائية')">إصدار وصفة</button>
+      <button class="btn-success" onclick="issuePrescription()">إصدار وصفة</button>
     </article>
     <article class="service-card" data-permission="order.labs">
       <h3>طلبات المختبر</h3>
       <p>طلب فحوصات مخبرية عاجلة أو دورية مع توثيق القرار.</p>
-      <button class="btn-primary" onclick="recordCaseAction('lab_order', 'تم إرسال طلب فحص مخبري عاجل')">طلب فحص</button>
+      <button class="btn-primary" onclick="createLabOrderTicket()">طلب فحص</button>
     </article>
     <article class="service-card" data-permission="approve.referral">
       <h3>التحويل للمستشفى</h3>
       <p>اعتماد تحويل رسمي للحالات التي تتطلب رعاية أعلى.</p>
-      <button class="btn-warning" onclick="recordCaseAction('external_referral', 'تم اعتماد تحويل الحالة للمستشفى')">اعتماد التحويل</button>
+      <button class="btn-warning" onclick="issueReferralWorkflow()">اعتماد التحويل</button>
     </article>
     <article class="service-card" data-permission="start.telemed">
       <h3>استشارة طبية عن بعد</h3>
@@ -401,13 +416,16 @@ var allCasesCache = [];
 var casesCache = [];
 var activeCaseId = 'case_1';
 var latestDoctorAi = null;
+var ACTIVE_CASE_STORAGE_KEY = 'smartclinic.doctor.activeCase.v1';
 
 function actionLabel(type) {
   var labels = {
     emergency_protocol: 'تفعيل بروتوكول الطوارئ',
     external_referral: 'تحويل خارجي',
     vitals_update: 'تحديث العلامات الحيوية',
-    careplan_save: 'حفظ خطة الرعاية'
+    careplan_save: 'حفظ خطة الرعاية',
+    prescription: 'إصدار وصفة دوائية',
+    lab_order: 'طلب فحص مخبري'
   };
   return labels[type] || type;
 }
@@ -455,17 +473,74 @@ function getActiveCase() {
   return allCasesCache.find(function (item) { return item.id === activeCaseId; }) || null;
 }
 
+function saveActiveCaseId(caseId) {
+  try {
+    localStorage.setItem(ACTIVE_CASE_STORAGE_KEY, String(caseId || ''));
+  } catch (err) {
+    // Ignore storage errors in restricted environments.
+  }
+}
+
+function readActiveCaseId() {
+  try {
+    return String(localStorage.getItem(ACTIVE_CASE_STORAGE_KEY) || '').trim();
+  } catch (err) {
+    return '';
+  }
+}
+
+function hasCase(caseId) {
+  if (!caseId) return false;
+  return allCasesCache.some(function (item) { return item.id === caseId; });
+}
+
+function getActiveStudentId() {
+  var item = getActiveCase();
+  return item && item.studentId ? item.studentId : 'u_student_1';
+}
+
+function setServiceFeedback(text, level) {
+  var wrap = document.getElementById('service-feedback');
+  if (!wrap) return;
+  var safeLevel = (level === 'ok' || level === 'warn' || level === 'danger') ? level : '';
+  wrap.className = 'service-feedback' + (safeLevel ? (' ' + safeLevel) : '');
+  wrap.textContent = 'آخر إجراء: ' + (text || 'لا يوجد.');
+}
+
+async function downloadBlobFromApi(path, filename) {
+  var response = await SmartClinicSecurity.apiRequest(path);
+  if (!response.ok) {
+    return false;
+  }
+  var blob = await response.blob();
+  var url = URL.createObjectURL(blob);
+  var link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  return true;
+}
+
 function renderActiveCaseSummary() {
   var item = getActiveCase();
   document.getElementById('active-student').textContent = item ? (item.studentName || '-') : '-';
+  document.getElementById('active-student-id').textContent = item ? (item.studentId || '-') : '-';
   document.getElementById('active-title').textContent = item ? (item.title || '-') : '-';
+  document.getElementById('active-case-id').textContent = item ? (item.id || '-') : '-';
   document.getElementById('active-severity').textContent = item ? (item.severity || '-') : '-';
   document.getElementById('active-updated').textContent = item ? formatWhen(item.updatedAt) : '-';
+  if (!item) {
+    setServiceFeedback('اختر حالة من قائمة الانتظار لتفعيل الخدمات الطبية.', 'warn');
+  }
 }
 
 function selectCase(caseId) {
   if (!caseId) return;
   activeCaseId = caseId;
+  saveActiveCaseId(caseId);
   renderCases(casesCache);
   renderCritical(casesCache);
   renderActiveCaseSummary();
@@ -511,10 +586,14 @@ function applyCaseFilters() {
   });
   casesCache = filtered;
   if (filtered.length && !filtered.some(function (c) { return c.id === activeCaseId; })) {
-    activeCaseId = filtered[0].id;
+    var saved = readActiveCaseId();
+    activeCaseId = filtered.some(function (c) { return c.id === saved; }) ? saved : filtered[0].id;
   }
   if (!filtered.length) {
     activeCaseId = '';
+  }
+  if (activeCaseId) {
+    saveActiveCaseId(activeCaseId);
   }
   renderCases(filtered);
   renderCritical(filtered);
@@ -579,6 +658,12 @@ async function loadDoctorData() {
   allCasesCache = (casesResult.data.items || []).filter(function (item) {
     return item.status !== 'closed';
   });
+  var savedCaseId = readActiveCaseId();
+  if (hasCase(savedCaseId)) {
+    activeCaseId = savedCaseId;
+  } else if (!hasCase(activeCaseId) && allCasesCache.length) {
+    activeCaseId = allCasesCache[0].id;
+  }
   renderStats(summary.data);
   renderMiniLog(summary.data.recentLogs || []);
   applyCaseFilters();
@@ -601,6 +686,16 @@ function openCriticalCase() {
   window.location.href = 'emergency-flow.html?id=' + encodeURIComponent(activeCaseId);
 }
 
+function openActiveStudentProfile() {
+  var target = getActiveCase();
+  if (!target) {
+    notify('اختر حالة أولًا لفتح ملف الطالب الموحد.');
+    return;
+  }
+  var path = 'student-profile.html?studentId=' + encodeURIComponent(getActiveStudentId()) + '&caseId=' + encodeURIComponent(target.id);
+  window.location.href = path;
+}
+
 async function generateActiveCaseVitals() {
   var target = getActiveCase();
   if (!target) {
@@ -621,6 +716,7 @@ async function generateActiveCaseVitals() {
   var v = result.data.item;
   notify('تم توليد قراءة: SpO2 ' + v.spo2 + '% • HR ' + v.hr + ' bpm');
   await recordCaseAction('vitals_update', 'تم تحديث العلامات الحيوية للحالة');
+  setServiceFeedback('تم توليد قراءة حيوية وربطها بالحالة النشطة.', 'ok');
 }
 
 async function startTelemedSession() {
@@ -653,26 +749,180 @@ async function startTelemedSession() {
   });
 
   notify('تم تجهيز الجلسة المرئية، جارٍ التحويل...');
+  setServiceFeedback('تم تفعيل جلسة مرئية للحالة ' + target.id + '.', 'ok');
   window.setTimeout(function () {
     window.location.href = 'telemed-room.html?sid=' + encodeURIComponent(telemed.item.id);
   }, 450);
 }
 
-async function recordCaseAction(type, note) {
-  if (!activeCaseId) {
-    notify('اختر حالة أولًا.');
+async function issuePrescription() {
+  var target = getActiveCase();
+  if (!target) {
+    notify('اختر حالة أولًا قبل إصدار وصفة.');
     return;
   }
+  var name = window.prompt('اسم الدواء:', 'Paracetamol 500mg');
+  if (name === null) return;
+  name = String(name || '').trim();
+  if (!name) {
+    notify('اسم الدواء مطلوب.');
+    return;
+  }
+  var dosesInput = window.prompt('عدد الجرعات اليومية (1-8):', '2');
+  if (dosesInput === null) return;
+  var doses = Number(dosesInput);
+  if (!Number.isFinite(doses) || doses < 1 || doses > 8) {
+    notify('عدد الجرعات يجب أن يكون بين 1 و 8.');
+    return;
+  }
+  var instructions = window.prompt('تعليمات الاستخدام:', 'بعد الأكل لمدة 5 أيام');
+  if (instructions === null) return;
+  var planResult = await SmartClinicSecurity.apiJson('/medications/plans', {
+    method: 'POST',
+    body: JSON.stringify({
+      studentId: getActiveStudentId(),
+      name: name,
+      dosesPerDay: Math.round(doses),
+      instructions: String(instructions || '').trim()
+    })
+  });
+  if (!planResult.ok || !planResult.data || !planResult.data.item) {
+    notify(planResult.error || 'تعذر إصدار الخطة الدوائية.');
+    return;
+  }
+  var note = 'إصدار وصفة دوائية: ' + name + ' (' + Math.round(doses) + ' جرعة/يوم)';
+  await recordCaseAction('prescription', note);
+  setServiceFeedback('تم إنشاء خطة دوائية مرتبطة بالحالة النشطة.', 'ok');
+}
+
+async function createLabOrderTicket() {
+  var target = getActiveCase();
+  if (!target) {
+    notify('اختر حالة أولًا قبل طلب الفحص.');
+    return;
+  }
+  var testName = window.prompt('اسم الفحص المطلوب:', 'CBC + CRP');
+  if (testName === null) return;
+  testName = String(testName || '').trim();
+  if (!testName) {
+    notify('اسم الفحص مطلوب.');
+    return;
+  }
+  var details = window.prompt('تفاصيل إضافية للمختبر (اختياري):', 'فحص عاجل خلال ساعتين') || '';
+  var priority = target.severity === 'critical' ? 'critical' : (target.severity === 'high' ? 'high' : 'normal');
+  var ticketResult = await SmartClinicSecurity.apiJson('/tickets', {
+    method: 'POST',
+    body: JSON.stringify({
+      studentId: getActiveStudentId(),
+      subject: 'طلب فحص مخبري: ' + testName,
+      text: details || ('تم طلب فحص ' + testName + ' للحالة ' + target.id),
+      priority: priority
+    })
+  });
+  if (!ticketResult.ok || !ticketResult.data || !ticketResult.data.item) {
+    notify(ticketResult.error || 'تعذر إنشاء تذكرة فحص مخبري.');
+    return;
+  }
+  var ticket = ticketResult.data.item;
+  var note = 'تم إرسال طلب فحص مخبري: ' + testName + (ticket.number ? ' • ' + ticket.number : '');
+  await recordCaseAction('lab_order', note);
+  setServiceFeedback('تم إنشاء طلب الفحص وتذكرة متابعة ' + (ticket.number || ticket.id) + '.', 'warn');
+}
+
+async function issueReferralWorkflow() {
+  var target = getActiveCase();
+  if (!target) {
+    notify('اختر حالة أولًا قبل إصدار التحويل.');
+    return;
+  }
+  var destination = window.prompt('جهة التحويل:', 'مستشفى الطوارئ');
+  if (destination === null) return;
+  destination = String(destination || '').trim();
+  if (!destination) {
+    notify('جهة التحويل مطلوبة.');
+    return;
+  }
+  var reason = window.prompt('سبب التحويل:', 'حالة تستدعي رعاية أعلى');
+  if (reason === null) return;
+  reason = String(reason || '').trim();
+  if (!reason) {
+    notify('سبب التحويل مطلوب.');
+    return;
+  }
+  var diagnosis = window.prompt('التشخيص الأولي (اختياري):', target.title || '') || '';
+  var summary = window.prompt('الملخص السريري (اختياري):', 'الحالة تحت المتابعة وتحتاج تقييمًا مستشفويًا.') || '';
+  var referralResult = await SmartClinicSecurity.apiJson('/referrals', {
+    method: 'POST',
+    body: JSON.stringify({
+      studentId: getActiveStudentId(),
+      destination: destination,
+      reason: reason,
+      diagnosis: String(diagnosis || '').trim(),
+      clinicalSummary: String(summary || '').trim()
+    })
+  });
+  if (!referralResult.ok || !referralResult.data || !referralResult.data.item) {
+    notify(referralResult.error || 'تعذر إنشاء الإحالة.');
+    return;
+  }
+  var referral = referralResult.data.item;
+  await recordCaseAction('external_referral', 'تم اعتماد تحويل الحالة إلى ' + destination);
+  setServiceFeedback('تم إصدار إحالة خارجية للحالة النشطة.', 'danger');
+
+  if (window.confirm('إنشاء طلب موافقة ولي الأمر على التحويل الآن؟')) {
+    var consentResult = await SmartClinicSecurity.apiJson('/consents', {
+      method: 'POST',
+      body: JSON.stringify({
+        studentId: getActiveStudentId(),
+        type: 'referral',
+        title: 'موافقة تحويل خارجي للحالة ' + target.id,
+        details: 'الوجهة: ' + destination + ' • السبب: ' + reason,
+        relatedEntityId: referral.id
+      })
+    });
+    if (!consentResult.ok) {
+      notify(consentResult.error || 'تم إنشاء الإحالة لكن تعذر إنشاء طلب الموافقة.');
+    }
+  }
+
+  if (window.confirm('تحميل ملف الإحالة PDF الآن؟')) {
+    var ok = await downloadBlobFromApi('/referrals/' + encodeURIComponent(referral.id) + '/pdf', 'referral-' + referral.id + '.pdf');
+    if (!ok) {
+      notify('تم إنشاء الإحالة لكن تعذر تحميل ملف PDF.');
+    }
+  }
+}
+
+async function recordCaseAction(type, note, extra) {
+  if (!activeCaseId) {
+    notify('اختر حالة أولًا.');
+    return false;
+  }
+  var payload = Object.assign({ type: type, note: note }, extra || {});
   var result = await SmartClinicSecurity.apiJson('/cases/' + encodeURIComponent(activeCaseId) + '/actions', {
     method: 'POST',
-    body: JSON.stringify({ type: type, note: note })
+    body: JSON.stringify(payload)
   });
   if (!result.ok) {
     notify(result.error || 'تعذر تنفيذ الإجراء.');
-    return;
+    return false;
   }
   notify(note);
-  loadDoctorData();
+  await loadDoctorData();
+  return true;
+}
+
+function bindDoctorShortcuts() {
+  window.addEventListener('keydown', function (ev) {
+    if (ev.defaultPrevented) return;
+    var tag = ev.target && ev.target.tagName ? ev.target.tagName.toLowerCase() : '';
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+    if (ev.key === '/') {
+      ev.preventDefault();
+      var search = document.getElementById('case-search');
+      if (search) search.focus();
+    }
+  });
 }
 
 function renderDoctorAi(item) {
@@ -817,6 +1067,7 @@ window.addEventListener('DOMContentLoaded', function () {
       ]
     });
   }
+  bindDoctorShortcuts();
   SmartClinicSecurity.createAutoRefresh(loadDoctorData, 15000, { immediate: true });
 });
 </script>
