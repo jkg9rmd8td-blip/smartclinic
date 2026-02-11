@@ -8,6 +8,7 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 const HOST = process.env.HOST || '127.0.0.1';
 const ROOT_DIR = process.cwd();
 const DATA_FILE = path.join(ROOT_DIR, 'backend', 'data.json');
+const TELEMED_INVITE_TTL_MS = 10 * 60 * 1000;
 
 const ROLE_PERMISSIONS = {
   student: [
@@ -233,6 +234,171 @@ function normalizeCaseId(rawId) {
 function getCaseByAnyId(data, rawId) {
   const normalized = normalizeCaseId(rawId);
   return data.cases.find(c => c.id === normalized);
+}
+
+function telemedRoomName(caseId) {
+  const safe = normalizeCaseId(caseId) || 'case_1';
+  return `smartclinic-${safe}-${Date.now().toString(36)}`;
+}
+
+function ensureTelemedSessions(data) {
+  if (!Array.isArray(data.telemedSessions)) {
+    data.telemedSessions = [];
+  }
+  return data.telemedSessions;
+}
+
+function telemedCanManage(auth) {
+  return Boolean(auth && auth.user && ['doctor', 'admin'].includes(auth.user.role));
+}
+
+function telemedParticipantMatch(participant, auth) {
+  return Boolean(
+    participant &&
+    auth &&
+    auth.user &&
+    participant.role === auth.user.role &&
+    participant.userId === auth.user.id
+  );
+}
+
+function telemedHasParticipant(session, auth) {
+  const participants = Array.isArray(session.participants) ? session.participants : [];
+  return participants.some((p) => telemedParticipantMatch(p, auth));
+}
+
+function telemedEnsureParticipant(session, auth) {
+  if (!auth || !auth.user) return null;
+  if (!Array.isArray(session.participants)) {
+    session.participants = [];
+  }
+  const existing = session.participants.find((p) => telemedParticipantMatch(p, auth));
+  if (existing) {
+    existing.lastSeenAt = nowIso();
+    return existing;
+  }
+  const item = {
+    id: id('tp'),
+    role: auth.user.role,
+    userId: auth.user.id,
+    joinedAt: nowIso(),
+    lastSeenAt: nowIso()
+  };
+  session.participants.push(item);
+  return item;
+}
+
+function telemedCanDiscover(session, auth) {
+  if (!session || !auth || !auth.user) return false;
+  if (telemedCanManage(auth)) return true;
+  if (auth.user.role === 'student') {
+    return session.studentId === auth.user.id;
+  }
+  if (auth.user.role === 'parent') {
+    return Boolean(session.allowGuardian);
+  }
+  return false;
+}
+
+function telemedCanView(session, auth) {
+  if (!session || !auth || !auth.user) return false;
+  if (telemedCanManage(auth)) return true;
+  if (auth.user.role === 'student') {
+    return session.studentId === auth.user.id && telemedHasParticipant(session, auth);
+  }
+  if (auth.user.role === 'parent') {
+    return Boolean(session.allowGuardian) && telemedHasParticipant(session, auth);
+  }
+  return false;
+}
+
+function telemedSanitize(session, options = {}) {
+  const opts = options || {};
+  const out = {
+    id: session.id,
+    caseId: session.caseId,
+    studentId: session.studentId,
+    roomName: session.roomName,
+    title: session.title,
+    allowGuardian: Boolean(session.allowGuardian),
+    status: session.status,
+    createdAt: session.createdAt,
+    updatedAt: session.updatedAt,
+    createdByRole: session.createdByRole,
+    createdByUserId: session.createdByUserId,
+    endedAt: session.endedAt || null,
+    endReason: session.endReason || null,
+    participants: (session.participants || []).map((p) => ({
+      id: p.id,
+      role: p.role,
+      userId: p.userId,
+      joinedAt: p.joinedAt,
+      lastSeenAt: p.lastSeenAt || null
+    }))
+  };
+  if (opts.includeInvites) {
+    out.invites = (session.invites || []).map((inv) => {
+      const item = {
+        id: inv.id,
+        role: inv.role,
+        createdAt: inv.createdAt,
+        expiresAt: inv.expiresAt,
+        usedAt: inv.usedAt || null,
+        usedByUserId: inv.usedByUserId || null,
+        usedByRole: inv.usedByRole || null,
+        revoked: Boolean(inv.revoked)
+      };
+      if (opts.includeInviteTokens) {
+        item.token = inv.token;
+      }
+      return item;
+    });
+  }
+  return out;
+}
+
+function telemedCreateInvite(session, role, auth, ttlMs = TELEMED_INVITE_TTL_MS) {
+  if (!Array.isArray(session.invites)) {
+    session.invites = [];
+  }
+  const invite = {
+    id: id('tmi'),
+    role,
+    token: crypto.randomBytes(24).toString('hex'),
+    createdAt: nowIso(),
+    expiresAt: new Date(Date.now() + Math.max(30 * 1000, Number(ttlMs || TELEMED_INVITE_TTL_MS))).toISOString(),
+    createdByUserId: auth.user.id,
+    createdByRole: auth.user.role,
+    usedAt: null,
+    usedByUserId: null,
+    usedByRole: null,
+    revoked: false
+  };
+  session.invites.unshift(invite);
+  return invite;
+}
+
+function telemedFindInvite(data, token) {
+  const safeToken = ensureString(token, 8, 200, '');
+  if (!safeToken) return null;
+  const sessions = ensureTelemedSessions(data);
+  for (let i = 0; i < sessions.length; i += 1) {
+    const session = sessions[i];
+    const invites = Array.isArray(session.invites) ? session.invites : [];
+    const invite = invites.find((item) => item.token === safeToken);
+    if (invite) {
+      return { session, invite };
+    }
+  }
+  return null;
+}
+
+function telemedInviteState(invite) {
+  if (!invite) return 'invalid';
+  if (invite.revoked) return 'revoked';
+  if (invite.usedAt) return 'used';
+  if (Date.now() > new Date(invite.expiresAt).getTime()) return 'expired';
+  return 'active';
 }
 
 function getSettings(data) {
@@ -461,6 +627,213 @@ function resolveStudentIdForScope(auth, urlObj) {
   return null;
 }
 
+function normalizeVitalsNumber(value, fallback, min, max, precision = 1) {
+  let numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    numeric = Number(fallback);
+  }
+  if (!Number.isFinite(numeric)) {
+    numeric = 0;
+  }
+  numeric = Math.max(min, Math.min(max, numeric));
+  const factor = Math.pow(10, precision);
+  return Math.round(numeric * factor) / factor;
+}
+
+function ensureVitalsStores(data) {
+  if (!Array.isArray(data.vitalsReadings)) {
+    data.vitalsReadings = [];
+  }
+  if (!Array.isArray(data.sensorDevices)) {
+    data.sensorDevices = [];
+  }
+}
+
+function ensureStudentSensors(data, studentId) {
+  ensureVitalsStores(data);
+  const templates = [
+    { key: 'hr', label: 'حساس النبض', battery: 86 },
+    { key: 'spo2', label: 'حساس الأكسجين', battery: 82 },
+    { key: 'temp', label: 'حساس الحرارة', battery: 91 },
+    { key: 'bp', label: 'حساس الضغط', battery: 79 }
+  ];
+  templates.forEach((tpl) => {
+    const sensorId = `sns_${studentId}_${tpl.key}`;
+    const exists = data.sensorDevices.some((item) => item.id === sensorId);
+    if (!exists) {
+      data.sensorDevices.push({
+        id: sensorId,
+        studentId,
+        type: tpl.key,
+        label: tpl.label,
+        status: 'connected',
+        battery: tpl.battery,
+        lastSeenAt: nowIso(),
+        lastReadingAt: null
+      });
+    }
+  });
+  return data.sensorDevices
+    .filter((item) => item.studentId === studentId)
+    .sort((a, b) => String(a.type || '').localeCompare(String(b.type || '')));
+}
+
+function vitalsRiskLevel(reading) {
+  if (!reading) return 'unknown';
+  const temp = Number(reading.temp || 0);
+  const spo2 = Number(reading.spo2 || 0);
+  const hr = Number(reading.hr || 0);
+  const bpSys = Number(reading.bpSys || 0);
+  const bpDia = Number(reading.bpDia || 0);
+
+  if (spo2 < 92 || hr > 130 || temp >= 39.2 || bpSys >= 160 || bpDia >= 100) {
+    return 'critical';
+  }
+  if (spo2 < 95 || hr > 110 || temp >= 37.8 || bpSys >= 145 || bpDia >= 92) {
+    return 'warning';
+  }
+  return 'stable';
+}
+
+function normalizeVitalsReading(studentId, input = {}, sourceFallback = 'manual') {
+  const measuredAtRaw = ensureString(input.measuredAt, 0, 40, '');
+  const parsedAt = measuredAtRaw ? new Date(measuredAtRaw) : null;
+  const measuredAt = parsedAt && Number.isFinite(parsedAt.getTime()) ? parsedAt.toISOString() : nowIso();
+  const source = ensureString(input.source, 0, 30, sourceFallback);
+  const sensorId = ensureString(input.sensorId, 0, 100, '');
+
+  const safe = {
+    id: id('vit'),
+    studentId,
+    temp: normalizeVitalsNumber(input.temp, 36.8, 34, 42, 1),
+    spo2: normalizeVitalsNumber(input.spo2, 98, 70, 100, 0),
+    hr: normalizeVitalsNumber(input.hr, 78, 30, 220, 0),
+    bpSys: normalizeVitalsNumber(input.bpSys, 118, 60, 240, 0),
+    bpDia: normalizeVitalsNumber(input.bpDia, 76, 35, 160, 0),
+    measuredAt,
+    source
+  };
+  if (sensorId) {
+    safe.sensorId = sensorId;
+  }
+  safe.risk = vitalsRiskLevel(safe);
+  return safe;
+}
+
+function listVitalsForStudent(data, studentId, limit = 20) {
+  ensureVitalsStores(data);
+  const max = Math.max(1, Math.min(200, Number(limit) || 20));
+  const items = data.vitalsReadings
+    .filter((item) => item.studentId === studentId)
+    .slice()
+    .sort((a, b) => new Date(b.measuredAt || 0) - new Date(a.measuredAt || 0))
+    .slice(0, max)
+    .map((item) => {
+      const safe = Object.assign({}, item);
+      safe.risk = vitalsRiskLevel(safe);
+      safe.temp = normalizeVitalsNumber(safe.temp, 36.8, 34, 42, 1);
+      safe.spo2 = normalizeVitalsNumber(safe.spo2, 98, 70, 100, 0);
+      safe.hr = normalizeVitalsNumber(safe.hr, 78, 30, 220, 0);
+      safe.bpSys = normalizeVitalsNumber(safe.bpSys, 118, 60, 240, 0);
+      safe.bpDia = normalizeVitalsNumber(safe.bpDia, 76, 35, 160, 0);
+      safe.source = ensureString(safe.source, 0, 30, 'manual');
+      const parsedAt = safe.measuredAt ? new Date(safe.measuredAt) : null;
+      safe.measuredAt = parsedAt && Number.isFinite(parsedAt.getTime()) ? parsedAt.toISOString() : nowIso();
+      return safe;
+    });
+  return items;
+}
+
+function persistVitalsReading(data, reading) {
+  ensureVitalsStores(data);
+  data.vitalsReadings.push(reading);
+  if (data.vitalsReadings.length > 800) {
+    data.vitalsReadings = data.vitalsReadings.slice(data.vitalsReadings.length - 800);
+  }
+}
+
+function updateSensorAfterReading(data, studentId, reading) {
+  const sensors = ensureStudentSensors(data, studentId);
+  const chosen = reading.sensorId
+    ? sensors.find((item) => item.id === reading.sensorId)
+    : sensors.find((item) => item.type === 'hr') || sensors[0];
+  if (!chosen) return;
+  chosen.status = 'connected';
+  chosen.lastSeenAt = nowIso();
+  chosen.lastReadingAt = reading.measuredAt;
+  chosen.battery = normalizeVitalsNumber(chosen.battery - Math.random() * 0.7, chosen.battery || 80, 25, 100, 0);
+  if (!reading.sensorId) {
+    reading.sensorId = chosen.id;
+  }
+}
+
+function generateVitalsReading(data, studentId, options = {}) {
+  const profile = ensureString(options.profile, 0, 20, 'normal').toLowerCase();
+  const sensors = ensureStudentSensors(data, studentId);
+  const latest = listVitalsForStudent(data, studentId, 1)[0] || null;
+  const base = latest || {
+    temp: 36.8,
+    spo2: 98,
+    hr: 78,
+    bpSys: 118,
+    bpDia: 76
+  };
+  const rand = (range) => (Math.random() * 2 - 1) * range;
+  let temp = Number(base.temp) + rand(0.35);
+  let spo2 = Number(base.spo2) + rand(1.4);
+  let hr = Number(base.hr) + rand(7);
+  let bpSys = Number(base.bpSys) + rand(7);
+  let bpDia = Number(base.bpDia) + rand(6);
+
+  if (profile === 'watch') {
+    temp += 0.4;
+    spo2 -= 1.8;
+    hr += 10;
+    bpSys += 8;
+    bpDia += 6;
+  } else if (profile === 'critical') {
+    temp += 1.2;
+    spo2 -= 5.5;
+    hr += 22;
+    bpSys += 18;
+    bpDia += 12;
+  }
+
+  const fallbackSensor = sensors.find((item) => item.type === 'hr') || sensors[0];
+  const reading = normalizeVitalsReading(studentId, {
+    temp,
+    spo2,
+    hr,
+    bpSys,
+    bpDia,
+    sensorId: ensureString(options.sensorId, 0, 100, fallbackSensor ? fallbackSensor.id : ''),
+    source: ensureString(options.source, 0, 30, 'sensor_simulator'),
+    measuredAt: nowIso()
+  }, 'sensor_simulator');
+  persistVitalsReading(data, reading);
+  updateSensorAfterReading(data, studentId, reading);
+  return reading;
+}
+
+function vitalsPayloadForStudent(data, studentId, limit = 20) {
+  const sensors = ensureStudentSensors(data, studentId).map((sensor) => ({
+    id: sensor.id,
+    studentId: sensor.studentId,
+    type: sensor.type,
+    label: sensor.label,
+    status: sensor.status || 'connected',
+    battery: normalizeVitalsNumber(sensor.battery, 80, 0, 100, 0),
+    lastSeenAt: sensor.lastSeenAt || null,
+    lastReadingAt: sensor.lastReadingAt || null
+  }));
+  const items = listVitalsForStudent(data, studentId, limit);
+  return {
+    latest: items[0] || null,
+    items,
+    sensors
+  };
+}
+
 function aiStudentSupport(data, studentId, input) {
   const text = ensureString(input && input.text, 0, 600, '');
   const context = String(text || '').toLowerCase();
@@ -587,6 +960,7 @@ function studentOverview(data, studentId) {
   const reports = data.reports.filter(r => r.studentId === studentId);
   const visitRequests = data.visitRequests.filter(v => v.studentId === studentId);
   const alerts = data.alerts.filter(a => Array.isArray(a.roles) && a.roles.includes('student'));
+  const vitals = vitalsPayloadForStudent(data, studentId, 8);
 
   const latestCase = cases
     .slice()
@@ -600,9 +974,13 @@ function studentOverview(data, studentId) {
       criticalCases: cases.filter(c => c.severity === 'critical').length,
       reports: reports.length,
       pendingVisits: visitRequests.filter(v => v.status === 'pending').length,
-      alerts: alerts.length
+      alerts: alerts.length,
+      latestVitalsRisk: vitals.latest ? vitals.latest.risk : 'unknown'
     },
     latestCase,
+    latestVitals: vitals.latest,
+    vitalsHistory: vitals.items,
+    sensors: vitals.sensors,
     cases: cases.slice().sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)),
     reports: reports.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
     visitRequests: visitRequests.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
@@ -961,6 +1339,15 @@ const server = http.createServer(async (req, res) => {
         if (actionType === 'careplan_save' && body.plan) {
           target.notes = String(body.plan);
         }
+        if (actionType === 'vitals_update') {
+          const rawVitals = body && typeof body.vitals === 'object' ? body.vitals : body;
+          const reading = normalizeVitalsReading(target.studentId, Object.assign({}, rawVitals || {}, {
+            measuredAt: nowIso(),
+            source: ensureString((rawVitals || {}).source, 0, 30, 'case_action')
+          }), 'case_action');
+          persistVitalsReading(data, reading);
+          updateSensorAfterReading(data, target.studentId, reading);
+        }
         logAction(data, auth, 'case.action.' + actionType, target.id, { note: actionNote });
 
         pushAlert(
@@ -1134,6 +1521,97 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
+      if (pathname === '/api/vitals' && req.method === 'GET') {
+        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin'])) return;
+        const studentId = resolveStudentIdForScope(auth, urlObj);
+        if (!studentId) {
+          json(res, 400, { error: 'Student scope is invalid' });
+          return;
+        }
+        const limit = Math.max(1, Math.min(200, Number(urlObj.searchParams.get('limit') || 30)));
+        const payload = vitalsPayloadForStudent(data, studentId, limit);
+        json(res, 200, payload);
+        return;
+      }
+
+      if (pathname === '/api/vitals/generate' && req.method === 'POST') {
+        if (!enforceRateLimit(req, res, 'vitals.generate', 120, 60 * 1000)) return;
+        if (!requireRole(res, auth, ['doctor', 'admin'])) return;
+        if (!hasPermission(auth.user.role, 'update.vitals')) {
+          json(res, 403, { error: 'Permission denied for vitals generation' });
+          return;
+        }
+        const body = await parseBody(req);
+        const studentId = ensureString(body.studentId, 0, 60, '') || resolveStudentIdForScope(auth, urlObj);
+        if (!studentId) {
+          json(res, 400, { error: 'Student scope is invalid' });
+          return;
+        }
+        const reading = generateVitalsReading(data, studentId, body || {});
+        if (reading.risk === 'critical') {
+          pushAlert(
+            data,
+            ['doctor', 'admin', 'parent', 'student'],
+            `قراءة حساسات حرجة للطالب ${studentId} (SpO2 ${reading.spo2}% / HR ${reading.hr})`,
+            'critical'
+          );
+        }
+        logAction(data, auth, 'vitals.generate', studentId, {
+          studentId,
+          readingId: reading.id,
+          risk: reading.risk
+        });
+        writeData(data);
+        json(res, 201, {
+          item: reading,
+          latest: reading,
+          sensors: vitalsPayloadForStudent(data, studentId, 1).sensors
+        });
+        return;
+      }
+
+      if (pathname === '/api/vitals/ingest' && req.method === 'POST') {
+        if (!enforceRateLimit(req, res, 'vitals.ingest', 150, 60 * 1000)) return;
+        if (!requireRole(res, auth, ['doctor', 'admin'])) return;
+        if (!hasPermission(auth.user.role, 'update.vitals')) {
+          json(res, 403, { error: 'Permission denied for vitals ingest' });
+          return;
+        }
+        const body = await parseBody(req);
+        const studentId = ensureString(body.studentId, 0, 60, '') || resolveStudentIdForScope(auth, urlObj);
+        if (!studentId) {
+          json(res, 400, { error: 'Student scope is invalid' });
+          return;
+        }
+        const reading = normalizeVitalsReading(studentId, Object.assign({}, body || {}, {
+          source: ensureString((body || {}).source, 0, 30, 'sensor_bridge'),
+          measuredAt: ensureString((body || {}).measuredAt, 0, 40, nowIso())
+        }), 'sensor_bridge');
+        persistVitalsReading(data, reading);
+        updateSensorAfterReading(data, studentId, reading);
+        if (reading.risk === 'critical') {
+          pushAlert(
+            data,
+            ['doctor', 'admin', 'parent', 'student'],
+            `إنذار حيوي: قراءة حرجة للطالب ${studentId}`,
+            'critical'
+          );
+        }
+        logAction(data, auth, 'vitals.ingest', studentId, {
+          studentId,
+          readingId: reading.id,
+          sensorId: reading.sensorId || null,
+          risk: reading.risk
+        });
+        writeData(data);
+        json(res, 201, {
+          item: reading,
+          latest: reading,
+          sensors: vitalsPayloadForStudent(data, studentId, 1).sensors
+        });
+        return;
+      }
+
       if (pathname === '/api/student/overview' && req.method === 'GET') {
         if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin'])) return;
         const studentId = resolveStudentIdForScope(auth, urlObj);
@@ -1186,6 +1664,297 @@ const server = http.createServer(async (req, res) => {
         logAction(data, auth, 'ai.doctor.support', result.caseId, { priority: result.priority });
         writeData(data);
         json(res, 200, { item: result });
+        return;
+      }
+
+      if (pathname === '/api/telemed/sessions' && req.method === 'GET') {
+        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin'])) return;
+        const caseId = normalizeCaseId(urlObj.searchParams.get('caseId'));
+        const includeEnded = String(urlObj.searchParams.get('includeEnded') || '') === '1';
+        let items = ensureTelemedSessions(data);
+        if (!includeEnded) {
+          items = items.filter((s) => s.status !== 'ended');
+        }
+        if (caseId) {
+          items = items.filter((s) => normalizeCaseId(s.caseId) === caseId);
+        }
+        if (!telemedCanManage(auth)) {
+          items = items.filter((s) => telemedCanDiscover(s, auth));
+        }
+        items = items
+          .slice()
+          .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+          .map((s) => telemedSanitize(s));
+        json(res, 200, { items });
+        return;
+      }
+
+      if (pathname === '/api/telemed/sessions' && req.method === 'POST') {
+        if (!enforceRateLimit(req, res, 'telemed.create', 40, 60 * 1000)) return;
+        if (!requireRole(res, auth, ['doctor', 'admin'])) return;
+        if (!hasPermission(auth.user.role, 'start.telemed')) {
+          json(res, 403, { error: 'Permission denied for telemed session creation' });
+          return;
+        }
+        const body = await parseBody(req);
+        const caseId = normalizeCaseId(body.caseId || 'case_1');
+        const target = getCaseByAnyId(data, caseId);
+        if (!target) {
+          json(res, 404, { error: 'Case not found' });
+          return;
+        }
+        const session = {
+          id: id('tm'),
+          caseId: caseId,
+          studentId: body.studentId ? String(body.studentId) : target.studentId,
+          roomName: ensureString(body.roomName, 3, 120, telemedRoomName(caseId)),
+          title: ensureString(body.title, 3, 220, `جلسة طبية مباشرة للحالة ${caseId}`),
+          allowGuardian: Boolean(body.allowGuardian),
+          status: 'active',
+          createdAt: nowIso(),
+          updatedAt: nowIso(),
+          createdByRole: auth.user.role,
+          createdByUserId: auth.user.id,
+          participants: [],
+          invites: []
+        };
+        telemedEnsureParticipant(session, auth);
+        ensureTelemedSessions(data).unshift(session);
+        logAction(data, auth, 'telemed.session.create', session.id, {
+          caseId: session.caseId,
+          studentId: session.studentId,
+          allowGuardian: session.allowGuardian
+        });
+        writeData(data);
+        json(res, 201, { item: telemedSanitize(session) });
+        return;
+      }
+
+      if (pathname.startsWith('/api/telemed/sessions/') && pathname.endsWith('/end') && req.method === 'POST') {
+        if (!enforceRateLimit(req, res, 'telemed.end', 40, 60 * 1000)) return;
+        if (!requireRole(res, auth, ['doctor', 'admin'])) return;
+        const parts = pathname.split('/').filter(Boolean);
+        const sessionId = parts[3];
+        const sessionsList = ensureTelemedSessions(data);
+        const session = sessionsList.find((item) => item.id === sessionId);
+        if (!session) {
+          json(res, 404, { error: 'Telemed session not found' });
+          return;
+        }
+        const body = await parseBody(req);
+        session.status = 'ended';
+        session.endReason = ensureString(body.endReason, 1, 240, 'تم إنهاء الجلسة بواسطة الطبيب');
+        session.endedAt = nowIso();
+        session.updatedAt = nowIso();
+        if (Array.isArray(session.invites)) {
+          session.invites.forEach((inv) => {
+            if (!inv.usedAt) {
+              inv.revoked = true;
+            }
+          });
+        }
+        logAction(data, auth, 'telemed.session.end', session.id, { endReason: session.endReason });
+        writeData(data);
+        json(res, 200, { item: telemedSanitize(session, { includeInvites: telemedCanManage(auth) }) });
+        return;
+      }
+
+      if (pathname.startsWith('/api/telemed/sessions/') && pathname.endsWith('/invites') && req.method === 'POST') {
+        if (!enforceRateLimit(req, res, 'telemed.invite', 80, 60 * 1000)) return;
+        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin'])) return;
+        const parts = pathname.split('/').filter(Boolean);
+        const sessionId = parts[3];
+        const session = ensureTelemedSessions(data).find((item) => item.id === sessionId);
+        if (!session) {
+          json(res, 404, { error: 'Telemed session not found' });
+          return;
+        }
+        if (session.status === 'ended') {
+          json(res, 409, { error: 'Session already ended' });
+          return;
+        }
+
+        const body = await parseBody(req);
+        let inviteRole = '';
+        if (telemedCanManage(auth)) {
+          inviteRole = ensureString(body.role, 1, 20, '');
+          if (!['student', 'parent'].includes(inviteRole)) {
+            json(res, 400, { error: 'Invalid invite role' });
+            return;
+          }
+        } else {
+          inviteRole = auth.user.role;
+          if (body.role && body.role !== inviteRole) {
+            json(res, 403, { error: 'Cannot create invite for another role' });
+            return;
+          }
+        }
+
+        if (inviteRole === 'student') {
+          if (auth.user.role === 'student' && session.studentId !== auth.user.id) {
+            json(res, 403, { error: 'Student invite does not match current account' });
+            return;
+          }
+          if (!session.studentId) {
+            json(res, 400, { error: 'Session does not have a student target' });
+            return;
+          }
+        }
+
+        if (inviteRole === 'parent') {
+          if (!session.allowGuardian) {
+            json(res, 403, { error: 'Guardian participation is disabled for this session' });
+            return;
+          }
+        }
+
+        const ttlMinutes = Math.max(1, Math.min(60, Number(body.ttlMinutes || 10)));
+        const invite = telemedCreateInvite(session, inviteRole, auth, ttlMinutes * 60 * 1000);
+        session.updatedAt = nowIso();
+        logAction(data, auth, 'telemed.invite.create', session.id, {
+          inviteId: invite.id,
+          role: invite.role,
+          expiresAt: invite.expiresAt
+        });
+        writeData(data);
+        json(res, 201, {
+          item: {
+            id: invite.id,
+            role: invite.role,
+            token: invite.token,
+            expiresAt: invite.expiresAt,
+            sessionId: session.id
+          }
+        });
+        return;
+      }
+
+      if (pathname === '/api/telemed/invites/redeem' && req.method === 'POST') {
+        if (!enforceRateLimit(req, res, 'telemed.redeem', 120, 60 * 1000)) return;
+        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin'])) return;
+        const body = await parseBody(req);
+        const token = ensureString(body.token, 8, 240, '');
+        if (!token) {
+          json(res, 400, { error: 'Invite token is required' });
+          return;
+        }
+        const found = telemedFindInvite(data, token);
+        if (!found) {
+          json(res, 404, { error: 'Invite not found' });
+          return;
+        }
+        const { session, invite } = found;
+        if (session.status === 'ended') {
+          json(res, 409, { error: 'Session already ended' });
+          return;
+        }
+        const state = telemedInviteState(invite);
+        if (state === 'expired') {
+          json(res, 410, { error: 'Invite expired' });
+          return;
+        }
+        if (state === 'used') {
+          json(res, 410, { error: 'Invite already used' });
+          return;
+        }
+        if (state === 'revoked') {
+          json(res, 410, { error: 'Invite revoked' });
+          return;
+        }
+        if (!telemedCanManage(auth) && invite.role !== auth.user.role) {
+          json(res, 403, { error: 'Invite role mismatch' });
+          return;
+        }
+        if (invite.role === 'student' && auth.user.role === 'student' && session.studentId !== auth.user.id) {
+          json(res, 403, { error: 'Invite is not intended for this student account' });
+          return;
+        }
+        if (invite.role === 'parent' && !session.allowGuardian) {
+          json(res, 403, { error: 'Guardian participation is disabled for this session' });
+          return;
+        }
+
+        invite.usedAt = nowIso();
+        invite.usedByUserId = auth.user.id;
+        invite.usedByRole = auth.user.role;
+        telemedEnsureParticipant(session, auth);
+        session.updatedAt = nowIso();
+        logAction(data, auth, 'telemed.invite.redeem', session.id, {
+          inviteId: invite.id,
+          role: invite.role
+        });
+        logAction(data, auth, 'telemed.join.' + auth.user.role, session.id, {
+          inviteId: invite.id
+        });
+        writeData(data);
+        json(res, 200, { item: telemedSanitize(session) });
+        return;
+      }
+
+      if (pathname.startsWith('/api/telemed/sessions/') && req.method === 'GET') {
+        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin'])) return;
+        const parts = pathname.split('/').filter(Boolean);
+        const sessionId = parts[3];
+        const session = ensureTelemedSessions(data).find((item) => item.id === sessionId);
+        if (!session) {
+          json(res, 404, { error: 'Telemed session not found' });
+          return;
+        }
+        if (!telemedCanView(session, auth)) {
+          json(res, 403, { error: 'Forbidden' });
+          return;
+        }
+        let changed = false;
+        if (telemedCanManage(auth)) {
+          const beforeCount = Array.isArray(session.participants) ? session.participants.length : 0;
+          telemedEnsureParticipant(session, auth);
+          const afterCount = Array.isArray(session.participants) ? session.participants.length : 0;
+          changed = afterCount !== beforeCount;
+          if (changed) {
+            logAction(data, auth, `telemed.join.${auth.user.role}`, session.id, { source: 'session_view' });
+          }
+        }
+        if (changed) {
+          session.updatedAt = nowIso();
+          writeData(data);
+        }
+        json(res, 200, { item: telemedSanitize(session, { includeInvites: telemedCanManage(auth) }) });
+        return;
+      }
+
+      if (pathname.startsWith('/api/telemed/sessions/') && req.method === 'PATCH') {
+        if (!enforceRateLimit(req, res, 'telemed.patch', 70, 60 * 1000)) return;
+        if (!requireRole(res, auth, ['doctor', 'admin'])) return;
+        const parts = pathname.split('/').filter(Boolean);
+        const sessionId = parts[3];
+        const session = ensureTelemedSessions(data).find((item) => item.id === sessionId);
+        if (!session) {
+          json(res, 404, { error: 'Telemed session not found' });
+          return;
+        }
+        const body = await parseBody(req);
+        if (typeof body.allowGuardian === 'boolean') {
+          session.allowGuardian = body.allowGuardian;
+        }
+        if (typeof body.title === 'string' && body.title.trim()) {
+          session.title = ensureString(body.title, 3, 220, session.title);
+        }
+        if (typeof body.status === 'string' && ['active', 'ended'].includes(body.status)) {
+          session.status = body.status;
+          if (body.status === 'ended' && !session.endedAt) {
+            session.endedAt = nowIso();
+          }
+        }
+        if (typeof body.endReason === 'string' && body.endReason.trim()) {
+          session.endReason = ensureString(body.endReason, 1, 240, session.endReason || '');
+        }
+        session.updatedAt = nowIso();
+        logAction(data, auth, 'telemed.session.update', session.id, {
+          allowGuardian: session.allowGuardian,
+          status: session.status
+        });
+        writeData(data);
+        json(res, 200, { item: telemedSanitize(session, { includeInvites: telemedCanManage(auth) }) });
         return;
       }
 

@@ -267,6 +267,10 @@
     return 'tm_' + Math.random().toString(16).slice(2, 10);
   }
 
+  function telemedInviteId() {
+    return 'tmi_' + Math.random().toString(16).slice(2, 10);
+  }
+
   function telemedRoomName(caseId) {
     var suffix = Date.now().toString(36);
     return 'smartclinic-' + String(caseId || 'case_1') + '-' + suffix;
@@ -298,9 +302,7 @@
     } catch (err) {
       raw = null;
     }
-    if (!raw) {
-      return { sessions: [] };
-    }
+    if (!raw) return { sessions: [] };
     try {
       var parsed = JSON.parse(raw);
       if (!parsed || !Array.isArray(parsed.sessions)) {
@@ -327,15 +329,53 @@
     });
   }
 
+  function telemedLocalEnsureSessionShape(session) {
+    var safe = Object.assign({}, session || {});
+    if (!Array.isArray(safe.participants)) safe.participants = [];
+    if (!Array.isArray(safe.invites)) safe.invites = [];
+    if (!safe.status) safe.status = 'active';
+    return safe;
+  }
+
+  function telemedHasParticipant(session, role, userId) {
+    var participants = Array.isArray(session && session.participants) ? session.participants : [];
+    return participants.some(function (p) {
+      return p && p.role === role && (!userId || p.userId === userId);
+    });
+  }
+
+  function telemedAddParticipant(session, role, userId) {
+    if (!session) return;
+    session.participants = Array.isArray(session.participants) ? session.participants : [];
+    var existing = session.participants.find(function (p) {
+      return p.role === role && p.userId === userId;
+    });
+    if (existing) {
+      existing.lastSeenAt = telemedNowIso();
+      return;
+    }
+    session.participants.push({
+      id: 'tp_' + Math.random().toString(16).slice(2, 10),
+      role: role,
+      userId: userId,
+      joinedAt: telemedNowIso(),
+      lastSeenAt: telemedNowIso()
+    });
+  }
+
   function canJoinTelemedSession(session, role, userId) {
     if (!session || session.status === 'ended') {
       return false;
     }
+    var localUserId = userId || getRoleUserId(role);
     if (role === 'doctor' || role === 'admin') {
       return true;
     }
     if (role === 'student') {
-      return !session.studentId || session.studentId === userId || session.studentId === 'u_student_1';
+      if (session.studentId && session.studentId !== localUserId && session.studentId !== 'u_student_1') {
+        return false;
+      }
+      return true;
     }
     if (role === 'parent') {
       return Boolean(session.allowGuardian);
@@ -343,46 +383,82 @@
     return false;
   }
 
-  function listTelemedSessions(options) {
+  function buildTelemedQuery(options) {
     var opts = options || {};
-    var state = readTelemedState();
-    var items = Array.isArray(state.sessions) ? state.sessions : [];
+    var params = new URLSearchParams();
+    if (opts.caseId) params.set('caseId', normalizeTelemedCaseId(opts.caseId));
+    if (opts.includeEnded) params.set('includeEnded', '1');
+    var q = params.toString();
+    return q ? ('?' + q) : '';
+  }
+
+  function telemedLocalFilter(items, options) {
+    var opts = options || {};
+    var role = opts.role || ((getSession() || {}).role || null);
+    var userId = opts.userId || getRoleUserId(role || '');
+    var list = items.slice();
     if (!opts.includeEnded) {
-      items = items.filter(function (item) { return item.status !== 'ended'; });
+      list = list.filter(function (item) { return item.status !== 'ended'; });
     }
     if (opts.caseId) {
       var caseId = normalizeTelemedCaseId(opts.caseId);
-      items = items.filter(function (item) { return normalizeTelemedCaseId(item.caseId) === caseId; });
-    }
-    if (opts.role) {
-      var userId = opts.userId || getRoleUserId(opts.role);
-      items = items.filter(function (item) {
-        return canJoinTelemedSession(item, opts.role, userId);
+      list = list.filter(function (item) {
+        return normalizeTelemedCaseId(item.caseId) === caseId;
       });
     }
-    return telemedSortLatest(items).map(function (item) { return deepClone(item); });
+    if (role === 'student') {
+      list = list.filter(function (item) { return !item.studentId || item.studentId === userId || item.studentId === 'u_student_1'; });
+    } else if (role === 'parent') {
+      list = list.filter(function (item) { return Boolean(item.allowGuardian); });
+    }
+    return telemedSortLatest(list).map(function (item) { return deepClone(item); });
   }
 
-  function getTelemedSessionById(sessionId) {
-    if (!sessionId) return null;
+  async function listTelemedSessions(options) {
+    var opts = options || {};
+    var result = await apiJson('/telemed/sessions' + buildTelemedQuery(opts), { skipAuthRedirect: true });
+    if (result.ok && result.data && Array.isArray(result.data.items)) {
+      return result.data.items;
+    }
     var state = readTelemedState();
-    var hit = (state.sessions || []).find(function (item) {
+    var items = Array.isArray(state.sessions) ? state.sessions.map(telemedLocalEnsureSessionShape) : [];
+    return telemedLocalFilter(items, opts);
+  }
+
+  async function getTelemedSessionById(sessionId) {
+    if (!sessionId) return null;
+    var safeId = encodeURIComponent(String(sessionId));
+    var result = await apiJson('/telemed/sessions/' + safeId, { skipAuthRedirect: true });
+    if (result.ok && result.data && result.data.item) {
+      return result.data.item;
+    }
+    var state = readTelemedState();
+    var hit = (state.sessions || []).map(telemedLocalEnsureSessionShape).find(function (item) {
       return item.id === String(sessionId);
     });
     return hit ? deepClone(hit) : null;
   }
 
-  function getLatestTelemedSession(options) {
-    var items = listTelemedSessions(options || {});
+  async function getLatestTelemedSession(options) {
+    var items = await listTelemedSessions(options || {});
     return items.length ? items[0] : null;
   }
 
-  function createTelemedSession(options) {
+  async function createTelemedSession(options) {
+    var opts = options || {};
+    var result = await apiJson('/telemed/sessions', {
+      method: 'POST',
+      body: JSON.stringify(opts),
+      skipAuthRedirect: true
+    });
+    if (result.ok && result.data && result.data.item) {
+      return { ok: true, item: result.data.item };
+    }
+
     var session = getSession();
     if (!session || (session.role !== 'doctor' && session.role !== 'admin')) {
-      return { ok: false, error: 'forbidden' };
+      return { ok: false, error: result.error || 'forbidden' };
     }
-    var opts = options || {};
     var state = readTelemedState();
     var caseId = normalizeTelemedCaseId(opts.caseId);
     var studentId = String(opts.studentId || 'u_student_1');
@@ -398,59 +474,179 @@
       createdAt: now,
       updatedAt: now,
       createdByRole: session.role,
-      createdByUserId: getRoleUserId(session.role)
+      createdByUserId: getRoleUserId(session.role),
+      participants: [],
+      invites: []
     };
-
+    telemedAddParticipant(item, session.role, getRoleUserId(session.role));
     state.sessions = Array.isArray(state.sessions) ? state.sessions : [];
     state.sessions.unshift(item);
     writeTelemedState(state);
     return { ok: true, item: deepClone(item) };
   }
 
-  function updateTelemedSession(sessionId, patch) {
+  async function updateTelemedSession(sessionId, patch) {
+    var safeId = encodeURIComponent(String(sessionId || ''));
+    var result = await apiJson('/telemed/sessions/' + safeId, {
+      method: 'PATCH',
+      body: JSON.stringify(patch || {}),
+      skipAuthRedirect: true
+    });
+    if (result.ok && result.data && result.data.item) {
+      return { ok: true, item: result.data.item };
+    }
+
     var session = getSession();
     if (!session || (session.role !== 'doctor' && session.role !== 'admin')) {
-      return { ok: false, error: 'forbidden' };
+      return { ok: false, error: result.error || 'forbidden' };
     }
     var state = readTelemedState();
     var idx = (state.sessions || []).findIndex(function (item) {
       return item.id === String(sessionId);
     });
     if (idx === -1) {
-      return { ok: false, error: 'not_found' };
+      return { ok: false, error: result.error || 'not_found' };
     }
-
-    var current = state.sessions[idx];
-    var next = Object.assign({}, current);
+    var current = telemedLocalEnsureSessionShape(state.sessions[idx]);
     var input = patch || {};
-
     if (typeof input.title === 'string' && input.title.trim()) {
-      next.title = input.title.trim();
+      current.title = input.title.trim();
     }
     if (typeof input.allowGuardian === 'boolean') {
-      next.allowGuardian = input.allowGuardian;
+      current.allowGuardian = input.allowGuardian;
     }
     if (input.status === 'active' || input.status === 'ended') {
-      next.status = input.status;
-      if (input.status === 'ended' && !next.endedAt) {
-        next.endedAt = telemedNowIso();
+      current.status = input.status;
+      if (input.status === 'ended' && !current.endedAt) {
+        current.endedAt = telemedNowIso();
       }
     }
     if (typeof input.endReason === 'string' && input.endReason.trim()) {
-      next.endReason = input.endReason.trim();
+      current.endReason = input.endReason.trim();
     }
-    next.updatedAt = telemedNowIso();
-
-    state.sessions[idx] = next;
+    current.updatedAt = telemedNowIso();
+    state.sessions[idx] = current;
     writeTelemedState(state);
-    return { ok: true, item: deepClone(next) };
+    return { ok: true, item: deepClone(current) };
   }
 
-  function endTelemedSession(sessionId, reason) {
+  async function endTelemedSession(sessionId, reason) {
+    var safeId = encodeURIComponent(String(sessionId || ''));
+    var result = await apiJson('/telemed/sessions/' + safeId + '/end', {
+      method: 'POST',
+      body: JSON.stringify({ endReason: reason || 'انتهت الجلسة' }),
+      skipAuthRedirect: true
+    });
+    if (result.ok && result.data && result.data.item) {
+      return { ok: true, item: result.data.item };
+    }
     return updateTelemedSession(sessionId, {
       status: 'ended',
       endReason: reason || 'انتهت الجلسة'
     });
+  }
+
+  async function createTelemedInvite(sessionId, role, options) {
+    var safeId = encodeURIComponent(String(sessionId || ''));
+    var opts = options || {};
+    var result = await apiJson('/telemed/sessions/' + safeId + '/invites', {
+      method: 'POST',
+      body: JSON.stringify({
+        role: role || '',
+        ttlMinutes: opts.ttlMinutes || 10
+      }),
+      skipAuthRedirect: true
+    });
+    if (result.ok && result.data && result.data.item) {
+      return { ok: true, item: result.data.item };
+    }
+
+    var auth = getSession();
+    if (!auth) return { ok: false, error: result.error || 'forbidden' };
+    var state = readTelemedState();
+    var session = (state.sessions || []).find(function (item) {
+      return item.id === String(sessionId);
+    });
+    if (!session) return { ok: false, error: result.error || 'not_found' };
+    session = telemedLocalEnsureSessionShape(session);
+    if (session.status === 'ended') return { ok: false, error: 'session_ended' };
+    var targetRole = role || auth.role;
+    if ((auth.role === 'student' || auth.role === 'parent') && targetRole !== auth.role) {
+      return { ok: false, error: 'forbidden' };
+    }
+    if (targetRole === 'parent' && !session.allowGuardian) {
+      return { ok: false, error: 'guardian_disabled' };
+    }
+    if (targetRole === 'student' && session.studentId && session.studentId !== getRoleUserId('student')) {
+      return { ok: false, error: 'student_mismatch' };
+    }
+    var ttlMs = Math.max(60 * 1000, Math.min(60 * 60 * 1000, Number(opts.ttlMinutes || 10) * 60 * 1000));
+    var invite = {
+      id: telemedInviteId(),
+      role: targetRole,
+      token: 'ltm_' + Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2),
+      createdAt: telemedNowIso(),
+      expiresAt: new Date(Date.now() + ttlMs).toISOString(),
+      usedAt: null,
+      usedByUserId: null,
+      usedByRole: null,
+      revoked: false
+    };
+    session.invites.unshift(invite);
+    session.updatedAt = telemedNowIso();
+    writeTelemedState(state);
+    return { ok: true, item: { id: invite.id, role: invite.role, token: invite.token, expiresAt: invite.expiresAt, sessionId: session.id } };
+  }
+
+  async function redeemTelemedInvite(token) {
+    var safeToken = String(token || '').trim();
+    if (!safeToken) return { ok: false, error: 'missing_token' };
+    var result = await apiJson('/telemed/invites/redeem', {
+      method: 'POST',
+      body: JSON.stringify({ token: safeToken }),
+      skipAuthRedirect: true
+    });
+    if (result.ok && result.data && result.data.item) {
+      return { ok: true, item: result.data.item };
+    }
+
+    var auth = getSession();
+    if (!auth) return { ok: false, error: result.error || 'forbidden' };
+    var state = readTelemedState();
+    var sessions = Array.isArray(state.sessions) ? state.sessions.map(telemedLocalEnsureSessionShape) : [];
+    var matchedSession = null;
+    var matchedInvite = null;
+    sessions.some(function (session) {
+      var invite = (session.invites || []).find(function (item) {
+        return item.token === safeToken;
+      });
+      if (!invite) return false;
+      matchedSession = session;
+      matchedInvite = invite;
+      return true;
+    });
+    if (!matchedSession || !matchedInvite) {
+      return { ok: false, error: result.error || 'not_found' };
+    }
+    if (matchedInvite.usedAt || matchedInvite.revoked) {
+      return { ok: false, error: 'invite_used' };
+    }
+    if (Date.now() > new Date(matchedInvite.expiresAt).getTime()) {
+      return { ok: false, error: 'invite_expired' };
+    }
+    if (matchedInvite.role !== auth.role && auth.role !== 'doctor' && auth.role !== 'admin') {
+      return { ok: false, error: 'role_mismatch' };
+    }
+    if (matchedInvite.role === 'parent' && !matchedSession.allowGuardian) {
+      return { ok: false, error: 'guardian_disabled' };
+    }
+    matchedInvite.usedAt = telemedNowIso();
+    matchedInvite.usedByRole = auth.role;
+    matchedInvite.usedByUserId = getRoleUserId(auth.role);
+    telemedAddParticipant(matchedSession, auth.role, getRoleUserId(auth.role));
+    matchedSession.updatedAt = telemedNowIso();
+    writeTelemedState({ sessions: sessions });
+    return { ok: true, item: deepClone(matchedSession) };
   }
 
   function getProjectBasePath() {
@@ -463,18 +659,25 @@
     return idx === -1 ? '/' : pathname.slice(0, idx + 1);
   }
 
-  function getTelemedRoomPath(sessionId) {
-    var safe = encodeURIComponent(String(sessionId || ''));
-    var route = 'src/pages/telemed-room.html?sid=' + safe;
+  function getTelemedRoomPath(sessionId, inviteToken) {
+    var safeSid = encodeURIComponent(String(sessionId || ''));
+    var route = 'src/pages/telemed-room.html?sid=' + safeSid;
+    if (inviteToken) {
+      route += '&invite=' + encodeURIComponent(String(inviteToken));
+    }
     return currentRoute().indexOf('src/pages/') === 0 ? route.slice('src/pages/'.length) : route;
   }
 
-  function getTelemedRoomUrl(sessionId) {
+  function getTelemedRoomUrl(sessionId, inviteToken) {
     var base = window.location.origin + getProjectBasePath();
     if (!/\/$/.test(base)) {
       base += '/';
     }
-    return new URL('src/pages/telemed-room.html?sid=' + encodeURIComponent(String(sessionId || '')), base).toString();
+    var route = 'src/pages/telemed-room.html?sid=' + encodeURIComponent(String(sessionId || ''));
+    if (inviteToken) {
+      route += '&invite=' + encodeURIComponent(String(inviteToken));
+    }
+    return new URL(route, base).toString();
   }
 
   function getTelemedEmbedUrl(roomName) {
@@ -555,6 +758,26 @@
           createdAt: demoNowIso()
         }
       ],
+      vitalsReadings: [
+        {
+          id: 'vit_seed_1',
+          studentId: 'u_student_1',
+          temp: 36.9,
+          spo2: 98,
+          hr: 79,
+          bpSys: 118,
+          bpDia: 77,
+          measuredAt: demoNowIso(),
+          source: 'sensor_boot',
+          sensorId: 'sns_u_student_1_hr'
+        }
+      ],
+      sensorDevices: [
+        { id: 'sns_u_student_1_hr', studentId: 'u_student_1', type: 'hr', label: 'حساس النبض', status: 'connected', battery: 86, lastSeenAt: demoNowIso(), lastReadingAt: null },
+        { id: 'sns_u_student_1_spo2', studentId: 'u_student_1', type: 'spo2', label: 'حساس الأكسجين', status: 'connected', battery: 82, lastSeenAt: demoNowIso(), lastReadingAt: null },
+        { id: 'sns_u_student_1_temp', studentId: 'u_student_1', type: 'temp', label: 'حساس الحرارة', status: 'connected', battery: 91, lastSeenAt: demoNowIso(), lastReadingAt: null },
+        { id: 'sns_u_student_1_bp', studentId: 'u_student_1', type: 'bp', label: 'حساس الضغط', status: 'connected', battery: 79, lastSeenAt: demoNowIso(), lastReadingAt: null }
+      ],
       alerts: [],
       auditLogs: [],
       settings: demoDefaultSettings()
@@ -605,6 +828,12 @@
 
       if (!demoDataCache.settings) {
         demoDataCache.settings = demoDefaultSettings();
+      }
+      if (!Array.isArray(demoDataCache.vitalsReadings)) {
+        demoDataCache.vitalsReadings = [];
+      }
+      if (!Array.isArray(demoDataCache.sensorDevices)) {
+        demoDataCache.sensorDevices = [];
       }
 
       try {
@@ -796,6 +1025,203 @@
     };
   }
 
+  function demoNormalizeVitalsNumber(value, fallback, min, max, precision) {
+    var p = typeof precision === 'number' ? precision : 1;
+    var numeric = Number(value);
+    if (!Number.isFinite(numeric)) numeric = Number(fallback);
+    if (!Number.isFinite(numeric)) numeric = 0;
+    numeric = Math.max(min, Math.min(max, numeric));
+    var factor = Math.pow(10, p);
+    return Math.round(numeric * factor) / factor;
+  }
+
+  function demoEnsureVitalsData(data) {
+    if (!Array.isArray(data.vitalsReadings)) data.vitalsReadings = [];
+    if (!Array.isArray(data.sensorDevices)) data.sensorDevices = [];
+  }
+
+  function demoEnsureStudentSensors(data, studentId) {
+    demoEnsureVitalsData(data);
+    var templates = [
+      { key: 'hr', label: 'حساس النبض', battery: 86 },
+      { key: 'spo2', label: 'حساس الأكسجين', battery: 82 },
+      { key: 'temp', label: 'حساس الحرارة', battery: 91 },
+      { key: 'bp', label: 'حساس الضغط', battery: 79 }
+    ];
+    templates.forEach(function (tpl) {
+      var sensorId = 'sns_' + studentId + '_' + tpl.key;
+      var exists = (data.sensorDevices || []).some(function (item) { return item.id === sensorId; });
+      if (!exists) {
+        data.sensorDevices.push({
+          id: sensorId,
+          studentId: studentId,
+          type: tpl.key,
+          label: tpl.label,
+          status: 'connected',
+          battery: tpl.battery,
+          lastSeenAt: demoNowIso(),
+          lastReadingAt: null
+        });
+      }
+    });
+    return (data.sensorDevices || []).filter(function (item) {
+      return item.studentId === studentId;
+    });
+  }
+
+  function demoVitalsRiskLevel(reading) {
+    if (!reading) return 'unknown';
+    var temp = Number(reading.temp || 0);
+    var spo2 = Number(reading.spo2 || 0);
+    var hr = Number(reading.hr || 0);
+    var bpSys = Number(reading.bpSys || 0);
+    var bpDia = Number(reading.bpDia || 0);
+    if (spo2 < 92 || hr > 130 || temp >= 39.2 || bpSys >= 160 || bpDia >= 100) {
+      return 'critical';
+    }
+    if (spo2 < 95 || hr > 110 || temp >= 37.8 || bpSys >= 145 || bpDia >= 92) {
+      return 'warning';
+    }
+    return 'stable';
+  }
+
+  function demoNormalizeVitalsReading(studentId, input, sourceFallback) {
+    var raw = input || {};
+    var measuredAtRaw = demoText(raw.measuredAt, '', 40);
+    var parsedAt = measuredAtRaw ? new Date(measuredAtRaw) : null;
+    var measuredAt = parsedAt && Number.isFinite(parsedAt.getTime()) ? parsedAt.toISOString() : demoNowIso();
+    var source = demoText(raw.source, sourceFallback || 'manual', 30);
+    var sensorId = demoText(raw.sensorId, '', 100);
+    var out = {
+      id: demoId('vit'),
+      studentId: studentId,
+      temp: demoNormalizeVitalsNumber(raw.temp, 36.8, 34, 42, 1),
+      spo2: demoNormalizeVitalsNumber(raw.spo2, 98, 70, 100, 0),
+      hr: demoNormalizeVitalsNumber(raw.hr, 78, 30, 220, 0),
+      bpSys: demoNormalizeVitalsNumber(raw.bpSys, 118, 60, 240, 0),
+      bpDia: demoNormalizeVitalsNumber(raw.bpDia, 76, 35, 160, 0),
+      measuredAt: measuredAt,
+      source: source
+    };
+    if (sensorId) out.sensorId = sensorId;
+    out.risk = demoVitalsRiskLevel(out);
+    return out;
+  }
+
+  function demoListVitalsForStudent(data, studentId, limit) {
+    demoEnsureVitalsData(data);
+    var max = Math.max(1, Math.min(200, Number(limit || 20)));
+    return (data.vitalsReadings || [])
+      .filter(function (item) { return item.studentId === studentId; })
+      .slice()
+      .sort(function (a, b) { return new Date(b.measuredAt || 0) - new Date(a.measuredAt || 0); })
+      .slice(0, max)
+      .map(function (item) {
+        var safe = Object.assign({}, item);
+        safe.temp = demoNormalizeVitalsNumber(safe.temp, 36.8, 34, 42, 1);
+        safe.spo2 = demoNormalizeVitalsNumber(safe.spo2, 98, 70, 100, 0);
+        safe.hr = demoNormalizeVitalsNumber(safe.hr, 78, 30, 220, 0);
+        safe.bpSys = demoNormalizeVitalsNumber(safe.bpSys, 118, 60, 240, 0);
+        safe.bpDia = demoNormalizeVitalsNumber(safe.bpDia, 76, 35, 160, 0);
+        safe.risk = demoVitalsRiskLevel(safe);
+        var parsedAt = safe.measuredAt ? new Date(safe.measuredAt) : null;
+        safe.measuredAt = parsedAt && Number.isFinite(parsedAt.getTime()) ? parsedAt.toISOString() : demoNowIso();
+        safe.source = demoText(safe.source, 'manual', 30);
+        return safe;
+      });
+  }
+
+  function demoPersistVitalsReading(data, reading) {
+    demoEnsureVitalsData(data);
+    data.vitalsReadings.push(reading);
+    if (data.vitalsReadings.length > 800) {
+      data.vitalsReadings = data.vitalsReadings.slice(data.vitalsReadings.length - 800);
+    }
+  }
+
+  function demoUpdateSensorAfterReading(data, studentId, reading) {
+    var sensors = demoEnsureStudentSensors(data, studentId);
+    var chosen = null;
+    if (reading.sensorId) {
+      chosen = sensors.find(function (item) { return item.id === reading.sensorId; }) || null;
+    }
+    if (!chosen) {
+      chosen = sensors.find(function (item) { return item.type === 'hr'; }) || sensors[0] || null;
+    }
+    if (!chosen) return;
+    chosen.status = 'connected';
+    chosen.lastSeenAt = demoNowIso();
+    chosen.lastReadingAt = reading.measuredAt;
+    chosen.battery = demoNormalizeVitalsNumber((chosen.battery || 80) - (Math.random() * 0.7), chosen.battery || 80, 25, 100, 0);
+    if (!reading.sensorId) {
+      reading.sensorId = chosen.id;
+    }
+  }
+
+  function demoGenerateVitalsReading(data, studentId, options) {
+    var opts = options || {};
+    var profile = demoText(opts.profile, 'normal', 20).toLowerCase();
+    var sensors = demoEnsureStudentSensors(data, studentId);
+    var latest = demoListVitalsForStudent(data, studentId, 1)[0] || null;
+    var base = latest || { temp: 36.8, spo2: 98, hr: 78, bpSys: 118, bpDia: 76 };
+    var rand = function (range) { return (Math.random() * 2 - 1) * range; };
+    var temp = Number(base.temp) + rand(0.35);
+    var spo2 = Number(base.spo2) + rand(1.4);
+    var hr = Number(base.hr) + rand(7);
+    var bpSys = Number(base.bpSys) + rand(7);
+    var bpDia = Number(base.bpDia) + rand(6);
+
+    if (profile === 'watch') {
+      temp += 0.4;
+      spo2 -= 1.8;
+      hr += 10;
+      bpSys += 8;
+      bpDia += 6;
+    } else if (profile === 'critical') {
+      temp += 1.2;
+      spo2 -= 5.5;
+      hr += 22;
+      bpSys += 18;
+      bpDia += 12;
+    }
+
+    var fallbackSensor = sensors.find(function (item) { return item.type === 'hr'; }) || sensors[0] || null;
+    var reading = demoNormalizeVitalsReading(studentId, {
+      temp: temp,
+      spo2: spo2,
+      hr: hr,
+      bpSys: bpSys,
+      bpDia: bpDia,
+      source: demoText(opts.source, 'sensor_simulator', 30),
+      sensorId: demoText(opts.sensorId, fallbackSensor ? fallbackSensor.id : '', 100),
+      measuredAt: demoNowIso()
+    }, 'sensor_simulator');
+    demoPersistVitalsReading(data, reading);
+    demoUpdateSensorAfterReading(data, studentId, reading);
+    return reading;
+  }
+
+  function demoVitalsPayloadForStudent(data, studentId, limit) {
+    var sensors = demoEnsureStudentSensors(data, studentId).map(function (sensor) {
+      return {
+        id: sensor.id,
+        studentId: sensor.studentId,
+        type: sensor.type,
+        label: sensor.label,
+        status: sensor.status || 'connected',
+        battery: demoNormalizeVitalsNumber(sensor.battery, 80, 0, 100, 0),
+        lastSeenAt: sensor.lastSeenAt || null,
+        lastReadingAt: sensor.lastReadingAt || null
+      };
+    });
+    var items = demoListVitalsForStudent(data, studentId, limit || 20);
+    return {
+      latest: items[0] || null,
+      items: items,
+      sensors: sensors
+    };
+  }
+
   function demoStudentOverview(data, studentId) {
     var user = (data.users || []).find(function (u) { return u.id === studentId; }) || null;
     var cases = (data.cases || []).filter(function (c) { return c.studentId === studentId; });
@@ -807,6 +1233,7 @@
     var latestCase = cases.slice().sort(function (a, b) {
       return new Date(b.updatedAt) - new Date(a.updatedAt);
     })[0] || null;
+    var vitals = demoVitalsPayloadForStudent(data, studentId, 8);
     return {
       student: user,
       snapshot: {
@@ -815,9 +1242,13 @@
         criticalCases: cases.filter(function (c) { return c.severity === 'critical'; }).length,
         reports: reports.length,
         pendingVisits: visits.filter(function (v) { return v.status === 'pending'; }).length,
-        alerts: alerts.length
+        alerts: alerts.length,
+        latestVitalsRisk: vitals.latest ? vitals.latest.risk : 'unknown'
       },
       latestCase: latestCase,
+      latestVitals: vitals.latest,
+      vitalsHistory: vitals.items,
+      sensors: vitals.sensors,
       cases: cases.slice().sort(function (a, b) { return new Date(b.updatedAt) - new Date(a.updatedAt); }),
       reports: reports.slice().sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); }),
       visitRequests: visits.slice().sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); }),
@@ -1194,6 +1625,21 @@
       }
       if (actionType === 'stabilized_case') targetCaseForAction.severity = 'medium';
       if (actionType === 'careplan_save' && actionBody.plan) targetCaseForAction.notes = String(actionBody.plan);
+      if (actionType === 'vitals_update') {
+        var actionVitals = actionBody && typeof actionBody.vitals === 'object' ? actionBody.vitals : actionBody;
+        var actionReading = demoNormalizeVitalsReading(targetCaseForAction.studentId, {
+          temp: actionVitals.temp,
+          spo2: actionVitals.spo2,
+          hr: actionVitals.hr,
+          bpSys: actionVitals.bpSys,
+          bpDia: actionVitals.bpDia,
+          sensorId: demoText(actionVitals.sensorId, '', 100),
+          source: demoText(actionVitals.source, 'case_action', 30),
+          measuredAt: demoNowIso()
+        }, 'case_action');
+        demoPersistVitalsReading(data, actionReading);
+        demoUpdateSensorAfterReading(data, targetCaseForAction.studentId, actionReading);
+      }
       demoLogAction(data, actionGate.auth, 'case.action.' + actionType, targetCaseForAction.id, { note: actionNote });
       demoPushAlert(
         data,
@@ -1363,6 +1809,90 @@
       var slaGate = demoRequireRole(data, ['doctor', 'admin']);
       if (!slaGate.ok) return slaGate.response;
       return demoJsonResponse(200, demoSlaMonitor(data));
+    }
+
+    if (pathname === '/vitals' && method === 'GET') {
+      var vitalsGate = demoRequireRole(data, ['student', 'parent', 'doctor', 'admin']);
+      if (!vitalsGate.ok) return vitalsGate.response;
+      var vitalsStudentId = demoResolveStudentId(vitalsGate.auth, urlObj);
+      if (!vitalsStudentId) {
+        return demoJsonResponse(400, { error: 'Student scope is invalid' });
+      }
+      var vitalsLimit = Math.max(1, Math.min(200, Number(urlObj.searchParams.get('limit') || 30)));
+      return demoJsonResponse(200, demoVitalsPayloadForStudent(data, vitalsStudentId, vitalsLimit));
+    }
+
+    if (pathname === '/vitals/generate' && method === 'POST') {
+      var vitalsGenerateGate = demoRequireRole(data, ['doctor', 'admin']);
+      if (!vitalsGenerateGate.ok) return vitalsGenerateGate.response;
+      if ((ROLE_PERMISSIONS[vitalsGenerateGate.auth.user.role] || []).indexOf('update.vitals') === -1) {
+        return demoJsonResponse(403, { error: 'Permission denied for vitals generation' });
+      }
+      var vitalsGenerateBody = await body();
+      var vitalsGenerateStudent = demoText(vitalsGenerateBody.studentId, '', 60) || demoResolveStudentId(vitalsGenerateGate.auth, urlObj);
+      if (!vitalsGenerateStudent) {
+        return demoJsonResponse(400, { error: 'Student scope is invalid' });
+      }
+      var generated = demoGenerateVitalsReading(data, vitalsGenerateStudent, vitalsGenerateBody || {});
+      if (generated.risk === 'critical') {
+        demoPushAlert(
+          data,
+          ['doctor', 'admin', 'parent', 'student'],
+          'قراءة حساسات حرجة للطالب ' + vitalsGenerateStudent + ' (SpO2 ' + generated.spo2 + '% / HR ' + generated.hr + ')',
+          'critical'
+        );
+      }
+      demoLogAction(data, vitalsGenerateGate.auth, 'vitals.generate', vitalsGenerateStudent, {
+        studentId: vitalsGenerateStudent,
+        readingId: generated.id,
+        risk: generated.risk
+      });
+      saveDemoData(data);
+      return demoJsonResponse(201, {
+        item: generated,
+        latest: generated,
+        sensors: demoVitalsPayloadForStudent(data, vitalsGenerateStudent, 1).sensors
+      });
+    }
+
+    if (pathname === '/vitals/ingest' && method === 'POST') {
+      var vitalsIngestGate = demoRequireRole(data, ['doctor', 'admin']);
+      if (!vitalsIngestGate.ok) return vitalsIngestGate.response;
+      if ((ROLE_PERMISSIONS[vitalsIngestGate.auth.user.role] || []).indexOf('update.vitals') === -1) {
+        return demoJsonResponse(403, { error: 'Permission denied for vitals ingest' });
+      }
+      var vitalsIngestBody = await body();
+      var vitalsIngestStudent = demoText(vitalsIngestBody.studentId, '', 60) || demoResolveStudentId(vitalsIngestGate.auth, urlObj);
+      if (!vitalsIngestStudent) {
+        return demoJsonResponse(400, { error: 'Student scope is invalid' });
+      }
+      var ingested = demoNormalizeVitalsReading(vitalsIngestStudent, {
+        temp: vitalsIngestBody.temp,
+        spo2: vitalsIngestBody.spo2,
+        hr: vitalsIngestBody.hr,
+        bpSys: vitalsIngestBody.bpSys,
+        bpDia: vitalsIngestBody.bpDia,
+        sensorId: demoText(vitalsIngestBody.sensorId, '', 100),
+        source: demoText(vitalsIngestBody.source, 'sensor_bridge', 30),
+        measuredAt: demoText(vitalsIngestBody.measuredAt, demoNowIso(), 40)
+      }, 'sensor_bridge');
+      demoPersistVitalsReading(data, ingested);
+      demoUpdateSensorAfterReading(data, vitalsIngestStudent, ingested);
+      if (ingested.risk === 'critical') {
+        demoPushAlert(data, ['doctor', 'admin', 'parent', 'student'], 'إنذار حيوي: قراءة حرجة للطالب ' + vitalsIngestStudent, 'critical');
+      }
+      demoLogAction(data, vitalsIngestGate.auth, 'vitals.ingest', vitalsIngestStudent, {
+        studentId: vitalsIngestStudent,
+        readingId: ingested.id,
+        sensorId: ingested.sensorId || null,
+        risk: ingested.risk
+      });
+      saveDemoData(data);
+      return demoJsonResponse(201, {
+        item: ingested,
+        latest: ingested,
+        sensors: demoVitalsPayloadForStudent(data, vitalsIngestStudent, 1).sensors
+      });
     }
 
     if (pathname === '/student/overview' && method === 'GET') {
@@ -1810,6 +2340,8 @@
     createTelemedSession: createTelemedSession,
     updateTelemedSession: updateTelemedSession,
     endTelemedSession: endTelemedSession,
+    createTelemedInvite: createTelemedInvite,
+    redeemTelemedInvite: redeemTelemedInvite,
     canJoinTelemedSession: canJoinTelemedSession,
     getTelemedRoomPath: getTelemedRoomPath,
     getTelemedRoomUrl: getTelemedRoomUrl,
