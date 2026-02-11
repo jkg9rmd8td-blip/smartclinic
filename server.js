@@ -1108,6 +1108,230 @@ function slaMonitor(data) {
   };
 }
 
+function ensureAdvancedStores(data) {
+  const stores = [
+    'consents',
+    'emergencyCards',
+    'homeCarePlans',
+    'appointments',
+    'tickets',
+    'medicationPlans',
+    'medicationLogs',
+    'referrals',
+    'monthlyReports'
+  ];
+  stores.forEach((key) => {
+    if (!Array.isArray(data[key])) {
+      data[key] = [];
+    }
+  });
+}
+
+function roleLabel(role) {
+  const labels = {
+    student: 'الطالب',
+    doctor: 'الطبيب',
+    parent: 'ولي الأمر',
+    admin: 'الإدارة'
+  };
+  return labels[role] || role;
+}
+
+function resolveLinkedStudentId(data, auth, urlObj) {
+  if (!auth || !auth.user) return 'u_student_1';
+  if (auth.user.role === 'student') return auth.user.id;
+  if (auth.user.role === 'parent') return 'u_student_1';
+  if (auth.user.role === 'doctor' || auth.user.role === 'admin') {
+    const asked = ensureString(urlObj.searchParams.get('studentId'), 0, 80, '');
+    if (asked) return asked;
+    const firstStudent = (data.users || []).find((item) => item.role === 'student' && item.active);
+    return firstStudent ? firstStudent.id : 'u_student_1';
+  }
+  return 'u_student_1';
+}
+
+function canAccessStudentScope(auth, studentId) {
+  if (!auth || !auth.user) return false;
+  if (auth.user.role === 'admin' || auth.user.role === 'doctor') return true;
+  if (auth.user.role === 'student') return auth.user.id === studentId;
+  if (auth.user.role === 'parent') return studentId === 'u_student_1';
+  return false;
+}
+
+function canAccessTicket(auth, ticket) {
+  if (!auth || !auth.user || !ticket) return false;
+  if (auth.user.role === 'admin' || auth.user.role === 'doctor') return true;
+  if (auth.user.role === 'student') {
+    return ticket.studentId === auth.user.id || ticket.createdByUserId === auth.user.id;
+  }
+  if (auth.user.role === 'parent') {
+    return ticket.studentId === 'u_student_1' || ticket.createdByUserId === auth.user.id;
+  }
+  return false;
+}
+
+function monthKeyFromIso(iso) {
+  const d = iso ? new Date(iso) : new Date();
+  if (!Number.isFinite(d.getTime())) return '';
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  return `${d.getUTCFullYear()}-${mm}`;
+}
+
+function normalizeMonthKey(raw) {
+  const value = ensureString(raw, 0, 20, '');
+  if (/^\d{4}-\d{2}$/.test(value)) {
+    const year = Number(value.slice(0, 4));
+    const month = Number(value.slice(5, 7));
+    if (year >= 2000 && year <= 2100 && month >= 1 && month <= 12) {
+      return value;
+    }
+  }
+  return monthKeyFromIso(nowIso());
+}
+
+function monthRange(monthKey) {
+  const normalized = normalizeMonthKey(monthKey);
+  const year = Number(normalized.slice(0, 4));
+  const month = Number(normalized.slice(5, 7));
+  const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
+  const end = new Date(Date.UTC(year, month, 1, 0, 0, 0));
+  return { monthKey: normalized, start, end };
+}
+
+function inRange(iso, start, end) {
+  const t = new Date(iso || 0).getTime();
+  if (!Number.isFinite(t)) return false;
+  return t >= start.getTime() && t < end.getTime();
+}
+
+function findStudent(data, studentId) {
+  return (data.users || []).find((user) => user.id === studentId && user.role === 'student') || null;
+}
+
+function emergencyCardPayload(req, data, studentId) {
+  ensureAdvancedStores(data);
+  const student = findStudent(data, studentId);
+  if (!student) return null;
+  let card = data.emergencyCards.find((item) => item.studentId === studentId);
+  if (!card) {
+    card = {
+      id: id('emg'),
+      studentId,
+      token: crypto.randomBytes(12).toString('hex'),
+      createdAt: nowIso(),
+      updatedAt: nowIso()
+    };
+    data.emergencyCards.push(card);
+  }
+  const publicPath = `/api/emergency/public/${card.token}`;
+  const protoHeader = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
+  const proto = protoHeader === 'https' ? 'https' : 'http';
+  const host = req.headers.host || `${HOST}:${PORT}`;
+  const publicUrl = `${proto}://${host}${publicPath}`;
+  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(publicUrl)}`;
+
+  return {
+    card: {
+      id: card.id,
+      token: card.token,
+      studentId: student.id,
+      studentName: student.name || student.id,
+      grade: student.grade || '-',
+      allergies: ensureString(student.allergies, 0, 280, 'لا توجد حساسية مسجلة'),
+      chronicCondition: ensureString(student.chronicCondition, 0, 280, 'لا توجد حالة مزمنة مسجلة'),
+      emergencyContact: ensureString(student.guardianPhone, 0, 60, 'غير متوفر'),
+      updatedAt: card.updatedAt || card.createdAt
+    },
+    publicPath,
+    publicUrl,
+    qrImageUrl
+  };
+}
+
+function medicationAdherenceSummary(data, studentId) {
+  ensureAdvancedStores(data);
+  const now = Date.now();
+  const weekMs = 7 * 24 * 60 * 60 * 1000;
+  const from = now - weekMs;
+  const plans = (data.medicationPlans || []).filter((item) => item.studentId === studentId && item.active !== false);
+  const logs = (data.medicationLogs || [])
+    .filter((item) => item.studentId === studentId && new Date(item.takenAt || item.createdAt || 0).getTime() >= from)
+    .sort((a, b) => new Date(b.takenAt || b.createdAt || 0) - new Date(a.takenAt || a.createdAt || 0));
+
+  const expected = plans.reduce((sum, plan) => {
+    const dosesPerDay = Math.max(1, Math.min(8, Number(plan.dosesPerDay || 1)));
+    const createdAt = new Date(plan.createdAt || nowIso()).getTime();
+    const activeFrom = Math.max(createdAt, from);
+    const dayCount = Math.max(1, Math.ceil((now - activeFrom) / (24 * 60 * 60 * 1000)));
+    return sum + (dosesPerDay * Math.min(7, dayCount));
+  }, 0);
+
+  const taken = logs.filter((item) => item.status === 'taken').length;
+  const skipped = logs.filter((item) => item.status === 'skipped').length;
+  const adherence = expected > 0 ? Math.max(0, Math.min(100, Math.round((taken / expected) * 100))) : 100;
+
+  return {
+    studentId,
+    weekStart: new Date(from).toISOString(),
+    weekEnd: new Date(now).toISOString(),
+    expectedDoses: expected,
+    takenDoses: taken,
+    skippedDoses: skipped,
+    adherencePercent: adherence,
+    plans: plans.slice().sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)),
+    recentLogs: logs.slice(0, 20),
+    alert: adherence < 80 ? 'انخفاض الالتزام الدوائي عن الحد الآمن (80%)' : null
+  };
+}
+
+function monthlyExecutiveSummary(data, monthKey) {
+  ensureAdvancedStores(data);
+  const range = monthRange(monthKey);
+  const month = range.monthKey;
+  const start = range.start;
+  const end = range.end;
+
+  const visitRequests = (data.visitRequests || []).filter((item) => inRange(item.createdAt, start, end));
+  const appointments = (data.appointments || []).filter((item) => inRange(item.createdAt, start, end));
+  const tickets = (data.tickets || []).filter((item) => inRange(item.createdAt, start, end));
+  const closedTickets = (data.tickets || []).filter((item) => item.closedAt && inRange(item.closedAt, start, end));
+  const criticalCases = (data.cases || []).filter((item) => item.severity === 'critical' && inRange(item.updatedAt, start, end));
+  const referrals = (data.referrals || []).filter((item) => inRange(item.createdAt, start, end));
+  const consents = (data.consents || []).filter((item) => inRange(item.createdAt, start, end));
+  const approvedConsents = consents.filter((item) => item.status === 'approved');
+
+  const resolutionHours = closedTickets.map((item) => {
+    const opened = new Date(item.createdAt || 0).getTime();
+    const closed = new Date(item.closedAt || 0).getTime();
+    if (!Number.isFinite(opened) || !Number.isFinite(closed) || closed <= opened) return null;
+    return (closed - opened) / (60 * 60 * 1000);
+  }).filter((v) => Number.isFinite(v));
+  const avgResolutionHours = resolutionHours.length
+    ? Math.round((resolutionHours.reduce((a, b) => a + b, 0) / resolutionHours.length) * 10) / 10
+    : 0;
+
+  const closureRate = tickets.length ? Math.round((closedTickets.length / tickets.length) * 100) : 0;
+  const completedAppointments = appointments.filter((item) => item.status === 'completed').length;
+
+  return {
+    month,
+    generatedAt: nowIso(),
+    metrics: {
+      criticalCases: criticalCases.length,
+      visitRequests: visitRequests.length,
+      appointmentsTotal: appointments.length,
+      appointmentsCompleted: completedAppointments,
+      ticketsOpened: tickets.length,
+      ticketsClosed: closedTickets.length,
+      ticketClosureRate: closureRate,
+      avgTicketResolutionHours,
+      referrals: referrals.length,
+      consentsRequested: consents.length,
+      consentsApproved: approvedConsents.length
+    }
+  };
+}
+
 function emitSse(client, event, payload) {
   try {
     client.res.write(`event: ${event}\n`);
@@ -1184,8 +1408,34 @@ const server = http.createServer(async (req, res) => {
   if (pathname.startsWith('/api/')) {
     const data = readData();
     const auth = authUser(req, data);
+    ensureAdvancedStores(data);
+    const apiPath = pathname.replace(/^\/api\/?/, '');
+    const apiParts = apiPath ? apiPath.split('/').filter(Boolean) : [];
 
     try {
+      if (apiParts[0] === 'emergency' && apiParts[1] === 'public' && apiParts[2] && req.method === 'GET') {
+        const token = ensureString(apiParts[2], 8, 120, '');
+        const card = data.emergencyCards.find((item) => item.token === token);
+        if (!card) {
+          json(res, 404, { error: 'Emergency card not found' });
+          return;
+        }
+        const student = findStudent(data, card.studentId);
+        if (!student) {
+          json(res, 404, { error: 'Student not found' });
+          return;
+        }
+        json(res, 200, {
+          studentName: student.name || student.id,
+          grade: student.grade || '-',
+          allergies: ensureString(student.allergies, 0, 280, 'لا توجد حساسية مسجلة'),
+          chronicCondition: ensureString(student.chronicCondition, 0, 280, 'لا توجد حالة مزمنة مسجلة'),
+          emergencyContact: ensureString(student.guardianPhone, 0, 60, 'غير متوفر'),
+          cardUpdatedAt: card.updatedAt || card.createdAt || null
+        });
+        return;
+      }
+
       if (pathname === '/api/auth/login' && req.method === 'POST') {
         if (!enforceRateLimit(req, res, 'auth.login', 20, 60 * 1000)) return;
         const body = await parseBody(req);
@@ -1390,6 +1640,789 @@ const server = http.createServer(async (req, res) => {
         logAction(data, auth, 'visit.request.create', item.id, item);
         writeData(data);
         json(res, 201, { item });
+        return;
+      }
+
+      if (pathname === '/api/emergency-card' && req.method === 'GET') {
+        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin'])) return;
+        const studentId = resolveLinkedStudentId(data, auth, urlObj);
+        if (!canAccessStudentScope(auth, studentId)) {
+          json(res, 403, { error: 'Forbidden student scope' });
+          return;
+        }
+        const payload = emergencyCardPayload(req, data, studentId);
+        if (!payload) {
+          json(res, 404, { error: 'Student not found' });
+          return;
+        }
+        logAction(data, auth, 'student.emergency.card.view', studentId, { studentId });
+        writeData(data);
+        json(res, 200, payload);
+        return;
+      }
+
+      if (pathname === '/api/consents' && req.method === 'GET') {
+        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin'])) return;
+        let items = (data.consents || []).slice();
+        if (auth.user.role === 'student') {
+          items = items.filter((item) => item.studentId === auth.user.id);
+        } else if (auth.user.role === 'parent') {
+          items = items.filter((item) => item.studentId === 'u_student_1');
+        } else {
+          const studentFilter = ensureString(urlObj.searchParams.get('studentId'), 0, 80, '');
+          if (studentFilter) {
+            items = items.filter((item) => item.studentId === studentFilter);
+          }
+        }
+        const statusFilter = ensureString(urlObj.searchParams.get('status'), 0, 20, '');
+        if (statusFilter) {
+          items = items.filter((item) => item.status === statusFilter);
+        }
+        items = items.sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
+        json(res, 200, { items });
+        return;
+      }
+
+      if (pathname === '/api/consents' && req.method === 'POST') {
+        if (!enforceRateLimit(req, res, 'consent.create', 40, 60 * 1000)) return;
+        if (!requireRole(res, auth, ['doctor', 'admin'])) return;
+        const body = await parseBody(req);
+        const studentId = ensureString(body.studentId, 0, 80, '') || resolveLinkedStudentId(data, auth, urlObj);
+        const student = findStudent(data, studentId);
+        if (!student) {
+          json(res, 404, { error: 'Student not found' });
+          return;
+        }
+        const type = ensureString(body.type, 1, 30, 'medication');
+        if (!['medication', 'referral', 'telemed'].includes(type)) {
+          json(res, 400, { error: 'Invalid consent type' });
+          return;
+        }
+        const item = {
+          id: id('cons'),
+          studentId,
+          studentName: student.name || student.id,
+          type,
+          title: ensureString(body.title, 3, 220, `طلب موافقة ${type}`),
+          details: ensureString(body.details, 3, 900, 'يرجى مراجعة الطلب واتخاذ القرار المناسب.'),
+          status: 'pending',
+          relatedEntityId: ensureString(body.relatedEntityId, 0, 80, '') || null,
+          createdAt: nowIso(),
+          updatedAt: nowIso(),
+          createdByUserId: auth.user.id,
+          createdByRole: auth.user.role,
+          decisionNote: null,
+          decidedAt: null,
+          decidedByUserId: null,
+          decidedByRole: null,
+          digitalSignature: null,
+          legalLog: [
+            {
+              id: id('legal'),
+              event: 'consent_requested',
+              at: nowIso(),
+              actorUserId: auth.user.id,
+              actorRole: auth.user.role,
+              note: 'تم إنشاء طلب الموافقة.'
+            }
+          ]
+        };
+        data.consents.unshift(item);
+        pushAlert(data, ['parent', 'admin', 'doctor'], `طلب موافقة جديد (${type}) للطالب ${item.studentName}`, type === 'referral' ? 'critical' : 'operational');
+        logAction(data, auth, 'consent.request.create', item.id, {
+          studentId,
+          type,
+          status: item.status
+        });
+        writeData(data);
+        json(res, 201, { item });
+        return;
+      }
+
+      if (apiParts[0] === 'consents' && apiParts[2] === 'decision' && req.method === 'POST') {
+        if (!enforceRateLimit(req, res, 'consent.decision', 50, 60 * 1000)) return;
+        if (!requireRole(res, auth, ['parent', 'admin'])) return;
+        const consentId = ensureString(apiParts[1], 1, 80, '');
+        const item = data.consents.find((entry) => entry.id === consentId);
+        if (!item) {
+          json(res, 404, { error: 'Consent not found' });
+          return;
+        }
+        if (auth.user.role === 'parent' && item.studentId !== 'u_student_1') {
+          json(res, 403, { error: 'Forbidden' });
+          return;
+        }
+        if (item.status !== 'pending') {
+          json(res, 409, { error: 'Consent already decided' });
+          return;
+        }
+        const body = await parseBody(req);
+        const decision = ensureString(body.decision, 1, 20, '').toLowerCase();
+        if (!['approve', 'reject'].includes(decision)) {
+          json(res, 400, { error: 'Invalid decision' });
+          return;
+        }
+        item.status = decision === 'approve' ? 'approved' : 'rejected';
+        item.decidedAt = nowIso();
+        item.updatedAt = nowIso();
+        item.decidedByUserId = auth.user.id;
+        item.decidedByRole = auth.user.role;
+        item.decisionNote = ensureString(body.note, 0, 500, '');
+        item.digitalSignature = ensureString(body.signature, 0, 120, `${auth.user.id}:${Date.now()}`);
+        item.legalLog = Array.isArray(item.legalLog) ? item.legalLog : [];
+        item.legalLog.push({
+          id: id('legal'),
+          event: 'consent_decision',
+          at: item.decidedAt,
+          actorUserId: auth.user.id,
+          actorRole: auth.user.role,
+          decision: item.status,
+          signature: item.digitalSignature,
+          note: item.decisionNote || null
+        });
+        pushAlert(data, ['doctor', 'admin', 'parent'], `تم ${item.status === 'approved' ? 'اعتماد' : 'رفض'} موافقة ${item.type} للطالب ${item.studentName}`, item.status === 'approved' ? 'operational' : 'info');
+        logAction(data, auth, 'consent.request.decide', item.id, {
+          decision: item.status,
+          signature: item.digitalSignature
+        });
+        writeData(data);
+        json(res, 200, { item });
+        return;
+      }
+
+      if (pathname === '/api/home-care/plans' && req.method === 'GET') {
+        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin'])) return;
+        const studentId = resolveLinkedStudentId(data, auth, urlObj);
+        if (!canAccessStudentScope(auth, studentId)) {
+          json(res, 403, { error: 'Forbidden student scope' });
+          return;
+        }
+        const statusFilter = ensureString(urlObj.searchParams.get('status'), 0, 30, '');
+        let items = (data.homeCarePlans || []).filter((item) => item.studentId === studentId);
+        if (statusFilter) {
+          items = items.filter((item) => item.status === statusFilter);
+        }
+        items = items.sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
+        json(res, 200, { items });
+        return;
+      }
+
+      if (pathname === '/api/home-care/plans' && req.method === 'POST') {
+        if (!enforceRateLimit(req, res, 'homecare.create', 40, 60 * 1000)) return;
+        if (!requireRole(res, auth, ['doctor', 'admin'])) return;
+        const body = await parseBody(req);
+        const studentId = ensureString(body.studentId, 0, 80, '') || resolveLinkedStudentId(data, auth, urlObj);
+        const student = findStudent(data, studentId);
+        if (!student) {
+          json(res, 404, { error: 'Student not found' });
+          return;
+        }
+        let sourceItems = [];
+        if (Array.isArray(body.items)) {
+          sourceItems = body.items;
+        } else if (typeof body.itemsText === 'string') {
+          sourceItems = body.itemsText.split('\n');
+        }
+        const checklist = sourceItems
+          .map((entry) => ensureString(entry, 1, 160, ''))
+          .filter(Boolean)
+          .slice(0, 12)
+          .map((label) => ({
+            id: id('chk'),
+            label,
+            done: false,
+            reminderTime: ensureString(body.reminderTime, 0, 20, '19:00'),
+            lastDoneAt: null
+          }));
+        if (!checklist.length) {
+          checklist.push({ id: id('chk'), label: 'تأكيد تناول الدواء بالجرعة المحددة', done: false, reminderTime: '19:00', lastDoneAt: null });
+          checklist.push({ id: id('chk'), label: 'متابعة السوائل والراحة', done: false, reminderTime: '20:00', lastDoneAt: null });
+          checklist.push({ id: id('chk'), label: 'تسجيل أي أعراض جديدة', done: false, reminderTime: '21:00', lastDoneAt: null });
+        }
+        const plan = {
+          id: id('hcp'),
+          studentId,
+          studentName: student.name || student.id,
+          title: ensureString(body.title, 3, 220, 'خطة متابعة منزلية'),
+          notes: ensureString(body.notes, 0, 500, ''),
+          status: 'active',
+          createdAt: nowIso(),
+          updatedAt: nowIso(),
+          createdByUserId: auth.user.id,
+          createdByRole: auth.user.role,
+          checklist,
+          logs: []
+        };
+        data.homeCarePlans.unshift(plan);
+        pushAlert(data, ['parent', 'student', 'doctor', 'admin'], `تم إنشاء خطة متابعة منزلية للطالب ${plan.studentName}`, 'operational');
+        logAction(data, auth, 'homecare.plan.create', plan.id, { studentId, items: checklist.length });
+        writeData(data);
+        json(res, 201, { item: plan });
+        return;
+      }
+
+      if (apiParts[0] === 'home-care' && apiParts[1] === 'plans' && apiParts[3] === 'check' && req.method === 'POST') {
+        if (!enforceRateLimit(req, res, 'homecare.check', 120, 60 * 1000)) return;
+        if (!requireRole(res, auth, ['student', 'parent', 'admin'])) return;
+        const planId = ensureString(apiParts[2], 1, 80, '');
+        const plan = data.homeCarePlans.find((item) => item.id === planId);
+        if (!plan) {
+          json(res, 404, { error: 'Plan not found' });
+          return;
+        }
+        if (!canAccessStudentScope(auth, plan.studentId)) {
+          json(res, 403, { error: 'Forbidden' });
+          return;
+        }
+        const body = await parseBody(req);
+        const itemId = ensureString(body.itemId, 0, 80, '');
+        const idx = Number(body.index);
+        let task = null;
+        if (itemId) {
+          task = (plan.checklist || []).find((entry) => entry.id === itemId) || null;
+        } else if (Number.isInteger(idx) && idx >= 0 && idx < (plan.checklist || []).length) {
+          task = plan.checklist[idx];
+        }
+        if (!task) {
+          json(res, 404, { error: 'Checklist item not found' });
+          return;
+        }
+        const done = typeof body.done === 'boolean' ? body.done : !task.done;
+        task.done = done;
+        task.lastDoneAt = done ? nowIso() : null;
+        task.lastNote = ensureString(body.note, 0, 200, '');
+        plan.updatedAt = nowIso();
+        plan.logs = Array.isArray(plan.logs) ? plan.logs : [];
+        plan.logs.unshift({
+          id: id('hcl'),
+          itemId: task.id,
+          itemLabel: task.label,
+          done,
+          note: task.lastNote || null,
+          actorUserId: auth.user.id,
+          actorRole: auth.user.role,
+          at: nowIso()
+        });
+        if ((plan.checklist || []).every((entry) => Boolean(entry.done))) {
+          plan.status = 'completed';
+        } else if (plan.status === 'completed') {
+          plan.status = 'active';
+        }
+        logAction(data, auth, 'homecare.check.update', plan.id, {
+          itemId: task.id,
+          done
+        });
+        writeData(data);
+        json(res, 200, { item: plan, task });
+        return;
+      }
+
+      if (pathname === '/api/appointments' && req.method === 'GET') {
+        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin'])) return;
+        let items = (data.appointments || []).slice();
+        if (auth.user.role === 'doctor' || auth.user.role === 'admin') {
+          const all = String(urlObj.searchParams.get('all') || '') === '1';
+          if (!all) {
+            const studentId = resolveLinkedStudentId(data, auth, urlObj);
+            items = items.filter((item) => item.studentId === studentId);
+          }
+        } else if (auth.user.role === 'student') {
+          items = items.filter((item) => item.studentId === auth.user.id);
+        } else {
+          items = items.filter((item) => item.studentId === 'u_student_1');
+        }
+        const statusFilter = ensureString(urlObj.searchParams.get('status'), 0, 20, '');
+        if (statusFilter) {
+          items = items.filter((item) => item.status === statusFilter);
+        }
+        items = items.sort((a, b) => new Date(a.slotAt || a.createdAt || 0) - new Date(b.slotAt || b.createdAt || 0));
+        json(res, 200, { items });
+        return;
+      }
+
+      if (pathname === '/api/appointments' && req.method === 'POST') {
+        if (!enforceRateLimit(req, res, 'appointments.create', 60, 60 * 1000)) return;
+        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin'])) return;
+        const body = await parseBody(req);
+        let studentId = ensureString(body.studentId, 0, 80, '');
+        if (!studentId) {
+          studentId = resolveLinkedStudentId(data, auth, urlObj);
+        }
+        if (!canAccessStudentScope(auth, studentId) && !['doctor', 'admin'].includes(auth.user.role)) {
+          json(res, 403, { error: 'Forbidden student scope' });
+          return;
+        }
+        const student = findStudent(data, studentId);
+        if (!student) {
+          json(res, 404, { error: 'Student not found' });
+          return;
+        }
+        const slotRaw = ensureString(body.slotAt, 0, 40, '');
+        const slotDate = slotRaw ? new Date(slotRaw) : new Date(Date.now() + 24 * 60 * 60 * 1000);
+        const slotAt = Number.isFinite(slotDate.getTime()) ? slotDate.toISOString() : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        const appointment = {
+          id: id('apt'),
+          studentId,
+          studentName: student.name || student.id,
+          reason: ensureString(body.reason, 3, 260, 'حجز موعد زيارة للعيادة'),
+          slotAt,
+          status: 'pending',
+          requestedByUserId: auth.user.id,
+          requestedByRole: auth.user.role,
+          createdAt: nowIso(),
+          updatedAt: nowIso(),
+          notes: ensureString(body.notes, 0, 280, '')
+        };
+        data.appointments.unshift(appointment);
+        pushAlert(data, ['doctor', 'admin', 'parent', 'student'], `تم إنشاء موعد جديد بتاريخ ${new Date(slotAt).toLocaleString('ar-SA')}`, 'operational');
+        logAction(data, auth, 'appointment.create', appointment.id, { studentId, slotAt });
+        writeData(data);
+        json(res, 201, { item: appointment });
+        return;
+      }
+
+      if (apiParts[0] === 'appointments' && apiParts[2] === 'status' && req.method === 'POST') {
+        if (!enforceRateLimit(req, res, 'appointments.status', 70, 60 * 1000)) return;
+        if (!requireRole(res, auth, ['doctor', 'admin'])) return;
+        const appointmentId = ensureString(apiParts[1], 1, 80, '');
+        const appointment = data.appointments.find((item) => item.id === appointmentId);
+        if (!appointment) {
+          json(res, 404, { error: 'Appointment not found' });
+          return;
+        }
+        const body = await parseBody(req);
+        const status = ensureString(body.status, 1, 20, '').toLowerCase();
+        if (!['pending', 'confirmed', 'completed', 'cancelled'].includes(status)) {
+          json(res, 400, { error: 'Invalid status' });
+          return;
+        }
+        appointment.status = status;
+        appointment.updatedAt = nowIso();
+        if (status === 'confirmed') appointment.confirmedAt = nowIso();
+        if (status === 'completed') appointment.completedAt = nowIso();
+        if (status === 'cancelled') appointment.cancelledAt = nowIso();
+        appointment.statusNote = ensureString(body.note, 0, 300, appointment.statusNote || '');
+        pushAlert(data, ['student', 'parent', 'doctor', 'admin'], `تحديث الموعد: ${status} (${appointment.reason})`, status === 'cancelled' ? 'info' : 'operational');
+        logAction(data, auth, 'appointment.status.update', appointment.id, { status });
+        writeData(data);
+        json(res, 200, { item: appointment });
+        return;
+      }
+
+      if (pathname === '/api/tickets' && req.method === 'GET') {
+        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin'])) return;
+        const statusFilter = ensureString(urlObj.searchParams.get('status'), 0, 20, '');
+        let items = (data.tickets || []).filter((item) => canAccessTicket(auth, item));
+        if (statusFilter) {
+          items = items.filter((item) => item.status === statusFilter);
+        }
+        items = items
+          .slice()
+          .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0))
+          .map((item) => ({
+            id: item.id,
+            number: item.number,
+            studentId: item.studentId,
+            studentName: item.studentName,
+            subject: item.subject,
+            priority: item.priority,
+            status: item.status,
+            assignedToUserId: item.assignedToUserId || null,
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt,
+            closedAt: item.closedAt || null,
+            messagesCount: Array.isArray(item.messages) ? item.messages.length : 0,
+            lastMessage: Array.isArray(item.messages) && item.messages.length ? item.messages[item.messages.length - 1].text : null
+          }));
+        json(res, 200, { items });
+        return;
+      }
+
+      if (pathname === '/api/tickets' && req.method === 'POST') {
+        if (!enforceRateLimit(req, res, 'tickets.create', 70, 60 * 1000)) return;
+        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin'])) return;
+        const body = await parseBody(req);
+        let studentId = ensureString(body.studentId, 0, 80, '');
+        if (!studentId) {
+          studentId = resolveLinkedStudentId(data, auth, urlObj);
+        }
+        if (!canAccessStudentScope(auth, studentId) && !['doctor', 'admin'].includes(auth.user.role)) {
+          json(res, 403, { error: 'Forbidden student scope' });
+          return;
+        }
+        const student = findStudent(data, studentId);
+        if (!student) {
+          json(res, 404, { error: 'Student not found' });
+          return;
+        }
+        const firstMessage = ensureString(body.text, 1, 1000, '');
+        if (!firstMessage) {
+          json(res, 400, { error: 'Ticket text is required' });
+          return;
+        }
+        const ticket = {
+          id: id('tkt'),
+          number: 'TKT-' + Date.now().toString().slice(-6),
+          studentId,
+          studentName: student.name || student.id,
+          subject: ensureString(body.subject, 3, 220, 'استفسار صحي'),
+          priority: ['low', 'normal', 'high', 'critical'].includes(body.priority) ? body.priority : 'normal',
+          status: 'open',
+          createdByUserId: auth.user.id,
+          createdByRole: auth.user.role,
+          assignedToUserId: ensureString(body.assignedToUserId, 0, 80, '') || 'u_doctor_1',
+          createdAt: nowIso(),
+          updatedAt: nowIso(),
+          closedAt: null,
+          messages: [
+            {
+              id: id('tmsg'),
+              fromUserId: auth.user.id,
+              fromRole: auth.user.role,
+              text: firstMessage,
+              createdAt: nowIso()
+            }
+          ]
+        };
+        data.tickets.unshift(ticket);
+        pushAlert(data, ['doctor', 'admin'], `تذكرة جديدة ${ticket.number}: ${ticket.subject}`, ticket.priority === 'critical' ? 'critical' : 'operational');
+        logAction(data, auth, 'ticket.create', ticket.id, { number: ticket.number, priority: ticket.priority });
+        writeData(data);
+        json(res, 201, { item: ticket });
+        return;
+      }
+
+      if (apiParts[0] === 'tickets' && apiParts.length === 3 && apiParts[2] === 'messages' && req.method === 'GET') {
+        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin'])) return;
+        const ticketId = ensureString(apiParts[1], 1, 80, '');
+        const ticket = data.tickets.find((item) => item.id === ticketId);
+        if (!ticket) {
+          json(res, 404, { error: 'Ticket not found' });
+          return;
+        }
+        if (!canAccessTicket(auth, ticket)) {
+          json(res, 403, { error: 'Forbidden' });
+          return;
+        }
+        json(res, 200, { item: ticket, messages: ticket.messages || [] });
+        return;
+      }
+
+      if (apiParts[0] === 'tickets' && apiParts.length === 3 && apiParts[2] === 'messages' && req.method === 'POST') {
+        if (!enforceRateLimit(req, res, 'tickets.reply', 140, 60 * 1000)) return;
+        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin'])) return;
+        const ticketId = ensureString(apiParts[1], 1, 80, '');
+        const ticket = data.tickets.find((item) => item.id === ticketId);
+        if (!ticket) {
+          json(res, 404, { error: 'Ticket not found' });
+          return;
+        }
+        if (!canAccessTicket(auth, ticket)) {
+          json(res, 403, { error: 'Forbidden' });
+          return;
+        }
+        const body = await parseBody(req);
+        const text = ensureString(body.text, 1, 1000, '');
+        if (!text) {
+          json(res, 400, { error: 'Message text is required' });
+          return;
+        }
+        const message = {
+          id: id('tmsg'),
+          fromUserId: auth.user.id,
+          fromRole: auth.user.role,
+          text,
+          createdAt: nowIso()
+        };
+        if (!Array.isArray(ticket.messages)) {
+          ticket.messages = [];
+        }
+        ticket.messages.push(message);
+        ticket.updatedAt = nowIso();
+        if (ticket.status === 'closed' && ['student', 'parent'].includes(auth.user.role)) {
+          ticket.status = 'open';
+          ticket.closedAt = null;
+        } else if (ticket.status === 'open' && ['doctor', 'admin'].includes(auth.user.role)) {
+          ticket.status = 'in_progress';
+        }
+        if (['closed', 'resolved'].includes(ticket.status) && !ticket.closedAt) {
+          ticket.closedAt = nowIso();
+        }
+        logAction(data, auth, 'ticket.message.send', ticket.id, { messageId: message.id });
+        writeData(data);
+        json(res, 201, { item: ticket, message });
+        return;
+      }
+
+      if (apiParts[0] === 'tickets' && apiParts.length === 2 && req.method === 'PATCH') {
+        if (!enforceRateLimit(req, res, 'tickets.patch', 100, 60 * 1000)) return;
+        if (!requireRole(res, auth, ['doctor', 'admin'])) return;
+        const ticketId = ensureString(apiParts[1], 1, 80, '');
+        const ticket = data.tickets.find((item) => item.id === ticketId);
+        if (!ticket) {
+          json(res, 404, { error: 'Ticket not found' });
+          return;
+        }
+        const body = await parseBody(req);
+        if (typeof body.assignedToUserId === 'string' && body.assignedToUserId.trim()) {
+          ticket.assignedToUserId = ensureString(body.assignedToUserId, 1, 80, ticket.assignedToUserId || '');
+        }
+        if (typeof body.status === 'string') {
+          const status = ensureString(body.status, 1, 20, '').toLowerCase();
+          if (['open', 'in_progress', 'closed'].includes(status)) {
+            ticket.status = status;
+            if (status === 'closed') {
+              ticket.closedAt = nowIso();
+            } else {
+              ticket.closedAt = null;
+            }
+          }
+        }
+        ticket.updatedAt = nowIso();
+        logAction(data, auth, 'ticket.update', ticket.id, {
+          status: ticket.status,
+          assignedToUserId: ticket.assignedToUserId
+        });
+        writeData(data);
+        json(res, 200, { item: ticket });
+        return;
+      }
+
+      if (pathname === '/api/medications/plans' && req.method === 'POST') {
+        if (!enforceRateLimit(req, res, 'medication.plan', 60, 60 * 1000)) return;
+        if (!requireRole(res, auth, ['doctor', 'admin'])) return;
+        const body = await parseBody(req);
+        const studentId = ensureString(body.studentId, 0, 80, '') || resolveLinkedStudentId(data, auth, urlObj);
+        const student = findStudent(data, studentId);
+        if (!student) {
+          json(res, 404, { error: 'Student not found' });
+          return;
+        }
+        const name = ensureString(body.name, 2, 140, '');
+        if (!name) {
+          json(res, 400, { error: 'Medication name is required' });
+          return;
+        }
+        const plan = {
+          id: id('medp'),
+          studentId,
+          studentName: student.name || student.id,
+          name,
+          dosesPerDay: Math.max(1, Math.min(8, Number(body.dosesPerDay || 1))),
+          instructions: ensureString(body.instructions, 0, 400, ''),
+          startDate: ensureString(body.startDate, 0, 40, new Date().toISOString().slice(0, 10)),
+          endDate: ensureString(body.endDate, 0, 40, ''),
+          active: true,
+          createdAt: nowIso(),
+          createdByUserId: auth.user.id,
+          createdByRole: auth.user.role
+        };
+        data.medicationPlans.unshift(plan);
+        pushAlert(data, ['parent', 'student', 'doctor', 'admin'], `تمت إضافة خطة دوائية: ${plan.name}`, 'operational');
+        logAction(data, auth, 'medication.plan.create', plan.id, { studentId, dosesPerDay: plan.dosesPerDay });
+        writeData(data);
+        json(res, 201, { item: plan });
+        return;
+      }
+
+      if (pathname === '/api/medications/logs' && req.method === 'POST') {
+        if (!enforceRateLimit(req, res, 'medication.log', 160, 60 * 1000)) return;
+        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin'])) return;
+        const body = await parseBody(req);
+        const planId = ensureString(body.planId, 0, 80, '');
+        const plan = planId ? data.medicationPlans.find((item) => item.id === planId) : null;
+        let studentId = plan ? plan.studentId : ensureString(body.studentId, 0, 80, '');
+        if (!studentId) {
+          studentId = resolveLinkedStudentId(data, auth, urlObj);
+        }
+        if (!canAccessStudentScope(auth, studentId) && !['doctor', 'admin'].includes(auth.user.role)) {
+          json(res, 403, { error: 'Forbidden student scope' });
+          return;
+        }
+        const status = ensureString(body.status, 1, 20, 'taken').toLowerCase();
+        if (!['taken', 'skipped'].includes(status)) {
+          json(res, 400, { error: 'Invalid medication log status' });
+          return;
+        }
+        const entry = {
+          id: id('medl'),
+          studentId,
+          planId: plan ? plan.id : null,
+          planName: plan ? plan.name : ensureString(body.planName, 0, 140, ''),
+          status,
+          note: ensureString(body.note, 0, 220, ''),
+          takenAt: nowIso(),
+          createdAt: nowIso(),
+          loggedByUserId: auth.user.id,
+          loggedByRole: auth.user.role
+        };
+        data.medicationLogs.unshift(entry);
+        const summary = medicationAdherenceSummary(data, studentId);
+        if (summary.alert) {
+          pushAlert(data, ['doctor', 'admin', 'parent', 'student'], summary.alert, 'critical');
+        }
+        logAction(data, auth, 'medication.log.create', entry.id, {
+          studentId,
+          planId: entry.planId,
+          status
+        });
+        writeData(data);
+        json(res, 201, { item: entry, summary });
+        return;
+      }
+
+      if (pathname === '/api/medications/adherence' && req.method === 'GET') {
+        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin'])) return;
+        const studentId = resolveLinkedStudentId(data, auth, urlObj);
+        if (!canAccessStudentScope(auth, studentId)) {
+          json(res, 403, { error: 'Forbidden student scope' });
+          return;
+        }
+        const summary = medicationAdherenceSummary(data, studentId);
+        json(res, 200, summary);
+        return;
+      }
+
+      if (pathname === '/api/referrals' && req.method === 'GET') {
+        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin'])) return;
+        let items = (data.referrals || []).slice();
+        if (auth.user.role === 'student') {
+          items = items.filter((item) => item.studentId === auth.user.id);
+        } else if (auth.user.role === 'parent') {
+          items = items.filter((item) => item.studentId === 'u_student_1');
+        } else {
+          const studentFilter = ensureString(urlObj.searchParams.get('studentId'), 0, 80, '');
+          if (studentFilter) {
+            items = items.filter((item) => item.studentId === studentFilter);
+          }
+        }
+        items = items.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        json(res, 200, { items });
+        return;
+      }
+
+      if (pathname === '/api/referrals' && req.method === 'POST') {
+        if (!enforceRateLimit(req, res, 'referrals.create', 40, 60 * 1000)) return;
+        if (!requireRole(res, auth, ['doctor', 'admin'])) return;
+        const body = await parseBody(req);
+        const studentId = ensureString(body.studentId, 0, 80, '') || resolveLinkedStudentId(data, auth, urlObj);
+        const student = findStudent(data, studentId);
+        if (!student) {
+          json(res, 404, { error: 'Student not found' });
+          return;
+        }
+        const reason = ensureString(body.reason, 3, 280, '');
+        if (!reason) {
+          json(res, 400, { error: 'Referral reason is required' });
+          return;
+        }
+        const referral = {
+          id: id('ref'),
+          studentId,
+          studentName: student.name || student.id,
+          destination: ensureString(body.destination, 3, 180, 'مستشفى الطوارئ'),
+          reason,
+          diagnosis: ensureString(body.diagnosis, 0, 240, ''),
+          clinicalSummary: ensureString(body.clinicalSummary, 0, 1000, ''),
+          status: 'issued',
+          createdAt: nowIso(),
+          createdByUserId: auth.user.id,
+          createdByRole: auth.user.role
+        };
+        data.referrals.unshift(referral);
+        pushAlert(data, ['parent', 'student', 'doctor', 'admin'], `تم إنشاء إحالة خارجية للطالب ${referral.studentName}`, 'critical');
+        logAction(data, auth, 'referral.create', referral.id, { studentId, destination: referral.destination });
+        writeData(data);
+        json(res, 201, { item: referral });
+        return;
+      }
+
+      if (apiParts[0] === 'referrals' && apiParts[2] === 'pdf' && req.method === 'GET') {
+        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin'])) return;
+        const referralId = ensureString(apiParts[1], 1, 80, '');
+        const referral = data.referrals.find((item) => item.id === referralId);
+        if (!referral) {
+          json(res, 404, { error: 'Referral not found' });
+          return;
+        }
+        if (!canAccessStudentScope(auth, referral.studentId)) {
+          json(res, 403, { error: 'Forbidden' });
+          return;
+        }
+        const lines = [
+          'Smart Clinic External Referral',
+          'Referral ID: ' + referral.id,
+          'Generated At: ' + nowIso(),
+          '---',
+          'Student: ' + (referral.studentName || referral.studentId),
+          'Student ID: ' + referral.studentId,
+          'Destination: ' + (referral.destination || '-'),
+          'Reason: ' + (referral.reason || '-'),
+          'Diagnosis: ' + (referral.diagnosis || '-'),
+          'Clinical Summary: ' + (referral.clinicalSummary || '-'),
+          'Issued By: ' + roleLabel(referral.createdByRole) + ' (' + (referral.createdByUserId || '-') + ')',
+          'Issued At: ' + (referral.createdAt || '-')
+        ];
+        const pdf = buildSimplePdf(lines);
+        logAction(data, auth, 'referral.pdf.export', referral.id, {});
+        writeData(data);
+        res.writeHead(200, withSecurityHeaders({
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="referral-${referral.id}.pdf"`,
+          'Content-Length': pdf.length,
+          'Cache-Control': 'no-store'
+        }));
+        res.end(pdf);
+        return;
+      }
+
+      if (pathname === '/api/reports/monthly' && req.method === 'GET') {
+        if (!requireRole(res, auth, ['admin'])) return;
+        const month = normalizeMonthKey(urlObj.searchParams.get('month'));
+        const summary = monthlyExecutiveSummary(data, month);
+        const idx = data.monthlyReports.findIndex((item) => item.month === summary.month);
+        if (idx >= 0) {
+          data.monthlyReports[idx] = summary;
+        } else {
+          data.monthlyReports.unshift(summary);
+        }
+        logAction(data, auth, 'report.monthly.view', summary.month, summary.metrics);
+        writeData(data);
+        json(res, 200, { item: summary });
+        return;
+      }
+
+      if (pathname === '/api/reports/monthly/pdf' && req.method === 'GET') {
+        if (!requireRole(res, auth, ['admin'])) return;
+        const month = normalizeMonthKey(urlObj.searchParams.get('month'));
+        const summary = monthlyExecutiveSummary(data, month);
+        const lines = [
+          'Smart Clinic Monthly Executive Report',
+          'Month: ' + summary.month,
+          'Generated At: ' + nowIso(),
+          '---',
+          'Critical Cases: ' + summary.metrics.criticalCases,
+          'Visit Requests: ' + summary.metrics.visitRequests,
+          'Appointments Total: ' + summary.metrics.appointmentsTotal,
+          'Appointments Completed: ' + summary.metrics.appointmentsCompleted,
+          'Tickets Opened: ' + summary.metrics.ticketsOpened,
+          'Tickets Closed: ' + summary.metrics.ticketsClosed,
+          'Ticket Closure Rate: ' + summary.metrics.ticketClosureRate + '%',
+          'Avg Ticket Resolution Hours: ' + summary.metrics.avgTicketResolutionHours,
+          'Referrals: ' + summary.metrics.referrals,
+          'Consents Requested: ' + summary.metrics.consentsRequested,
+          'Consents Approved: ' + summary.metrics.consentsApproved
+        ];
+        const pdf = buildSimplePdf(lines);
+        logAction(data, auth, 'report.monthly.pdf', summary.month, summary.metrics);
+        writeData(data);
+        res.writeHead(200, withSecurityHeaders({
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="monthly-executive-${summary.month}.pdf"`,
+          'Content-Length': pdf.length,
+          'Cache-Control': 'no-store'
+        }));
+        res.end(pdf);
         return;
       }
 

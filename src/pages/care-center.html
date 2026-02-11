@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مركز التنسيق العلاجي – Smart Clinic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-a: #071428;
+  --bg-b: #1a2f3c;
+  --card: rgba(10, 25, 40, 0.82);
+  --line: rgba(103, 232, 249, 0.28);
+  --text: #eff9ff;
+  --soft: #b8cfe0;
+  --accent: #22d3ee;
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --danger: #ef4444;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding: 16px 12px 28px;
+  font-family: "Tajawal", sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(850px 440px at 8% 0%, rgba(34, 211, 238, 0.2), transparent 60%),
+    radial-gradient(760px 420px at 92% 100%, rgba(34, 197, 94, 0.15), transparent 65%),
+    linear-gradient(140deg, var(--bg-a), var(--bg-b));
+}
+.shell { width: min(1300px, 100%); margin: 0 auto; }
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.chip {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: var(--soft);
+  background: rgba(255,255,255,0.04);
+}
+.btn {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.hero {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 14px;
+}
+.hero h1 { margin: 0; font-size: 30px; }
+.hero p { margin: 6px 0 0; color: var(--soft); }
+.meta {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.meta-item {
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.04);
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--soft);
+}
+.grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+  gap: 10px;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px;
+}
+.card h2 {
+  margin: 0;
+  font-size: 19px;
+}
+.card p {
+  margin: 6px 0 10px;
+  color: var(--soft);
+  font-size: 14px;
+}
+.row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+input, select, textarea {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+  font: inherit;
+  padding: 8px;
+}
+textarea { resize: vertical; min-height: 64px; }
+.cta {
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #04202a;
+  font: inherit;
+  font-weight: 700;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.warn { background: var(--warn); color: #1f2937; }
+.danger { background: var(--danger); color: #fff; }
+.ok { background: var(--ok); color: #052e14; }
+.item-list {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.item {
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.03);
+  padding: 8px;
+  font-size: 13px;
+}
+.item strong { font-size: 14px; }
+.badge {
+  display: inline-block;
+  margin-top: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+.b-ok { background: rgba(34,197,94,.2); color: #86efac; }
+.b-warn { background: rgba(245,158,11,.2); color: #fde68a; }
+.b-danger { background: rgba(239,68,68,.2); color: #fca5a5; }
+.muted { color: var(--soft); font-size: 12px; }
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.hidden { display: none !important; }
+.ticket-thread {
+  margin-top: 8px;
+  max-height: 180px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.msg {
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.03);
+  padding: 6px;
+  font-size: 12px;
+}
+.qr-wrap {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.qr-box {
+  width: 120px;
+  height: 120px;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.04);
+}
+.qr-box img { width: 100%; height: 100%; object-fit: cover; }
+.stats {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.stat {
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.03);
+  padding: 8px;
+}
+.stat .l { color: var(--soft); font-size: 12px; }
+.stat .v { margin-top: 3px; font-weight: 800; font-size: 18px; }
+.toast {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(10, 25, 40, 0.95);
+  color: var(--text);
+  padding: 9px 12px;
+  display: none;
+  z-index: 40;
+}
+@media (max-width: 720px) {
+  .two-col { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <div class="chip">الدور الحالي: <strong data-session-role>-</strong></div>
+    <div class="row">
+      <button class="btn" onclick="window.location.href='../../index.html'">الرئيسية</button>
+      <button class="btn" onclick="window.location.href=SmartClinicSecurity.getRoleHomePath()">العودة لبوابة الدور</button>
+      <button class="btn" data-action="logout">تسجيل الخروج</button>
+    </div>
+  </div>
+
+  <section class="hero">
+    <h1>مركز التنسيق العلاجي المتقدم</h1>
+    <p>موافقات رقمية، بطاقة طوارئ QR، متابعة منزلية، مواعيد، تذاكر، التزام دوائي، إحالات PDF، وتقارير شهرية تنفيذية.</p>
+    <div class="meta">
+      <div class="meta-item">الوضع: <strong id="meta-mode">-</strong></div>
+      <div class="meta-item">آخر تحديث: <strong id="meta-sync">-</strong></div>
+      <div class="meta-item">التذكرة المحددة: <strong id="meta-ticket">-</strong></div>
+    </div>
+  </section>
+
+  <section class="grid">
+    <article class="card">
+      <h2>الموافقات الرقمية لولي الأمر</h2>
+      <p>إنشاء طلب موافقة (دواء/تحويل/جلسة مرئية) وتسجيل قرار قانوني بتوقيت وتوقيع رقمي.</p>
+      <div id="consent-create-box" data-permission="approve.referral">
+        <div class="two-col">
+          <select id="consent-type">
+            <option value="medication">موافقة دوائية</option>
+            <option value="referral">موافقة تحويل خارجي</option>
+            <option value="telemed">موافقة جلسة مرئية</option>
+          </select>
+          <input id="consent-title" placeholder="عنوان الطلب">
+        </div>
+        <textarea id="consent-details" placeholder="تفاصيل الطلب..."></textarea>
+        <div class="row">
+          <button class="cta" onclick="createConsent()">إنشاء طلب موافقة</button>
+        </div>
+      </div>
+      <div id="consents-list" class="item-list"></div>
+    </article>
+
+    <article class="card">
+      <h2>بطاقة الطوارئ QR للطالب</h2>
+      <p>الوصول السريع لبيانات الإسعاف (الحساسية، الحالة المزمنة، جهة الاتصال).</p>
+      <div class="qr-wrap">
+        <div class="qr-box"><img id="emergency-qr" alt="QR"></div>
+        <div>
+          <div id="emergency-name"><strong>-</strong></div>
+          <div id="emergency-facts" class="muted">-</div>
+          <div class="row" style="margin-top:8px;">
+            <button class="cta" onclick="loadEmergencyCard()">تحديث البطاقة</button>
+            <button class="btn" onclick="openEmergencyPublic()">فتح رابط الطوارئ</button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>خطة متابعة منزلية</h2>
+      <p>Checklist يومي (دواء/سوائل/راحة/أعراض) مع تحديثات من الطالب أو ولي الأمر.</p>
+      <div id="home-create-box" data-permission="edit.careplan">
+        <input id="home-title" placeholder="عنوان الخطة">
+        <textarea id="home-items" placeholder="اكتب كل عنصر في سطر مستقل"></textarea>
+        <div class="two-col">
+          <input id="home-reminder" placeholder="وقت التذكير (مثال 19:00)">
+          <button class="cta" onclick="createHomePlan()">إنشاء الخطة</button>
+        </div>
+      </div>
+      <div id="home-list" class="item-list"></div>
+    </article>
+
+    <article class="card">
+      <h2>نظام المواعيد الحقيقي</h2>
+      <p>حجز موعد محدد بحالة تشغيلية: قيد الانتظار، مؤكد، مكتمل، ملغي.</p>
+      <div>
+        <input id="appointment-reason" placeholder="سبب الموعد">
+        <div class="two-col">
+          <input id="appointment-slot" type="datetime-local">
+          <button class="cta" onclick="createAppointment()">حجز الموعد</button>
+        </div>
+      </div>
+      <div id="appointments-list" class="item-list"></div>
+    </article>
+
+    <article class="card">
+      <h2>المحادثات كتذاكر Tickets</h2>
+      <p>كل استفسار يتحول لتذكرة برقم وحالة ومسؤول وتاريخ إغلاق.</p>
+      <div>
+        <input id="ticket-subject" placeholder="موضوع التذكرة">
+        <div class="two-col">
+          <select id="ticket-priority">
+            <option value="normal">أولوية عادية</option>
+            <option value="high">أولوية عالية</option>
+            <option value="critical">أولوية حرجة</option>
+            <option value="low">أولوية منخفضة</option>
+          </select>
+          <button class="cta" onclick="createTicket()">فتح تذكرة</button>
+        </div>
+        <textarea id="ticket-text" placeholder="وصف الاستفسار..."></textarea>
+      </div>
+      <div id="tickets-list" class="item-list"></div>
+      <div id="ticket-thread" class="ticket-thread"></div>
+      <div class="row" style="margin-top:8px;">
+        <input id="ticket-reply" placeholder="رد على التذكرة المحددة">
+        <button class="cta" onclick="replyTicket()">إرسال رد</button>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>لوحة الامتثال الدوائي</h2>
+      <p>تتبع الجرعات ونسبة الالتزام الأسبوعية مع إنذار عند الانخفاض.</p>
+      <div id="med-plan-create" data-permission="prescribe.medication">
+        <div class="two-col">
+          <input id="med-name" placeholder="اسم الدواء">
+          <input id="med-doses" type="number" min="1" max="8" value="2" placeholder="جرعات يومية">
+        </div>
+        <input id="med-instructions" placeholder="تعليمات الجرعة">
+        <button class="cta" onclick="createMedicationPlan()">إضافة خطة دوائية</button>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <select id="med-plan-select"></select>
+        <button class="cta ok" onclick="logMedication('taken')">تم أخذ الجرعة</button>
+        <button class="cta warn" onclick="logMedication('skipped')">تم تجاوز الجرعة</button>
+      </div>
+      <div id="med-stats" class="stats"></div>
+      <div id="med-logs" class="item-list"></div>
+    </article>
+
+    <article class="card">
+      <h2>نموذج إحالة خارجي موحد</h2>
+      <p>إنشاء إحالة للمستشفى وتصدير تقرير PDF جاهز.</p>
+      <div id="referral-create" data-permission="approve.referral">
+        <input id="ref-destination" placeholder="جهة التحويل">
+        <input id="ref-reason" placeholder="سبب التحويل">
+        <input id="ref-diagnosis" placeholder="التشخيص الأولي">
+        <textarea id="ref-summary" placeholder="الملخص السريري"></textarea>
+        <button class="cta" onclick="createReferral()">إنشاء إحالة</button>
+      </div>
+      <div id="referrals-list" class="item-list"></div>
+    </article>
+
+    <article class="card" data-permission="export.executive">
+      <h2>تقارير تنفيذية شهرية تلقائية</h2>
+      <p>ملخص شهري للإدارة: الحالات الحرجة، الاستجابة، نسب الإغلاق بصيغة PDF.</p>
+      <div class="two-col">
+        <input id="monthly-month" type="month">
+        <button class="cta" onclick="loadMonthlyReport()">توليد التقرير</button>
+      </div>
+      <div id="monthly-stats" class="stats"></div>
+      <div class="row" style="margin-top:8px;">
+        <button class="cta" onclick="downloadMonthlyPdf()">تحميل PDF</button>
+      </div>
+    </article>
+  </section>
+</div>
+<div id="toast" class="toast"></div>
+
+<script src="../../assets/js/security.js"></script>
+<script>
+var currentSession = null;
+var selectedTicketId = '';
+var emergencyPublicUrl = '';
+var ticketCache = [];
+var medicationPlanCache = [];
+var monthlyReportCache = null;
+var homeReminderSeen = {};
+
+function notify(text) {
+  var el = document.getElementById('toast');
+  el.textContent = text;
+  el.style.display = 'block';
+  window.setTimeout(function () { el.style.display = 'none'; }, 2300);
+}
+
+function safeHtml(text) {
+  return String(text || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function formatTime(iso) {
+  if (!iso) return '-';
+  return new Date(iso).toLocaleString('ar-SA');
+}
+
+function shouldTriggerReminder(reminderTime) {
+  if (!reminderTime || String(reminderTime).indexOf(':') === -1) return false;
+  var bits = String(reminderTime).split(':');
+  var h = Number(bits[0]);
+  var m = Number(bits[1]);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return false;
+  var now = new Date();
+  var stamp = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+  var currentMin = (now.getHours() * 60) + now.getMinutes();
+  var reminderMin = (h * 60) + m;
+  return currentMin >= reminderMin && !homeReminderSeen[stamp + ':' + reminderTime];
+}
+
+function statusBadge(status) {
+  var cls = 'b-ok';
+  if (status === 'pending' || status === 'in_progress') cls = 'b-warn';
+  if (status === 'rejected' || status === 'cancelled' || status === 'closed') cls = 'b-danger';
+  return '<span class="badge ' + cls + '">' + safeHtml(status || '-') + '</span>';
+}
+
+async function openPdf(path, filename) {
+  var response = await SmartClinicSecurity.apiRequest(path);
+  if (!response.ok) {
+    notify('تعذر تجهيز ملف PDF.');
+    return;
+  }
+  var blob = await response.blob();
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function refreshMeta() {
+  document.getElementById('meta-mode').textContent = SmartClinicSecurity.isDemoMode() ? 'Demo' : 'Live';
+  document.getElementById('meta-sync').textContent = new Date().toLocaleTimeString('ar-SA');
+  document.getElementById('meta-ticket').textContent = selectedTicketId || '-';
+}
+
+function isParentOrAdmin() {
+  return currentSession && (currentSession.role === 'parent' || currentSession.role === 'admin');
+}
+
+function isDoctorOrAdmin() {
+  return currentSession && (currentSession.role === 'doctor' || currentSession.role === 'admin');
+}
+
+async function createConsent() {
+  var title = document.getElementById('consent-title').value.trim();
+  var details = document.getElementById('consent-details').value.trim();
+  var type = document.getElementById('consent-type').value;
+  if (!title || !details) {
+    notify('اكتب عنوانًا وتفاصيل للموافقة.');
+    return;
+  }
+  var result = await SmartClinicSecurity.apiJson('/consents', {
+    method: 'POST',
+    body: JSON.stringify({ title: title, details: details, type: type })
+  });
+  if (!result.ok) {
+    notify(result.error || 'تعذر إنشاء طلب الموافقة.');
+    return;
+  }
+  document.getElementById('consent-title').value = '';
+  document.getElementById('consent-details').value = '';
+  notify('تم إنشاء طلب الموافقة.');
+  loadConsents();
+}
+
+async function decideConsent(id, decision) {
+  var note = window.prompt(decision === 'approve' ? 'ملاحظة الاعتماد (اختياري):' : 'سبب الرفض (اختياري):', '') || '';
+  var result = await SmartClinicSecurity.apiJson('/consents/' + encodeURIComponent(id) + '/decision', {
+    method: 'POST',
+    body: JSON.stringify({
+      decision: decision,
+      note: note,
+      signature: (currentSession ? currentSession.role : 'user') + ':' + Date.now()
+    })
+  });
+  if (!result.ok) {
+    notify(result.error || 'تعذر تسجيل قرار الموافقة.');
+    return;
+  }
+  notify('تم تحديث قرار الموافقة.');
+  loadConsents();
+}
+
+async function loadConsents() {
+  var result = await SmartClinicSecurity.apiJson('/consents');
+  var wrap = document.getElementById('consents-list');
+  if (!result.ok || !result.data) {
+    wrap.innerHTML = '<div class="item">تعذر تحميل الموافقات.</div>';
+    return;
+  }
+  var items = result.data.items || [];
+  if (!items.length) {
+    wrap.innerHTML = '<div class="item">لا توجد طلبات موافقة حاليًا.</div>';
+    return;
+  }
+  wrap.innerHTML = items.slice(0, 6).map(function (item) {
+    var actions = '';
+    if (isParentOrAdmin() && item.status === 'pending') {
+      actions = '<div class="row" style="margin-top:6px;">' +
+        '<button class="cta ok" onclick="decideConsent(\'' + item.id + '\',\'approve\')">اعتماد</button>' +
+        '<button class="cta danger" onclick="decideConsent(\'' + item.id + '\',\'reject\')">رفض</button>' +
+      '</div>';
+    }
+    var legal = Array.isArray(item.legalLog) && item.legalLog.length ? '<div class="muted">سجل قانوني: ' + item.legalLog.length + ' حدث</div>' : '';
+    return '<div class="item">' +
+      '<strong>' + safeHtml(item.title) + '</strong> • ' + safeHtml(item.type) +
+      statusBadge(item.status) +
+      '<div class="muted">آخر تحديث: ' + formatTime(item.updatedAt || item.createdAt) + '</div>' +
+      '<div>' + safeHtml(item.details || '-') + '</div>' +
+      legal + actions +
+    '</div>';
+  }).join('');
+}
+
+async function loadEmergencyCard() {
+  var result = await SmartClinicSecurity.apiJson('/emergency-card');
+  if (!result.ok || !result.data || !result.data.card) {
+    notify(result.error || 'تعذر تحميل بطاقة الطوارئ.');
+    return;
+  }
+  var card = result.data.card;
+  document.getElementById('emergency-name').innerHTML = '<strong>' + safeHtml(card.studentName) + '</strong> • ' + safeHtml(card.grade || '-');
+  document.getElementById('emergency-facts').textContent = 'حساسية: ' + card.allergies + ' | مزمن: ' + card.chronicCondition + ' | اتصال: ' + card.emergencyContact;
+  document.getElementById('emergency-qr').src = result.data.qrImageUrl || '';
+  emergencyPublicUrl = result.data.publicUrl || '';
+}
+
+function openEmergencyPublic() {
+  if (!emergencyPublicUrl) {
+    notify('لا يوجد رابط طوارئ حاليًا.');
+    return;
+  }
+  window.open(emergencyPublicUrl, '_blank');
+}
+
+async function createHomePlan() {
+  var title = document.getElementById('home-title').value.trim();
+  var itemsText = document.getElementById('home-items').value.trim();
+  var reminder = document.getElementById('home-reminder').value.trim() || '19:00';
+  if (!title) {
+    notify('اكتب عنوان الخطة.');
+    return;
+  }
+  var result = await SmartClinicSecurity.apiJson('/home-care/plans', {
+    method: 'POST',
+    body: JSON.stringify({ title: title, itemsText: itemsText, reminderTime: reminder })
+  });
+  if (!result.ok) {
+    notify(result.error || 'تعذر إنشاء خطة المتابعة.');
+    return;
+  }
+  document.getElementById('home-title').value = '';
+  document.getElementById('home-items').value = '';
+  notify('تم إنشاء خطة المتابعة المنزلية.');
+  loadHomePlans();
+}
+
+async function toggleHomeItem(planId, itemId, done) {
+  var result = await SmartClinicSecurity.apiJson('/home-care/plans/' + encodeURIComponent(planId) + '/check', {
+    method: 'POST',
+    body: JSON.stringify({ itemId: itemId, done: done })
+  });
+  if (!result.ok) {
+    notify(result.error || 'تعذر تحديث عنصر الخطة.');
+    return;
+  }
+  loadHomePlans();
+}
+
+async function loadHomePlans() {
+  var result = await SmartClinicSecurity.apiJson('/home-care/plans');
+  var wrap = document.getElementById('home-list');
+  if (!result.ok || !result.data) {
+    wrap.innerHTML = '<div class="item">تعذر تحميل خطط المتابعة.</div>';
+    return;
+  }
+  var plans = result.data.items || [];
+  if (!plans.length) {
+    wrap.innerHTML = '<div class="item">لا توجد خطط متابعة نشطة.</div>';
+    return;
+  }
+  var reminders = [];
+  wrap.innerHTML = plans.slice(0, 4).map(function (plan) {
+    var checklist = (plan.checklist || []).map(function (task) {
+      var checked = task.done ? 'checked' : '';
+      var disabled = (currentSession && currentSession.role === 'doctor') ? 'disabled' : '';
+      var mark = task.done ? 'b-ok' : 'b-warn';
+      if (!task.done && shouldTriggerReminder(task.reminderTime || '')) {
+        reminders.push(task.reminderTime);
+      }
+      return '<label class="item" style="margin-top:6px;display:block;">' +
+        '<input type="checkbox" ' + checked + ' ' + disabled + ' onchange="toggleHomeItem(\'' + plan.id + '\',\'' + task.id + '\',this.checked)">' +
+        ' ' + safeHtml(task.label) + ' <span class="badge ' + mark + '">' + (task.done ? 'منفذ' : 'معلق') + '</span>' +
+        '<div class="muted">تذكير: ' + safeHtml(task.reminderTime || '-') + '</div>' +
+      '</label>';
+    }).join('');
+    return '<div class="item">' +
+      '<strong>' + safeHtml(plan.title) + '</strong> ' + statusBadge(plan.status) +
+      '<div class="muted">تم الإنشاء: ' + formatTime(plan.createdAt) + '</div>' +
+      checklist +
+    '</div>';
+  }).join('');
+  if (reminders.length) {
+    var now = new Date();
+    var stamp = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    reminders.forEach(function (time) {
+      homeReminderSeen[stamp + ':' + time] = true;
+    });
+    notify('تذكير متابعة منزلية: لديك عناصر غير منفذة بموعد التذكير الحالي.');
+  }
+}
+
+async function createAppointment() {
+  var reason = document.getElementById('appointment-reason').value.trim();
+  var slot = document.getElementById('appointment-slot').value;
+  if (!reason || !slot) {
+    notify('أدخل سبب الموعد والتاريخ.');
+    return;
+  }
+  var iso = new Date(slot).toISOString();
+  var result = await SmartClinicSecurity.apiJson('/appointments', {
+    method: 'POST',
+    body: JSON.stringify({ reason: reason, slotAt: iso })
+  });
+  if (!result.ok) {
+    notify(result.error || 'تعذر حجز الموعد.');
+    return;
+  }
+  document.getElementById('appointment-reason').value = '';
+  notify('تم تسجيل طلب الموعد.');
+  loadAppointments();
+}
+
+async function setAppointmentStatus(id, status) {
+  var result = await SmartClinicSecurity.apiJson('/appointments/' + encodeURIComponent(id) + '/status', {
+    method: 'POST',
+    body: JSON.stringify({ status: status })
+  });
+  if (!result.ok) {
+    notify(result.error || 'تعذر تحديث حالة الموعد.');
+    return;
+  }
+  loadAppointments();
+}
+
+async function loadAppointments() {
+  var query = isDoctorOrAdmin() ? '?all=1' : '';
+  var result = await SmartClinicSecurity.apiJson('/appointments' + query);
+  var wrap = document.getElementById('appointments-list');
+  if (!result.ok || !result.data) {
+    wrap.innerHTML = '<div class="item">تعذر تحميل المواعيد.</div>';
+    return;
+  }
+  var items = result.data.items || [];
+  if (!items.length) {
+    wrap.innerHTML = '<div class="item">لا توجد مواعيد حالية.</div>';
+    return;
+  }
+  wrap.innerHTML = items.slice(0, 8).map(function (item) {
+    var controls = '';
+    if (isDoctorOrAdmin()) {
+      controls = '<div class="row" style="margin-top:6px;">' +
+        '<button class="btn" onclick="setAppointmentStatus(\'' + item.id + '\',\'confirmed\')">تأكيد</button>' +
+        '<button class="btn" onclick="setAppointmentStatus(\'' + item.id + '\',\'completed\')">إكمال</button>' +
+        '<button class="btn" onclick="setAppointmentStatus(\'' + item.id + '\',\'cancelled\')">إلغاء</button>' +
+      '</div>';
+    }
+    return '<div class="item">' +
+      '<strong>' + safeHtml(item.reason) + '</strong> ' + statusBadge(item.status) +
+      '<div class="muted">الموعد: ' + formatTime(item.slotAt) + '</div>' +
+      controls +
+    '</div>';
+  }).join('');
+}
+
+async function createTicket() {
+  var subject = document.getElementById('ticket-subject').value.trim();
+  var text = document.getElementById('ticket-text').value.trim();
+  var priority = document.getElementById('ticket-priority').value;
+  if (!subject || !text) {
+    notify('أدخل موضوع التذكرة والنص.');
+    return;
+  }
+  var result = await SmartClinicSecurity.apiJson('/tickets', {
+    method: 'POST',
+    body: JSON.stringify({ subject: subject, text: text, priority: priority })
+  });
+  if (!result.ok || !result.data) {
+    notify(result.error || 'تعذر فتح التذكرة.');
+    return;
+  }
+  document.getElementById('ticket-subject').value = '';
+  document.getElementById('ticket-text').value = '';
+  selectedTicketId = (result.data.item || {}).id || '';
+  notify('تم إنشاء التذكرة.');
+  loadTickets();
+}
+
+async function setTicketStatus(id, status) {
+  var result = await SmartClinicSecurity.apiJson('/tickets/' + encodeURIComponent(id), {
+    method: 'PATCH',
+    body: JSON.stringify({ status: status })
+  });
+  if (!result.ok) {
+    notify(result.error || 'تعذر تحديث حالة التذكرة.');
+    return;
+  }
+  loadTickets();
+}
+
+async function loadTicketThread(id) {
+  if (!id) return;
+  selectedTicketId = id;
+  refreshMeta();
+  var result = await SmartClinicSecurity.apiJson('/tickets/' + encodeURIComponent(id) + '/messages');
+  var wrap = document.getElementById('ticket-thread');
+  if (!result.ok || !result.data) {
+    wrap.innerHTML = '<div class="msg">تعذر تحميل المحادثة.</div>';
+    return;
+  }
+  var messages = result.data.messages || [];
+  wrap.innerHTML = messages.map(function (m) {
+    return '<div class="msg"><strong>' + safeHtml(m.fromRole) + '</strong>: ' + safeHtml(m.text) + '<div class="muted">' + formatTime(m.createdAt) + '</div></div>';
+  }).join('');
+}
+
+async function replyTicket() {
+  if (!selectedTicketId) {
+    notify('اختر تذكرة أولًا.');
+    return;
+  }
+  var text = document.getElementById('ticket-reply').value.trim();
+  if (!text) {
+    notify('أدخل نص الرد.');
+    return;
+  }
+  var result = await SmartClinicSecurity.apiJson('/tickets/' + encodeURIComponent(selectedTicketId) + '/messages', {
+    method: 'POST',
+    body: JSON.stringify({ text: text })
+  });
+  if (!result.ok) {
+    notify(result.error || 'تعذر إرسال الرد.');
+    return;
+  }
+  document.getElementById('ticket-reply').value = '';
+  loadTickets();
+  loadTicketThread(selectedTicketId);
+}
+
+async function loadTickets() {
+  var result = await SmartClinicSecurity.apiJson('/tickets');
+  var wrap = document.getElementById('tickets-list');
+  if (!result.ok || !result.data) {
+    wrap.innerHTML = '<div class="item">تعذر تحميل التذاكر.</div>';
+    return;
+  }
+  ticketCache = result.data.items || [];
+  if (!ticketCache.length) {
+    wrap.innerHTML = '<div class="item">لا توجد تذاكر حالية.</div>';
+    document.getElementById('ticket-thread').innerHTML = '';
+    return;
+  }
+  if (!selectedTicketId) {
+    selectedTicketId = ticketCache[0].id;
+  }
+  refreshMeta();
+  wrap.innerHTML = ticketCache.slice(0, 8).map(function (t) {
+    var controls = '';
+    if (isDoctorOrAdmin()) {
+      controls = '<div class="row" style="margin-top:6px;">' +
+        '<button class="btn" onclick="setTicketStatus(\'' + t.id + '\',\'in_progress\')">قيد المعالجة</button>' +
+        '<button class="btn" onclick="setTicketStatus(\'' + t.id + '\',\'closed\')">إغلاق</button>' +
+      '</div>';
+    }
+    return '<div class="item">' +
+      '<strong>' + safeHtml(t.number + ' - ' + t.subject) + '</strong> ' + statusBadge(t.status) +
+      '<div class="muted">آخر تحديث: ' + formatTime(t.updatedAt) + '</div>' +
+      '<div class="row" style="margin-top:6px;"><button class="btn" onclick="loadTicketThread(\'' + t.id + '\')">فتح المحادثة</button></div>' +
+      controls +
+    '</div>';
+  }).join('');
+  loadTicketThread(selectedTicketId);
+}
+
+function renderMedicationStats(summary) {
+  var wrap = document.getElementById('med-stats');
+  wrap.innerHTML = [
+    ['نسبة الالتزام', String(summary.adherencePercent || 0) + '%'],
+    ['جرعات متوقعة', summary.expectedDoses || 0],
+    ['جرعات مأخوذة', summary.takenDoses || 0],
+    ['جرعات متجاوزة', summary.skippedDoses || 0]
+  ].map(function (item) {
+    return '<div class="stat"><div class="l">' + item[0] + '</div><div class="v">' + item[1] + '</div></div>';
+  }).join('');
+}
+
+function renderMedicationPlans(plans) {
+  medicationPlanCache = plans || [];
+  var select = document.getElementById('med-plan-select');
+  if (!medicationPlanCache.length) {
+    select.innerHTML = '<option value="">لا توجد خطة دوائية</option>';
+    return;
+  }
+  select.innerHTML = medicationPlanCache.map(function (p) {
+    return '<option value="' + p.id + '">' + safeHtml(p.name) + ' (' + p.dosesPerDay + '/يوم)</option>';
+  }).join('');
+}
+
+async function createMedicationPlan() {
+  var name = document.getElementById('med-name').value.trim();
+  var doses = Number(document.getElementById('med-doses').value || 1);
+  var instructions = document.getElementById('med-instructions').value.trim();
+  if (!name) {
+    notify('أدخل اسم الدواء.');
+    return;
+  }
+  var result = await SmartClinicSecurity.apiJson('/medications/plans', {
+    method: 'POST',
+    body: JSON.stringify({ name: name, dosesPerDay: doses, instructions: instructions })
+  });
+  if (!result.ok) {
+    notify(result.error || 'تعذر إضافة الخطة الدوائية.');
+    return;
+  }
+  document.getElementById('med-name').value = '';
+  document.getElementById('med-instructions').value = '';
+  notify('تمت إضافة الخطة الدوائية.');
+  loadMedication();
+}
+
+async function logMedication(status) {
+  var planId = document.getElementById('med-plan-select').value;
+  if (!planId) {
+    notify('اختر خطة دوائية أولًا.');
+    return;
+  }
+  var result = await SmartClinicSecurity.apiJson('/medications/logs', {
+    method: 'POST',
+    body: JSON.stringify({ planId: planId, status: status })
+  });
+  if (!result.ok) {
+    notify(result.error || 'تعذر تسجيل الجرعة.');
+    return;
+  }
+  notify(status === 'taken' ? 'تم تسجيل الجرعة كمأخوذة.' : 'تم تسجيل الجرعة كمتجاوزة.');
+  loadMedication();
+}
+
+async function loadMedication() {
+  var result = await SmartClinicSecurity.apiJson('/medications/adherence');
+  var logsWrap = document.getElementById('med-logs');
+  if (!result.ok || !result.data) {
+    logsWrap.innerHTML = '<div class="item">تعذر تحميل بيانات الدواء.</div>';
+    return;
+  }
+  renderMedicationStats(result.data);
+  renderMedicationPlans(result.data.plans || []);
+  var logs = result.data.recentLogs || [];
+  if (!logs.length) {
+    logsWrap.innerHTML = '<div class="item">لا توجد سجلات جرعات حتى الآن.</div>';
+  } else {
+    logsWrap.innerHTML = logs.slice(0, 6).map(function (log) {
+      return '<div class="item"><strong>' + safeHtml(log.planName || 'جرعة') + '</strong> ' + statusBadge(log.status) +
+        '<div class="muted">' + formatTime(log.takenAt || log.createdAt) + '</div></div>';
+    }).join('');
+  }
+  if (result.data.alert) {
+    notify(result.data.alert);
+  }
+}
+
+async function createReferral() {
+  var destination = document.getElementById('ref-destination').value.trim();
+  var reason = document.getElementById('ref-reason').value.trim();
+  var diagnosis = document.getElementById('ref-diagnosis').value.trim();
+  var summary = document.getElementById('ref-summary').value.trim();
+  if (!destination || !reason) {
+    notify('أدخل الجهة وسبب التحويل.');
+    return;
+  }
+  var result = await SmartClinicSecurity.apiJson('/referrals', {
+    method: 'POST',
+    body: JSON.stringify({
+      destination: destination,
+      reason: reason,
+      diagnosis: diagnosis,
+      clinicalSummary: summary
+    })
+  });
+  if (!result.ok) {
+    notify(result.error || 'تعذر إنشاء الإحالة.');
+    return;
+  }
+  document.getElementById('ref-destination').value = '';
+  document.getElementById('ref-reason').value = '';
+  document.getElementById('ref-diagnosis').value = '';
+  document.getElementById('ref-summary').value = '';
+  notify('تم إنشاء الإحالة الخارجية.');
+  loadReferrals();
+}
+
+async function downloadReferralPdf(id) {
+  openPdf('/referrals/' + encodeURIComponent(id) + '/pdf', 'referral-' + id + '.pdf');
+}
+
+async function loadReferrals() {
+  var result = await SmartClinicSecurity.apiJson('/referrals');
+  var wrap = document.getElementById('referrals-list');
+  if (!result.ok || !result.data) {
+    wrap.innerHTML = '<div class="item">تعذر تحميل الإحالات.</div>';
+    return;
+  }
+  var items = result.data.items || [];
+  if (!items.length) {
+    wrap.innerHTML = '<div class="item">لا توجد إحالات حالية.</div>';
+    return;
+  }
+  wrap.innerHTML = items.slice(0, 6).map(function (item) {
+    return '<div class="item">' +
+      '<strong>' + safeHtml(item.destination || '-') + '</strong> • ' + safeHtml(item.reason || '-') +
+      '<div class="muted">' + formatTime(item.createdAt) + '</div>' +
+      '<div class="row" style="margin-top:6px;"><button class="btn" onclick="downloadReferralPdf(\'' + item.id + '\')">تحميل PDF</button></div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderMonthlyStats(metrics) {
+  var wrap = document.getElementById('monthly-stats');
+  if (!metrics) {
+    wrap.innerHTML = '<div class="stat"><div class="l">لا توجد بيانات</div><div class="v">-</div></div>';
+    return;
+  }
+  var items = [
+    ['حالات حرجة', metrics.criticalCases || 0],
+    ['طلبات زيارة', metrics.visitRequests || 0],
+    ['مواعيد مكتملة', metrics.appointmentsCompleted || 0],
+    ['نسبة إغلاق التذاكر', String(metrics.ticketClosureRate || 0) + '%']
+  ];
+  wrap.innerHTML = items.map(function (item) {
+    return '<div class="stat"><div class="l">' + item[0] + '</div><div class="v">' + item[1] + '</div></div>';
+  }).join('');
+}
+
+async function loadMonthlyReport() {
+  var month = document.getElementById('monthly-month').value;
+  if (!month) {
+    notify('اختر الشهر أولًا.');
+    return;
+  }
+  var result = await SmartClinicSecurity.apiJson('/reports/monthly?month=' + encodeURIComponent(month));
+  if (!result.ok || !result.data || !result.data.item) {
+    notify(result.error || 'تعذر توليد التقرير الشهري.');
+    return;
+  }
+  monthlyReportCache = result.data.item;
+  renderMonthlyStats(monthlyReportCache.metrics);
+  notify('تم تحديث التقرير الشهري: ' + monthlyReportCache.month);
+}
+
+function downloadMonthlyPdf() {
+  var month = document.getElementById('monthly-month').value;
+  if (!month) {
+    notify('اختر الشهر أولًا.');
+    return;
+  }
+  openPdf('/reports/monthly/pdf?month=' + encodeURIComponent(month), 'monthly-executive-' + month + '.pdf');
+}
+
+function initMonthField() {
+  var now = new Date();
+  var month = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  document.getElementById('monthly-month').value = month;
+}
+
+async function refreshAll() {
+  refreshMeta();
+  await Promise.all([
+    loadConsents(),
+    loadEmergencyCard(),
+    loadHomePlans(),
+    loadAppointments(),
+    loadTickets(),
+    loadMedication(),
+    loadReferrals()
+  ]);
+  if (isDoctorOrAdmin() && currentSession && currentSession.role === 'admin') {
+    loadMonthlyReport();
+  }
+  refreshMeta();
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  currentSession = SmartClinicSecurity.requireAccess(['student', 'doctor', 'parent', 'admin'], 'مركز التنسيق العلاجي');
+  initMonthField();
+  refreshAll();
+  SmartClinicSecurity.createAutoRefresh(refreshAll, 25000, { immediate: false });
+});
+</script>
+</body>
+</html>

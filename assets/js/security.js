@@ -116,7 +116,8 @@
     'src/pages/telemed-room.html': ['student', 'doctor', 'parent', 'admin'],
     'src/pages/student-portal.html': ['student', 'admin'],
     'src/pages/student-profile.html': ['student', 'doctor', 'parent', 'admin'],
-    'src/pages/notifications-center.html': ['student', 'doctor', 'parent', 'admin']
+    'src/pages/notifications-center.html': ['student', 'doctor', 'parent', 'admin'],
+    'src/pages/care-center.html': ['student', 'doctor', 'parent', 'admin']
   };
 
   var ENTRY_ROUTES = {
@@ -780,6 +781,15 @@
       ],
       alerts: [],
       auditLogs: [],
+      consents: [],
+      emergencyCards: [],
+      homeCarePlans: [],
+      appointments: [],
+      tickets: [],
+      medicationPlans: [],
+      medicationLogs: [],
+      referrals: [],
+      monthlyReports: [],
       settings: demoDefaultSettings()
     };
   }
@@ -835,6 +845,11 @@
       if (!Array.isArray(demoDataCache.sensorDevices)) {
         demoDataCache.sensorDevices = [];
       }
+      ['consents', 'emergencyCards', 'homeCarePlans', 'appointments', 'tickets', 'medicationPlans', 'medicationLogs', 'referrals', 'monthlyReports'].forEach(function (key) {
+        if (!Array.isArray(demoDataCache[key])) {
+          demoDataCache[key] = [];
+        }
+      });
 
       try {
         localStorage.setItem(DEMO_STORE_KEY, JSON.stringify(demoDataCache));
@@ -1406,6 +1421,199 @@
     return null;
   }
 
+  function demoEnsureAdvancedStores(data) {
+    [
+      'consents',
+      'emergencyCards',
+      'homeCarePlans',
+      'appointments',
+      'tickets',
+      'medicationPlans',
+      'medicationLogs',
+      'referrals',
+      'monthlyReports'
+    ].forEach(function (key) {
+      if (!Array.isArray(data[key])) {
+        data[key] = [];
+      }
+    });
+  }
+
+  function demoRoleLabel(role) {
+    return ROLE_LABELS[role] || role;
+  }
+
+  function demoCanAccessStudentScope(auth, studentId) {
+    if (!auth || !auth.user) return false;
+    if (auth.user.role === 'admin' || auth.user.role === 'doctor') return true;
+    if (auth.user.role === 'student') return auth.user.id === studentId;
+    if (auth.user.role === 'parent') return studentId === 'u_student_1';
+    return false;
+  }
+
+  function demoCanAccessTicket(auth, ticket) {
+    if (!auth || !auth.user || !ticket) return false;
+    if (auth.user.role === 'admin' || auth.user.role === 'doctor') return true;
+    if (auth.user.role === 'student') {
+      return ticket.studentId === auth.user.id || ticket.createdByUserId === auth.user.id;
+    }
+    if (auth.user.role === 'parent') {
+      return ticket.studentId === 'u_student_1' || ticket.createdByUserId === auth.user.id;
+    }
+    return false;
+  }
+
+  function demoFindStudent(data, studentId) {
+    return (data.users || []).find(function (user) {
+      return user.id === studentId && user.role === 'student';
+    }) || null;
+  }
+
+  function demoEmergencyCardPayload(data, studentId) {
+    demoEnsureAdvancedStores(data);
+    var student = demoFindStudent(data, studentId);
+    if (!student) return null;
+    var card = (data.emergencyCards || []).find(function (item) { return item.studentId === studentId; }) || null;
+    if (!card) {
+      card = {
+        id: demoId('emg'),
+        studentId: studentId,
+        token: demoId('token') + Date.now().toString(36),
+        createdAt: demoNowIso(),
+        updatedAt: demoNowIso()
+      };
+      data.emergencyCards.push(card);
+    }
+    var publicPath = '/api/emergency/public/' + card.token;
+    var publicUrl = 'https://jkg9rmd8td-blip.github.io/smartclinic/?emergency=' + encodeURIComponent(card.token);
+    return {
+      card: {
+        id: card.id,
+        token: card.token,
+        studentId: student.id,
+        studentName: student.name || student.id,
+        grade: student.grade || '-',
+        allergies: demoText(student.allergies, 'لا توجد حساسية مسجلة', 280),
+        chronicCondition: demoText(student.chronicCondition, 'لا توجد حالة مزمنة مسجلة', 280),
+        emergencyContact: demoText(student.guardianPhone, 'غير متوفر', 60),
+        updatedAt: card.updatedAt || card.createdAt
+      },
+      publicPath: publicPath,
+      publicUrl: publicUrl,
+      qrImageUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(publicUrl)
+    };
+  }
+
+  function demoMedicationAdherenceSummary(data, studentId) {
+    demoEnsureAdvancedStores(data);
+    var now = Date.now();
+    var from = now - (7 * 24 * 60 * 60 * 1000);
+    var plans = (data.medicationPlans || []).filter(function (item) {
+      return item.studentId === studentId && item.active !== false;
+    });
+    var logs = (data.medicationLogs || []).filter(function (item) {
+      return item.studentId === studentId && new Date(item.takenAt || item.createdAt || 0).getTime() >= from;
+    }).sort(function (a, b) {
+      return new Date(b.takenAt || b.createdAt || 0) - new Date(a.takenAt || a.createdAt || 0);
+    });
+
+    var expected = plans.reduce(function (sum, plan) {
+      var dosesPerDay = Math.max(1, Math.min(8, Number(plan.dosesPerDay || 1)));
+      var createdAt = new Date(plan.createdAt || demoNowIso()).getTime();
+      var activeFrom = Math.max(createdAt, from);
+      var days = Math.max(1, Math.ceil((now - activeFrom) / (24 * 60 * 60 * 1000)));
+      return sum + (dosesPerDay * Math.min(7, days));
+    }, 0);
+    var taken = logs.filter(function (item) { return item.status === 'taken'; }).length;
+    var skipped = logs.filter(function (item) { return item.status === 'skipped'; }).length;
+    var adherence = expected > 0 ? Math.max(0, Math.min(100, Math.round((taken / expected) * 100))) : 100;
+
+    return {
+      studentId: studentId,
+      weekStart: new Date(from).toISOString(),
+      weekEnd: new Date(now).toISOString(),
+      expectedDoses: expected,
+      takenDoses: taken,
+      skippedDoses: skipped,
+      adherencePercent: adherence,
+      plans: plans.slice().sort(function (a, b) { return new Date(b.createdAt || 0) - new Date(a.createdAt || 0); }),
+      recentLogs: logs.slice(0, 20),
+      alert: adherence < 80 ? 'انخفاض الالتزام الدوائي عن الحد الآمن (80%)' : null
+    };
+  }
+
+  function demoNormalizeMonthKey(raw) {
+    var value = demoText(raw, '', 20);
+    if (/^\d{4}-\d{2}$/.test(value)) {
+      var y = Number(value.slice(0, 4));
+      var m = Number(value.slice(5, 7));
+      if (y >= 2000 && y <= 2100 && m >= 1 && m <= 12) {
+        return value;
+      }
+    }
+    var now = new Date();
+    return now.getUTCFullYear() + '-' + String(now.getUTCMonth() + 1).padStart(2, '0');
+  }
+
+  function demoMonthRange(monthKey) {
+    var normalized = demoNormalizeMonthKey(monthKey);
+    var y = Number(normalized.slice(0, 4));
+    var m = Number(normalized.slice(5, 7));
+    var start = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0));
+    var end = new Date(Date.UTC(y, m, 1, 0, 0, 0));
+    return { month: normalized, start: start, end: end };
+  }
+
+  function demoInRange(iso, start, end) {
+    var t = new Date(iso || 0).getTime();
+    if (!Number.isFinite(t)) return false;
+    return t >= start.getTime() && t < end.getTime();
+  }
+
+  function demoMonthlyExecutiveSummary(data, monthKey) {
+    demoEnsureAdvancedStores(data);
+    var range = demoMonthRange(monthKey);
+    var start = range.start;
+    var end = range.end;
+    var visits = (data.visitRequests || []).filter(function (item) { return demoInRange(item.createdAt, start, end); });
+    var appointments = (data.appointments || []).filter(function (item) { return demoInRange(item.createdAt, start, end); });
+    var tickets = (data.tickets || []).filter(function (item) { return demoInRange(item.createdAt, start, end); });
+    var closedTickets = (data.tickets || []).filter(function (item) { return item.closedAt && demoInRange(item.closedAt, start, end); });
+    var criticalCases = (data.cases || []).filter(function (item) { return item.severity === 'critical' && demoInRange(item.updatedAt, start, end); });
+    var referrals = (data.referrals || []).filter(function (item) { return demoInRange(item.createdAt, start, end); });
+    var consents = (data.consents || []).filter(function (item) { return demoInRange(item.createdAt, start, end); });
+    var approvedConsents = consents.filter(function (item) { return item.status === 'approved'; });
+    var avgResolutionHours = 0;
+    if (closedTickets.length) {
+      var sum = closedTickets.reduce(function (acc, item) {
+        var opened = new Date(item.createdAt || 0).getTime();
+        var closed = new Date(item.closedAt || 0).getTime();
+        if (!Number.isFinite(opened) || !Number.isFinite(closed) || closed <= opened) {
+          return acc;
+        }
+        return acc + ((closed - opened) / (60 * 60 * 1000));
+      }, 0);
+      avgResolutionHours = Math.round((sum / closedTickets.length) * 10) / 10;
+    }
+    return {
+      month: range.month,
+      generatedAt: demoNowIso(),
+      metrics: {
+        criticalCases: criticalCases.length,
+        visitRequests: visits.length,
+        appointmentsTotal: appointments.length,
+        appointmentsCompleted: appointments.filter(function (item) { return item.status === 'completed'; }).length,
+        ticketsOpened: tickets.length,
+        ticketsClosed: closedTickets.length,
+        ticketClosureRate: tickets.length ? Math.round((closedTickets.length / tickets.length) * 100) : 0,
+        avgTicketResolutionHours: avgResolutionHours,
+        referrals: referrals.length,
+        consentsRequested: consents.length,
+        consentsApproved: approvedConsents.length
+      }
+    };
+  }
+
   function demoAiStudentSupport(data, studentId, input) {
     var text = demoText(input && input.text, '', 600).toLowerCase();
     var overview = demoStudentOverview(data, studentId);
@@ -1536,6 +1744,7 @@
     var pathname = urlObj.pathname;
     var parts = [];
     var data = await loadDemoData();
+    demoEnsureAdvancedStores(data);
     var parsedBody = null;
 
     if (pathname.indexOf('/api/') === 0) {
@@ -1555,6 +1764,26 @@
 
     if (pathname === '/health' && method === 'GET') {
       return demoJsonResponse(200, { ok: true, time: demoNowIso(), mode: 'demo' });
+    }
+
+    if (parts[0] === 'emergency' && parts[1] === 'public' && parts[2] && method === 'GET') {
+      var token = demoText(parts[2], '', 160);
+      var cardPublic = (data.emergencyCards || []).find(function (item) { return item.token === token; }) || null;
+      if (!cardPublic) {
+        return demoJsonResponse(404, { error: 'Emergency card not found' });
+      }
+      var studentPublic = demoFindStudent(data, cardPublic.studentId);
+      if (!studentPublic) {
+        return demoJsonResponse(404, { error: 'Student not found' });
+      }
+      return demoJsonResponse(200, {
+        studentName: studentPublic.name || studentPublic.id,
+        grade: studentPublic.grade || '-',
+        allergies: demoText(studentPublic.allergies, 'لا توجد حساسية مسجلة', 280),
+        chronicCondition: demoText(studentPublic.chronicCondition, 'لا توجد حالة مزمنة مسجلة', 280),
+        emergencyContact: demoText(studentPublic.guardianPhone, 'غير متوفر', 60),
+        cardUpdatedAt: cardPublic.updatedAt || cardPublic.createdAt || null
+      });
     }
 
     if (pathname === '/auth/login' && method === 'POST') {
@@ -1714,6 +1943,730 @@
       demoLogAction(data, visitCreateGate.auth, 'visit.request.create', visit.id, visit);
       saveDemoData(data);
       return demoJsonResponse(201, { item: visit });
+    }
+
+    if (pathname === '/emergency-card' && method === 'GET') {
+      var emergencyCardGate = demoRequireRole(data, ['student', 'parent', 'doctor', 'admin']);
+      if (!emergencyCardGate.ok) return emergencyCardGate.response;
+      var emergencyStudentId = demoResolveStudentId(emergencyCardGate.auth, urlObj);
+      if (!demoCanAccessStudentScope(emergencyCardGate.auth, emergencyStudentId)) {
+        return demoJsonResponse(403, { error: 'Forbidden student scope' });
+      }
+      var emergencyPayload = demoEmergencyCardPayload(data, emergencyStudentId);
+      if (!emergencyPayload) {
+        return demoJsonResponse(404, { error: 'Student not found' });
+      }
+      demoLogAction(data, emergencyCardGate.auth, 'student.emergency.card.view', emergencyStudentId, { studentId: emergencyStudentId });
+      saveDemoData(data);
+      return demoJsonResponse(200, emergencyPayload);
+    }
+
+    if (pathname === '/consents' && method === 'GET') {
+      var consentsGate = demoRequireRole(data, ['student', 'parent', 'doctor', 'admin']);
+      if (!consentsGate.ok) return consentsGate.response;
+      var consentItems = (data.consents || []).slice();
+      if (consentsGate.auth.user.role === 'student') {
+        consentItems = consentItems.filter(function (item) { return item.studentId === consentsGate.auth.user.id; });
+      } else if (consentsGate.auth.user.role === 'parent') {
+        consentItems = consentItems.filter(function (item) { return item.studentId === 'u_student_1'; });
+      } else {
+        var consentStudentFilter = demoText(urlObj.searchParams.get('studentId'), '', 80);
+        if (consentStudentFilter) {
+          consentItems = consentItems.filter(function (item) { return item.studentId === consentStudentFilter; });
+        }
+      }
+      var consentStatusFilter = demoText(urlObj.searchParams.get('status'), '', 20);
+      if (consentStatusFilter) {
+        consentItems = consentItems.filter(function (item) { return item.status === consentStatusFilter; });
+      }
+      consentItems = consentItems.sort(function (a, b) { return new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0); });
+      return demoJsonResponse(200, { items: consentItems });
+    }
+
+    if (pathname === '/consents' && method === 'POST') {
+      var consentCreateGate = demoRequireRole(data, ['doctor', 'admin']);
+      if (!consentCreateGate.ok) return consentCreateGate.response;
+      var consentBody = await body();
+      var consentStudent = demoText(consentBody.studentId, '', 80) || demoResolveStudentId(consentCreateGate.auth, urlObj);
+      var consentStudentUser = demoFindStudent(data, consentStudent);
+      if (!consentStudentUser) {
+        return demoJsonResponse(404, { error: 'Student not found' });
+      }
+      var consentType = demoText(consentBody.type, 'medication', 30);
+      if (['medication', 'referral', 'telemed'].indexOf(consentType) === -1) {
+        return demoJsonResponse(400, { error: 'Invalid consent type' });
+      }
+      var consent = {
+        id: demoId('cons'),
+        studentId: consentStudent,
+        studentName: consentStudentUser.name || consentStudentUser.id,
+        type: consentType,
+        title: demoText(consentBody.title, 'طلب موافقة ' + consentType, 220),
+        details: demoText(consentBody.details, 'يرجى مراجعة الطلب واتخاذ القرار المناسب.', 900),
+        status: 'pending',
+        relatedEntityId: demoText(consentBody.relatedEntityId, '', 80) || null,
+        createdAt: demoNowIso(),
+        updatedAt: demoNowIso(),
+        createdByUserId: consentCreateGate.auth.user.id,
+        createdByRole: consentCreateGate.auth.user.role,
+        decisionNote: null,
+        decidedAt: null,
+        decidedByUserId: null,
+        decidedByRole: null,
+        digitalSignature: null,
+        legalLog: [
+          {
+            id: demoId('legal'),
+            event: 'consent_requested',
+            at: demoNowIso(),
+            actorUserId: consentCreateGate.auth.user.id,
+            actorRole: consentCreateGate.auth.user.role,
+            note: 'تم إنشاء طلب الموافقة.'
+          }
+        ]
+      };
+      data.consents.unshift(consent);
+      demoPushAlert(data, ['parent', 'admin', 'doctor'], 'طلب موافقة جديد (' + consentType + ') للطالب ' + consent.studentName, consentType === 'referral' ? 'critical' : 'operational');
+      demoLogAction(data, consentCreateGate.auth, 'consent.request.create', consent.id, {
+        studentId: consentStudent,
+        type: consentType,
+        status: consent.status
+      });
+      saveDemoData(data);
+      return demoJsonResponse(201, { item: consent });
+    }
+
+    if (parts[0] === 'consents' && parts[2] === 'decision' && method === 'POST') {
+      var consentDecisionGate = demoRequireRole(data, ['parent', 'admin']);
+      if (!consentDecisionGate.ok) return consentDecisionGate.response;
+      var consentId = demoText(parts[1], '', 80);
+      var consentItem = (data.consents || []).find(function (item) { return item.id === consentId; }) || null;
+      if (!consentItem) {
+        return demoJsonResponse(404, { error: 'Consent not found' });
+      }
+      if (consentDecisionGate.auth.user.role === 'parent' && consentItem.studentId !== 'u_student_1') {
+        return demoJsonResponse(403, { error: 'Forbidden' });
+      }
+      if (consentItem.status !== 'pending') {
+        return demoJsonResponse(409, { error: 'Consent already decided' });
+      }
+      var consentDecisionBody = await body();
+      var consentDecision = demoText(consentDecisionBody.decision, '', 20).toLowerCase();
+      if (consentDecision !== 'approve' && consentDecision !== 'reject') {
+        return demoJsonResponse(400, { error: 'Invalid decision' });
+      }
+      consentItem.status = consentDecision === 'approve' ? 'approved' : 'rejected';
+      consentItem.decidedAt = demoNowIso();
+      consentItem.updatedAt = demoNowIso();
+      consentItem.decidedByUserId = consentDecisionGate.auth.user.id;
+      consentItem.decidedByRole = consentDecisionGate.auth.user.role;
+      consentItem.decisionNote = demoText(consentDecisionBody.note, '', 500);
+      consentItem.digitalSignature = demoText(consentDecisionBody.signature, consentDecisionGate.auth.user.id + ':' + Date.now(), 120);
+      consentItem.legalLog = Array.isArray(consentItem.legalLog) ? consentItem.legalLog : [];
+      consentItem.legalLog.push({
+        id: demoId('legal'),
+        event: 'consent_decision',
+        at: consentItem.decidedAt,
+        actorUserId: consentDecisionGate.auth.user.id,
+        actorRole: consentDecisionGate.auth.user.role,
+        decision: consentItem.status,
+        signature: consentItem.digitalSignature,
+        note: consentItem.decisionNote || null
+      });
+      demoPushAlert(data, ['doctor', 'admin', 'parent'], 'تم ' + (consentItem.status === 'approved' ? 'اعتماد' : 'رفض') + ' موافقة ' + consentItem.type + ' للطالب ' + consentItem.studentName, consentItem.status === 'approved' ? 'operational' : 'info');
+      demoLogAction(data, consentDecisionGate.auth, 'consent.request.decide', consentItem.id, {
+        decision: consentItem.status,
+        signature: consentItem.digitalSignature
+      });
+      saveDemoData(data);
+      return demoJsonResponse(200, { item: consentItem });
+    }
+
+    if (pathname === '/home-care/plans' && method === 'GET') {
+      var homeCareGate = demoRequireRole(data, ['student', 'parent', 'doctor', 'admin']);
+      if (!homeCareGate.ok) return homeCareGate.response;
+      var homeCareStudentId = demoResolveStudentId(homeCareGate.auth, urlObj);
+      if (!demoCanAccessStudentScope(homeCareGate.auth, homeCareStudentId)) {
+        return demoJsonResponse(403, { error: 'Forbidden student scope' });
+      }
+      var homeStatusFilter = demoText(urlObj.searchParams.get('status'), '', 30);
+      var homeItems = (data.homeCarePlans || []).filter(function (item) { return item.studentId === homeCareStudentId; });
+      if (homeStatusFilter) {
+        homeItems = homeItems.filter(function (item) { return item.status === homeStatusFilter; });
+      }
+      homeItems = homeItems.sort(function (a, b) { return new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0); });
+      return demoJsonResponse(200, { items: homeItems });
+    }
+
+    if (pathname === '/home-care/plans' && method === 'POST') {
+      var homeCreateGate = demoRequireRole(data, ['doctor', 'admin']);
+      if (!homeCreateGate.ok) return homeCreateGate.response;
+      var homeCreateBody = await body();
+      var homeStudent = demoText(homeCreateBody.studentId, '', 80) || demoResolveStudentId(homeCreateGate.auth, urlObj);
+      var homeStudentUser = demoFindStudent(data, homeStudent);
+      if (!homeStudentUser) {
+        return demoJsonResponse(404, { error: 'Student not found' });
+      }
+      var sourceItems = [];
+      if (Array.isArray(homeCreateBody.items)) {
+        sourceItems = homeCreateBody.items;
+      } else if (typeof homeCreateBody.itemsText === 'string') {
+        sourceItems = homeCreateBody.itemsText.split('\n');
+      }
+      var checklist = sourceItems.map(function (entry) {
+        return demoText(entry, '', 160);
+      }).filter(function (entry) {
+        return Boolean(entry);
+      }).slice(0, 12).map(function (label) {
+        return {
+          id: demoId('chk'),
+          label: label,
+          done: false,
+          reminderTime: demoText(homeCreateBody.reminderTime, '19:00', 20),
+          lastDoneAt: null
+        };
+      });
+      if (!checklist.length) {
+        checklist = [
+          { id: demoId('chk'), label: 'تأكيد تناول الدواء بالجرعة المحددة', done: false, reminderTime: '19:00', lastDoneAt: null },
+          { id: demoId('chk'), label: 'متابعة السوائل والراحة', done: false, reminderTime: '20:00', lastDoneAt: null },
+          { id: demoId('chk'), label: 'تسجيل أي أعراض جديدة', done: false, reminderTime: '21:00', lastDoneAt: null }
+        ];
+      }
+      var plan = {
+        id: demoId('hcp'),
+        studentId: homeStudent,
+        studentName: homeStudentUser.name || homeStudentUser.id,
+        title: demoText(homeCreateBody.title, 'خطة متابعة منزلية', 220),
+        notes: demoText(homeCreateBody.notes, '', 500),
+        status: 'active',
+        createdAt: demoNowIso(),
+        updatedAt: demoNowIso(),
+        createdByUserId: homeCreateGate.auth.user.id,
+        createdByRole: homeCreateGate.auth.user.role,
+        checklist: checklist,
+        logs: []
+      };
+      data.homeCarePlans.unshift(plan);
+      demoPushAlert(data, ['parent', 'student', 'doctor', 'admin'], 'تم إنشاء خطة متابعة منزلية للطالب ' + plan.studentName, 'operational');
+      demoLogAction(data, homeCreateGate.auth, 'homecare.plan.create', plan.id, { studentId: homeStudent, items: checklist.length });
+      saveDemoData(data);
+      return demoJsonResponse(201, { item: plan });
+    }
+
+    if (parts[0] === 'home-care' && parts[1] === 'plans' && parts[3] === 'check' && method === 'POST') {
+      var homeCheckGate = demoRequireRole(data, ['student', 'parent', 'admin']);
+      if (!homeCheckGate.ok) return homeCheckGate.response;
+      var planId = demoText(parts[2], '', 80);
+      var planItem = (data.homeCarePlans || []).find(function (item) { return item.id === planId; }) || null;
+      if (!planItem) {
+        return demoJsonResponse(404, { error: 'Plan not found' });
+      }
+      if (!demoCanAccessStudentScope(homeCheckGate.auth, planItem.studentId)) {
+        return demoJsonResponse(403, { error: 'Forbidden' });
+      }
+      var homeCheckBody = await body();
+      var itemId = demoText(homeCheckBody.itemId, '', 80);
+      var idx = Number(homeCheckBody.index);
+      var task = null;
+      if (itemId) {
+        task = (planItem.checklist || []).find(function (entry) { return entry.id === itemId; }) || null;
+      } else if (Number.isInteger(idx) && idx >= 0 && idx < (planItem.checklist || []).length) {
+        task = planItem.checklist[idx];
+      }
+      if (!task) {
+        return demoJsonResponse(404, { error: 'Checklist item not found' });
+      }
+      var done = typeof homeCheckBody.done === 'boolean' ? homeCheckBody.done : !task.done;
+      task.done = done;
+      task.lastDoneAt = done ? demoNowIso() : null;
+      task.lastNote = demoText(homeCheckBody.note, '', 200);
+      planItem.updatedAt = demoNowIso();
+      planItem.logs = Array.isArray(planItem.logs) ? planItem.logs : [];
+      planItem.logs.unshift({
+        id: demoId('hcl'),
+        itemId: task.id,
+        itemLabel: task.label,
+        done: done,
+        note: task.lastNote || null,
+        actorUserId: homeCheckGate.auth.user.id,
+        actorRole: homeCheckGate.auth.user.role,
+        at: demoNowIso()
+      });
+      if ((planItem.checklist || []).every(function (entry) { return Boolean(entry.done); })) {
+        planItem.status = 'completed';
+      } else if (planItem.status === 'completed') {
+        planItem.status = 'active';
+      }
+      demoLogAction(data, homeCheckGate.auth, 'homecare.check.update', planItem.id, { itemId: task.id, done: done });
+      saveDemoData(data);
+      return demoJsonResponse(200, { item: planItem, task: task });
+    }
+
+    if (pathname === '/appointments' && method === 'GET') {
+      var appointmentsGate = demoRequireRole(data, ['student', 'parent', 'doctor', 'admin']);
+      if (!appointmentsGate.ok) return appointmentsGate.response;
+      var appointmentItems = (data.appointments || []).slice();
+      if (appointmentsGate.auth.user.role === 'doctor' || appointmentsGate.auth.user.role === 'admin') {
+        var allAppointments = String(urlObj.searchParams.get('all') || '') === '1';
+        if (!allAppointments) {
+          var doctorStudent = demoResolveStudentId(appointmentsGate.auth, urlObj);
+          appointmentItems = appointmentItems.filter(function (item) { return item.studentId === doctorStudent; });
+        }
+      } else if (appointmentsGate.auth.user.role === 'student') {
+        appointmentItems = appointmentItems.filter(function (item) { return item.studentId === appointmentsGate.auth.user.id; });
+      } else {
+        appointmentItems = appointmentItems.filter(function (item) { return item.studentId === 'u_student_1'; });
+      }
+      var appointmentStatus = demoText(urlObj.searchParams.get('status'), '', 20);
+      if (appointmentStatus) {
+        appointmentItems = appointmentItems.filter(function (item) { return item.status === appointmentStatus; });
+      }
+      appointmentItems = appointmentItems.sort(function (a, b) { return new Date(a.slotAt || a.createdAt || 0) - new Date(b.slotAt || b.createdAt || 0); });
+      return demoJsonResponse(200, { items: appointmentItems });
+    }
+
+    if (pathname === '/appointments' && method === 'POST') {
+      var appointmentCreateGate = demoRequireRole(data, ['student', 'parent', 'doctor', 'admin']);
+      if (!appointmentCreateGate.ok) return appointmentCreateGate.response;
+      var appointmentBody = await body();
+      var appointmentStudent = demoText(appointmentBody.studentId, '', 80) || demoResolveStudentId(appointmentCreateGate.auth, urlObj);
+      if (!demoCanAccessStudentScope(appointmentCreateGate.auth, appointmentStudent) && (appointmentCreateGate.auth.user.role !== 'doctor' && appointmentCreateGate.auth.user.role !== 'admin')) {
+        return demoJsonResponse(403, { error: 'Forbidden student scope' });
+      }
+      var appointmentStudentUser = demoFindStudent(data, appointmentStudent);
+      if (!appointmentStudentUser) {
+        return demoJsonResponse(404, { error: 'Student not found' });
+      }
+      var slot = demoText(appointmentBody.slotAt, '', 40);
+      var slotDate = slot ? new Date(slot) : new Date(Date.now() + (24 * 60 * 60 * 1000));
+      var slotAt = Number.isFinite(slotDate.getTime()) ? slotDate.toISOString() : new Date(Date.now() + (24 * 60 * 60 * 1000)).toISOString();
+      var appointment = {
+        id: demoId('apt'),
+        studentId: appointmentStudent,
+        studentName: appointmentStudentUser.name || appointmentStudentUser.id,
+        reason: demoText(appointmentBody.reason, 'حجز موعد زيارة للعيادة', 260),
+        slotAt: slotAt,
+        status: 'pending',
+        requestedByUserId: appointmentCreateGate.auth.user.id,
+        requestedByRole: appointmentCreateGate.auth.user.role,
+        createdAt: demoNowIso(),
+        updatedAt: demoNowIso(),
+        notes: demoText(appointmentBody.notes, '', 280)
+      };
+      data.appointments.unshift(appointment);
+      demoPushAlert(data, ['doctor', 'admin', 'parent', 'student'], 'تم إنشاء موعد جديد بتاريخ ' + new Date(slotAt).toLocaleString('ar-SA'), 'operational');
+      demoLogAction(data, appointmentCreateGate.auth, 'appointment.create', appointment.id, { studentId: appointmentStudent, slotAt: slotAt });
+      saveDemoData(data);
+      return demoJsonResponse(201, { item: appointment });
+    }
+
+    if (parts[0] === 'appointments' && parts[2] === 'status' && method === 'POST') {
+      var appointmentStatusGate = demoRequireRole(data, ['doctor', 'admin']);
+      if (!appointmentStatusGate.ok) return appointmentStatusGate.response;
+      var appointmentId = demoText(parts[1], '', 80);
+      var appointmentTarget = (data.appointments || []).find(function (item) { return item.id === appointmentId; }) || null;
+      if (!appointmentTarget) {
+        return demoJsonResponse(404, { error: 'Appointment not found' });
+      }
+      var appointmentStatusBody = await body();
+      var nextStatus = demoText(appointmentStatusBody.status, '', 20).toLowerCase();
+      if (['pending', 'confirmed', 'completed', 'cancelled'].indexOf(nextStatus) === -1) {
+        return demoJsonResponse(400, { error: 'Invalid status' });
+      }
+      appointmentTarget.status = nextStatus;
+      appointmentTarget.updatedAt = demoNowIso();
+      if (nextStatus === 'confirmed') appointmentTarget.confirmedAt = demoNowIso();
+      if (nextStatus === 'completed') appointmentTarget.completedAt = demoNowIso();
+      if (nextStatus === 'cancelled') appointmentTarget.cancelledAt = demoNowIso();
+      appointmentTarget.statusNote = demoText(appointmentStatusBody.note, appointmentTarget.statusNote || '', 300);
+      demoPushAlert(data, ['student', 'parent', 'doctor', 'admin'], 'تحديث الموعد: ' + nextStatus + ' (' + appointmentTarget.reason + ')', nextStatus === 'cancelled' ? 'info' : 'operational');
+      demoLogAction(data, appointmentStatusGate.auth, 'appointment.status.update', appointmentTarget.id, { status: nextStatus });
+      saveDemoData(data);
+      return demoJsonResponse(200, { item: appointmentTarget });
+    }
+
+    if (pathname === '/tickets' && method === 'GET') {
+      var ticketsGate = demoRequireRole(data, ['student', 'parent', 'doctor', 'admin']);
+      if (!ticketsGate.ok) return ticketsGate.response;
+      var ticketStatusFilter = demoText(urlObj.searchParams.get('status'), '', 20);
+      var tickets = (data.tickets || []).filter(function (item) { return demoCanAccessTicket(ticketsGate.auth, item); });
+      if (ticketStatusFilter) {
+        tickets = tickets.filter(function (item) { return item.status === ticketStatusFilter; });
+      }
+      tickets = tickets.slice().sort(function (a, b) {
+        return new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0);
+      }).map(function (item) {
+        return {
+          id: item.id,
+          number: item.number,
+          studentId: item.studentId,
+          studentName: item.studentName,
+          subject: item.subject,
+          priority: item.priority,
+          status: item.status,
+          assignedToUserId: item.assignedToUserId || null,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt,
+          closedAt: item.closedAt || null,
+          messagesCount: Array.isArray(item.messages) ? item.messages.length : 0,
+          lastMessage: Array.isArray(item.messages) && item.messages.length ? item.messages[item.messages.length - 1].text : null
+        };
+      });
+      return demoJsonResponse(200, { items: tickets });
+    }
+
+    if (pathname === '/tickets' && method === 'POST') {
+      var ticketCreateGate = demoRequireRole(data, ['student', 'parent', 'doctor', 'admin']);
+      if (!ticketCreateGate.ok) return ticketCreateGate.response;
+      var ticketBody = await body();
+      var ticketStudent = demoText(ticketBody.studentId, '', 80) || demoResolveStudentId(ticketCreateGate.auth, urlObj);
+      if (!demoCanAccessStudentScope(ticketCreateGate.auth, ticketStudent) && (ticketCreateGate.auth.user.role !== 'doctor' && ticketCreateGate.auth.user.role !== 'admin')) {
+        return demoJsonResponse(403, { error: 'Forbidden student scope' });
+      }
+      var ticketStudentUser = demoFindStudent(data, ticketStudent);
+      if (!ticketStudentUser) {
+        return demoJsonResponse(404, { error: 'Student not found' });
+      }
+      var ticketText = demoText(ticketBody.text, '', 1000);
+      if (!ticketText) {
+        return demoJsonResponse(400, { error: 'Ticket text is required' });
+      }
+      var ticket = {
+        id: demoId('tkt'),
+        number: 'TKT-' + Date.now().toString().slice(-6),
+        studentId: ticketStudent,
+        studentName: ticketStudentUser.name || ticketStudentUser.id,
+        subject: demoText(ticketBody.subject, 'استفسار صحي', 220),
+        priority: ['low', 'normal', 'high', 'critical'].indexOf(ticketBody.priority) !== -1 ? ticketBody.priority : 'normal',
+        status: 'open',
+        createdByUserId: ticketCreateGate.auth.user.id,
+        createdByRole: ticketCreateGate.auth.user.role,
+        assignedToUserId: demoText(ticketBody.assignedToUserId, 'u_doctor_1', 80),
+        createdAt: demoNowIso(),
+        updatedAt: demoNowIso(),
+        closedAt: null,
+        messages: [
+          {
+            id: demoId('tmsg'),
+            fromUserId: ticketCreateGate.auth.user.id,
+            fromRole: ticketCreateGate.auth.user.role,
+            text: ticketText,
+            createdAt: demoNowIso()
+          }
+        ]
+      };
+      data.tickets.unshift(ticket);
+      demoPushAlert(data, ['doctor', 'admin'], 'تذكرة جديدة ' + ticket.number + ': ' + ticket.subject, ticket.priority === 'critical' ? 'critical' : 'operational');
+      demoLogAction(data, ticketCreateGate.auth, 'ticket.create', ticket.id, { number: ticket.number, priority: ticket.priority });
+      saveDemoData(data);
+      return demoJsonResponse(201, { item: ticket });
+    }
+
+    if (parts[0] === 'tickets' && parts.length === 3 && parts[2] === 'messages' && method === 'GET') {
+      var ticketMessagesGate = demoRequireRole(data, ['student', 'parent', 'doctor', 'admin']);
+      if (!ticketMessagesGate.ok) return ticketMessagesGate.response;
+      var ticketIdView = demoText(parts[1], '', 80);
+      var ticketView = (data.tickets || []).find(function (item) { return item.id === ticketIdView; }) || null;
+      if (!ticketView) {
+        return demoJsonResponse(404, { error: 'Ticket not found' });
+      }
+      if (!demoCanAccessTicket(ticketMessagesGate.auth, ticketView)) {
+        return demoJsonResponse(403, { error: 'Forbidden' });
+      }
+      return demoJsonResponse(200, { item: ticketView, messages: ticketView.messages || [] });
+    }
+
+    if (parts[0] === 'tickets' && parts.length === 3 && parts[2] === 'messages' && method === 'POST') {
+      var ticketReplyGate = demoRequireRole(data, ['student', 'parent', 'doctor', 'admin']);
+      if (!ticketReplyGate.ok) return ticketReplyGate.response;
+      var ticketReplyId = demoText(parts[1], '', 80);
+      var ticketReply = (data.tickets || []).find(function (item) { return item.id === ticketReplyId; }) || null;
+      if (!ticketReply) {
+        return demoJsonResponse(404, { error: 'Ticket not found' });
+      }
+      if (!demoCanAccessTicket(ticketReplyGate.auth, ticketReply)) {
+        return demoJsonResponse(403, { error: 'Forbidden' });
+      }
+      var ticketReplyBody = await body();
+      var ticketReplyText = demoText(ticketReplyBody.text, '', 1000);
+      if (!ticketReplyText) {
+        return demoJsonResponse(400, { error: 'Message text is required' });
+      }
+      var ticketMessage = {
+        id: demoId('tmsg'),
+        fromUserId: ticketReplyGate.auth.user.id,
+        fromRole: ticketReplyGate.auth.user.role,
+        text: ticketReplyText,
+        createdAt: demoNowIso()
+      };
+      if (!Array.isArray(ticketReply.messages)) ticketReply.messages = [];
+      ticketReply.messages.push(ticketMessage);
+      ticketReply.updatedAt = demoNowIso();
+      if (ticketReply.status === 'closed' && (ticketReplyGate.auth.user.role === 'student' || ticketReplyGate.auth.user.role === 'parent')) {
+        ticketReply.status = 'open';
+        ticketReply.closedAt = null;
+      } else if (ticketReply.status === 'open' && (ticketReplyGate.auth.user.role === 'doctor' || ticketReplyGate.auth.user.role === 'admin')) {
+        ticketReply.status = 'in_progress';
+      }
+      if ((ticketReply.status === 'closed' || ticketReply.status === 'resolved') && !ticketReply.closedAt) {
+        ticketReply.closedAt = demoNowIso();
+      }
+      demoLogAction(data, ticketReplyGate.auth, 'ticket.message.send', ticketReply.id, { messageId: ticketMessage.id });
+      saveDemoData(data);
+      return demoJsonResponse(201, { item: ticketReply, message: ticketMessage });
+    }
+
+    if (parts[0] === 'tickets' && parts.length === 2 && method === 'PATCH') {
+      var ticketPatchGate = demoRequireRole(data, ['doctor', 'admin']);
+      if (!ticketPatchGate.ok) return ticketPatchGate.response;
+      var ticketPatchId = demoText(parts[1], '', 80);
+      var ticketPatch = (data.tickets || []).find(function (item) { return item.id === ticketPatchId; }) || null;
+      if (!ticketPatch) {
+        return demoJsonResponse(404, { error: 'Ticket not found' });
+      }
+      var ticketPatchBody = await body();
+      if (typeof ticketPatchBody.assignedToUserId === 'string' && ticketPatchBody.assignedToUserId.trim()) {
+        ticketPatch.assignedToUserId = demoText(ticketPatchBody.assignedToUserId, ticketPatch.assignedToUserId || '', 80);
+      }
+      if (typeof ticketPatchBody.status === 'string') {
+        var patchStatus = demoText(ticketPatchBody.status, '', 20).toLowerCase();
+        if (patchStatus === 'open' || patchStatus === 'in_progress' || patchStatus === 'closed') {
+          ticketPatch.status = patchStatus;
+          if (patchStatus === 'closed') {
+            ticketPatch.closedAt = demoNowIso();
+          } else {
+            ticketPatch.closedAt = null;
+          }
+        }
+      }
+      ticketPatch.updatedAt = demoNowIso();
+      demoLogAction(data, ticketPatchGate.auth, 'ticket.update', ticketPatch.id, {
+        status: ticketPatch.status,
+        assignedToUserId: ticketPatch.assignedToUserId
+      });
+      saveDemoData(data);
+      return demoJsonResponse(200, { item: ticketPatch });
+    }
+
+    if (pathname === '/medications/plans' && method === 'POST') {
+      var medicationPlanGate = demoRequireRole(data, ['doctor', 'admin']);
+      if (!medicationPlanGate.ok) return medicationPlanGate.response;
+      var medicationPlanBody = await body();
+      var medicationStudent = demoText(medicationPlanBody.studentId, '', 80) || demoResolveStudentId(medicationPlanGate.auth, urlObj);
+      var medicationStudentUser = demoFindStudent(data, medicationStudent);
+      if (!medicationStudentUser) {
+        return demoJsonResponse(404, { error: 'Student not found' });
+      }
+      var medicationName = demoText(medicationPlanBody.name, '', 140);
+      if (!medicationName) {
+        return demoJsonResponse(400, { error: 'Medication name is required' });
+      }
+      var medicationPlan = {
+        id: demoId('medp'),
+        studentId: medicationStudent,
+        studentName: medicationStudentUser.name || medicationStudentUser.id,
+        name: medicationName,
+        dosesPerDay: Math.max(1, Math.min(8, Number(medicationPlanBody.dosesPerDay || 1))),
+        instructions: demoText(medicationPlanBody.instructions, '', 400),
+        startDate: demoText(medicationPlanBody.startDate, new Date().toISOString().slice(0, 10), 40),
+        endDate: demoText(medicationPlanBody.endDate, '', 40),
+        active: true,
+        createdAt: demoNowIso(),
+        createdByUserId: medicationPlanGate.auth.user.id,
+        createdByRole: medicationPlanGate.auth.user.role
+      };
+      data.medicationPlans.unshift(medicationPlan);
+      demoPushAlert(data, ['parent', 'student', 'doctor', 'admin'], 'تمت إضافة خطة دوائية: ' + medicationPlan.name, 'operational');
+      demoLogAction(data, medicationPlanGate.auth, 'medication.plan.create', medicationPlan.id, { studentId: medicationStudent, dosesPerDay: medicationPlan.dosesPerDay });
+      saveDemoData(data);
+      return demoJsonResponse(201, { item: medicationPlan });
+    }
+
+    if (pathname === '/medications/logs' && method === 'POST') {
+      var medicationLogGate = demoRequireRole(data, ['student', 'parent', 'doctor', 'admin']);
+      if (!medicationLogGate.ok) return medicationLogGate.response;
+      var medicationLogBody = await body();
+      var planId = demoText(medicationLogBody.planId, '', 80);
+      var planTarget = planId ? (data.medicationPlans || []).find(function (item) { return item.id === planId; }) : null;
+      var logStudent = planTarget ? planTarget.studentId : demoText(medicationLogBody.studentId, '', 80);
+      if (!logStudent) {
+        logStudent = demoResolveStudentId(medicationLogGate.auth, urlObj);
+      }
+      if (!demoCanAccessStudentScope(medicationLogGate.auth, logStudent) && (medicationLogGate.auth.user.role !== 'doctor' && medicationLogGate.auth.user.role !== 'admin')) {
+        return demoJsonResponse(403, { error: 'Forbidden student scope' });
+      }
+      var logStatus = demoText(medicationLogBody.status, 'taken', 20).toLowerCase();
+      if (logStatus !== 'taken' && logStatus !== 'skipped') {
+        return demoJsonResponse(400, { error: 'Invalid medication log status' });
+      }
+      var logEntry = {
+        id: demoId('medl'),
+        studentId: logStudent,
+        planId: planTarget ? planTarget.id : null,
+        planName: planTarget ? planTarget.name : demoText(medicationLogBody.planName, '', 140),
+        status: logStatus,
+        note: demoText(medicationLogBody.note, '', 220),
+        takenAt: demoNowIso(),
+        createdAt: demoNowIso(),
+        loggedByUserId: medicationLogGate.auth.user.id,
+        loggedByRole: medicationLogGate.auth.user.role
+      };
+      data.medicationLogs.unshift(logEntry);
+      var medSummary = demoMedicationAdherenceSummary(data, logStudent);
+      if (medSummary.alert) {
+        demoPushAlert(data, ['doctor', 'admin', 'parent', 'student'], medSummary.alert, 'critical');
+      }
+      demoLogAction(data, medicationLogGate.auth, 'medication.log.create', logEntry.id, {
+        studentId: logStudent,
+        planId: logEntry.planId,
+        status: logStatus
+      });
+      saveDemoData(data);
+      return demoJsonResponse(201, { item: logEntry, summary: medSummary });
+    }
+
+    if (pathname === '/medications/adherence' && method === 'GET') {
+      var adherenceGate = demoRequireRole(data, ['student', 'parent', 'doctor', 'admin']);
+      if (!adherenceGate.ok) return adherenceGate.response;
+      var adherenceStudent = demoResolveStudentId(adherenceGate.auth, urlObj);
+      if (!demoCanAccessStudentScope(adherenceGate.auth, adherenceStudent)) {
+        return demoJsonResponse(403, { error: 'Forbidden student scope' });
+      }
+      return demoJsonResponse(200, demoMedicationAdherenceSummary(data, adherenceStudent));
+    }
+
+    if (pathname === '/referrals' && method === 'GET') {
+      var referralsGate = demoRequireRole(data, ['student', 'parent', 'doctor', 'admin']);
+      if (!referralsGate.ok) return referralsGate.response;
+      var referralItems = (data.referrals || []).slice();
+      if (referralsGate.auth.user.role === 'student') {
+        referralItems = referralItems.filter(function (item) { return item.studentId === referralsGate.auth.user.id; });
+      } else if (referralsGate.auth.user.role === 'parent') {
+        referralItems = referralItems.filter(function (item) { return item.studentId === 'u_student_1'; });
+      } else {
+        var referralFilter = demoText(urlObj.searchParams.get('studentId'), '', 80);
+        if (referralFilter) {
+          referralItems = referralItems.filter(function (item) { return item.studentId === referralFilter; });
+        }
+      }
+      referralItems = referralItems.sort(function (a, b) { return new Date(b.createdAt || 0) - new Date(a.createdAt || 0); });
+      return demoJsonResponse(200, { items: referralItems });
+    }
+
+    if (pathname === '/referrals' && method === 'POST') {
+      var referralCreateGate = demoRequireRole(data, ['doctor', 'admin']);
+      if (!referralCreateGate.ok) return referralCreateGate.response;
+      var referralBody = await body();
+      var referralStudent = demoText(referralBody.studentId, '', 80) || demoResolveStudentId(referralCreateGate.auth, urlObj);
+      var referralStudentUser = demoFindStudent(data, referralStudent);
+      if (!referralStudentUser) {
+        return demoJsonResponse(404, { error: 'Student not found' });
+      }
+      var referralReason = demoText(referralBody.reason, '', 280);
+      if (!referralReason) {
+        return demoJsonResponse(400, { error: 'Referral reason is required' });
+      }
+      var referral = {
+        id: demoId('ref'),
+        studentId: referralStudent,
+        studentName: referralStudentUser.name || referralStudentUser.id,
+        destination: demoText(referralBody.destination, 'مستشفى الطوارئ', 180),
+        reason: referralReason,
+        diagnosis: demoText(referralBody.diagnosis, '', 240),
+        clinicalSummary: demoText(referralBody.clinicalSummary, '', 1000),
+        status: 'issued',
+        createdAt: demoNowIso(),
+        createdByUserId: referralCreateGate.auth.user.id,
+        createdByRole: referralCreateGate.auth.user.role
+      };
+      data.referrals.unshift(referral);
+      demoPushAlert(data, ['parent', 'student', 'doctor', 'admin'], 'تم إنشاء إحالة خارجية للطالب ' + referral.studentName, 'critical');
+      demoLogAction(data, referralCreateGate.auth, 'referral.create', referral.id, { studentId: referralStudent, destination: referral.destination });
+      saveDemoData(data);
+      return demoJsonResponse(201, { item: referral });
+    }
+
+    if (parts[0] === 'referrals' && parts[2] === 'pdf' && method === 'GET') {
+      var referralPdfGate = demoRequireRole(data, ['student', 'parent', 'doctor', 'admin']);
+      if (!referralPdfGate.ok) return referralPdfGate.response;
+      var referralId = demoText(parts[1], '', 80);
+      var referralTarget = (data.referrals || []).find(function (item) { return item.id === referralId; }) || null;
+      if (!referralTarget) {
+        return demoJsonResponse(404, { error: 'Referral not found' });
+      }
+      if (!demoCanAccessStudentScope(referralPdfGate.auth, referralTarget.studentId)) {
+        return demoJsonResponse(403, { error: 'Forbidden' });
+      }
+      demoLogAction(data, referralPdfGate.auth, 'referral.pdf.export', referralTarget.id, {});
+      saveDemoData(data);
+      var referralPdfBody = [
+        'Smart Clinic External Referral',
+        'Referral ID: ' + referralTarget.id,
+        'Generated At: ' + demoNowIso(),
+        '---',
+        'Student: ' + (referralTarget.studentName || referralTarget.studentId),
+        'Student ID: ' + referralTarget.studentId,
+        'Destination: ' + (referralTarget.destination || '-'),
+        'Reason: ' + (referralTarget.reason || '-'),
+        'Diagnosis: ' + (referralTarget.diagnosis || '-'),
+        'Clinical Summary: ' + (referralTarget.clinicalSummary || '-'),
+        'Issued By: ' + demoRoleLabel(referralTarget.createdByRole) + ' (' + (referralTarget.createdByUserId || '-') + ')'
+      ].join('\n');
+      return new Response(referralPdfBody, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': 'attachment; filename="referral-' + referralTarget.id + '.pdf"'
+        }
+      });
+    }
+
+    if (pathname === '/reports/monthly' && method === 'GET') {
+      var monthlyGate = demoRequireRole(data, ['admin']);
+      if (!monthlyGate.ok) return monthlyGate.response;
+      var monthlySummary = demoMonthlyExecutiveSummary(data, demoNormalizeMonthKey(urlObj.searchParams.get('month')));
+      var monthlyIdx = (data.monthlyReports || []).findIndex(function (item) { return item.month === monthlySummary.month; });
+      if (monthlyIdx >= 0) {
+        data.monthlyReports[monthlyIdx] = monthlySummary;
+      } else {
+        data.monthlyReports.unshift(monthlySummary);
+      }
+      demoLogAction(data, monthlyGate.auth, 'report.monthly.view', monthlySummary.month, monthlySummary.metrics);
+      saveDemoData(data);
+      return demoJsonResponse(200, { item: monthlySummary });
+    }
+
+    if (pathname === '/reports/monthly/pdf' && method === 'GET') {
+      var monthlyPdfGate = demoRequireRole(data, ['admin']);
+      if (!monthlyPdfGate.ok) return monthlyPdfGate.response;
+      var monthlyPdfSummary = demoMonthlyExecutiveSummary(data, demoNormalizeMonthKey(urlObj.searchParams.get('month')));
+      demoLogAction(data, monthlyPdfGate.auth, 'report.monthly.pdf', monthlyPdfSummary.month, monthlyPdfSummary.metrics);
+      saveDemoData(data);
+      var monthlyPdfBody = [
+        'Smart Clinic Monthly Executive Report',
+        'Month: ' + monthlyPdfSummary.month,
+        'Generated At: ' + demoNowIso(),
+        '---',
+        'Critical Cases: ' + monthlyPdfSummary.metrics.criticalCases,
+        'Visit Requests: ' + monthlyPdfSummary.metrics.visitRequests,
+        'Appointments Total: ' + monthlyPdfSummary.metrics.appointmentsTotal,
+        'Appointments Completed: ' + monthlyPdfSummary.metrics.appointmentsCompleted,
+        'Tickets Opened: ' + monthlyPdfSummary.metrics.ticketsOpened,
+        'Tickets Closed: ' + monthlyPdfSummary.metrics.ticketsClosed,
+        'Ticket Closure Rate: ' + monthlyPdfSummary.metrics.ticketClosureRate + '%',
+        'Avg Ticket Resolution Hours: ' + monthlyPdfSummary.metrics.avgTicketResolutionHours,
+        'Referrals: ' + monthlyPdfSummary.metrics.referrals,
+        'Consents Requested: ' + monthlyPdfSummary.metrics.consentsRequested,
+        'Consents Approved: ' + monthlyPdfSummary.metrics.consentsApproved
+      ].join('\n');
+      return new Response(monthlyPdfBody, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': 'attachment; filename="monthly-executive-' + monthlyPdfSummary.month + '.pdf"'
+        }
+      });
     }
 
     if (pathname === '/messages' && method === 'POST') {
