@@ -246,7 +246,7 @@ body {
     <article class="service-card" data-permission="start.telemed">
       <h3>استشارة طبية عن بعد</h3>
       <p>تفعيل جلسة استشارية وربطها مباشرة بالحالة الحالية.</p>
-      <button class="btn-primary" onclick="recordCaseAction('telemed', 'تم بدء جلسة استشارة عن بعد')">بدء جلسة</button>
+      <button class="btn-primary" onclick="startTelemedSession()">بدء جلسة</button>
     </article>
     <article class="service-card" data-permission="view.analytics">
       <h3>تحليلات سريرية</h3>
@@ -398,6 +398,36 @@ function openCase(caseId) {
 
 function openCriticalCase() {
   window.location.href = 'emergency-flow.html?id=' + encodeURIComponent(activeCaseId || 'case_1');
+}
+
+async function startTelemedSession() {
+  var allowGuardian = window.confirm('هل تريد السماح لولي الأمر بالانضمام لهذه الجلسة؟');
+  var telemed = SmartClinicSecurity.createTelemedSession({
+    caseId: activeCaseId || 'case_1',
+    studentId: 'u_student_1',
+    allowGuardian: allowGuardian,
+    title: 'جلسة طبية مباشرة للحالة ' + (activeCaseId || 'case_1')
+  });
+
+  if (!telemed.ok || !telemed.item) {
+    notify('تعذر إنشاء جلسة العيادة الافتراضية.');
+    return;
+  }
+
+  await SmartClinicSecurity.apiJson('/cases/' + encodeURIComponent(activeCaseId || 'case_1') + '/actions', {
+    method: 'POST',
+    body: JSON.stringify({
+      type: 'telemed',
+      note: allowGuardian
+        ? 'تم بدء جلسة استشارة عن بعد مع إتاحة مشاركة ولي الأمر'
+        : 'تم بدء جلسة استشارة عن بعد'
+    })
+  });
+
+  notify('تم تجهيز الجلسة المرئية، جارٍ التحويل...');
+  window.setTimeout(function () {
+    window.location.href = 'telemed-room.html?sid=' + encodeURIComponent(telemed.item.id);
+  }, 450);
 }
 
 async function recordCaseAction(type, note) {

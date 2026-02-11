@@ -8,6 +8,7 @@
   var API_BASE = '/api';
   var API_TIMEOUT_MS = 12000;
   var DEMO_STORE_KEY = 'smartclinic.demo.data.v1';
+  var TELEMED_STORE_KEY = 'smartclinic.telemed.sessions.v1';
   var DEMO_FALLBACK_HOST = /(^|\.)github\.io$/i.test(window.location.hostname) || window.location.protocol === 'file:';
   var DEMO_START_AT = Date.now();
   var DEMO_QUERY_ENABLED = /(?:^|[?&])demo=1(?:&|$)/.test(window.location.search || '');
@@ -112,6 +113,7 @@
     'src/pages/nurse-dashboard.html': ['admin'],
     'src/pages/case-details.html': ['doctor', 'admin'],
     'src/pages/emergency-flow.html': ['doctor', 'admin'],
+    'src/pages/telemed-room.html': ['student', 'doctor', 'parent', 'admin'],
     'src/pages/student-portal.html': ['student', 'admin'],
     'src/pages/student-profile.html': ['student', 'doctor', 'parent', 'admin'],
     'src/pages/notifications-center.html': ['student', 'doctor', 'parent', 'admin']
@@ -255,6 +257,229 @@
 
   function deepClone(data) {
     return JSON.parse(JSON.stringify(data));
+  }
+
+  function telemedNowIso() {
+    return new Date().toISOString();
+  }
+
+  function telemedId() {
+    return 'tm_' + Math.random().toString(16).slice(2, 10);
+  }
+
+  function telemedRoomName(caseId) {
+    var suffix = Date.now().toString(36);
+    return 'smartclinic-' + String(caseId || 'case_1') + '-' + suffix;
+  }
+
+  function normalizeTelemedCaseId(raw) {
+    if (!raw) return 'case_1';
+    var value = String(raw).trim();
+    if (!value) return 'case_1';
+    if (/^case_/.test(value)) return value;
+    if (/^\d+$/.test(value)) return 'case_' + value;
+    return value;
+  }
+
+  function getRoleUserId(role) {
+    var map = {
+      student: 'u_student_1',
+      parent: 'u_parent_1',
+      doctor: 'u_doctor_1',
+      admin: 'u_admin_1'
+    };
+    return map[role] || 'u_student_1';
+  }
+
+  function readTelemedState() {
+    var raw = null;
+    try {
+      raw = localStorage.getItem(TELEMED_STORE_KEY);
+    } catch (err) {
+      raw = null;
+    }
+    if (!raw) {
+      return { sessions: [] };
+    }
+    try {
+      var parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.sessions)) {
+        return { sessions: [] };
+      }
+      return parsed;
+    } catch (err) {
+      return { sessions: [] };
+    }
+  }
+
+  function writeTelemedState(state) {
+    var safe = state && Array.isArray(state.sessions) ? state : { sessions: [] };
+    try {
+      localStorage.setItem(TELEMED_STORE_KEY, JSON.stringify(safe));
+    } catch (err) {
+      // Ignore storage failures.
+    }
+  }
+
+  function telemedSortLatest(items) {
+    return items.slice().sort(function (a, b) {
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+    });
+  }
+
+  function canJoinTelemedSession(session, role, userId) {
+    if (!session || session.status === 'ended') {
+      return false;
+    }
+    if (role === 'doctor' || role === 'admin') {
+      return true;
+    }
+    if (role === 'student') {
+      return !session.studentId || session.studentId === userId || session.studentId === 'u_student_1';
+    }
+    if (role === 'parent') {
+      return Boolean(session.allowGuardian);
+    }
+    return false;
+  }
+
+  function listTelemedSessions(options) {
+    var opts = options || {};
+    var state = readTelemedState();
+    var items = Array.isArray(state.sessions) ? state.sessions : [];
+    if (!opts.includeEnded) {
+      items = items.filter(function (item) { return item.status !== 'ended'; });
+    }
+    if (opts.caseId) {
+      var caseId = normalizeTelemedCaseId(opts.caseId);
+      items = items.filter(function (item) { return normalizeTelemedCaseId(item.caseId) === caseId; });
+    }
+    if (opts.role) {
+      var userId = opts.userId || getRoleUserId(opts.role);
+      items = items.filter(function (item) {
+        return canJoinTelemedSession(item, opts.role, userId);
+      });
+    }
+    return telemedSortLatest(items).map(function (item) { return deepClone(item); });
+  }
+
+  function getTelemedSessionById(sessionId) {
+    if (!sessionId) return null;
+    var state = readTelemedState();
+    var hit = (state.sessions || []).find(function (item) {
+      return item.id === String(sessionId);
+    });
+    return hit ? deepClone(hit) : null;
+  }
+
+  function getLatestTelemedSession(options) {
+    var items = listTelemedSessions(options || {});
+    return items.length ? items[0] : null;
+  }
+
+  function createTelemedSession(options) {
+    var session = getSession();
+    if (!session || (session.role !== 'doctor' && session.role !== 'admin')) {
+      return { ok: false, error: 'forbidden' };
+    }
+    var opts = options || {};
+    var state = readTelemedState();
+    var caseId = normalizeTelemedCaseId(opts.caseId);
+    var studentId = String(opts.studentId || 'u_student_1');
+    var now = telemedNowIso();
+    var item = {
+      id: telemedId(),
+      caseId: caseId,
+      studentId: studentId,
+      roomName: telemedRoomName(caseId),
+      title: String(opts.title || ('جلسة متابعة للحالة ' + caseId)),
+      allowGuardian: Boolean(opts.allowGuardian),
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+      createdByRole: session.role,
+      createdByUserId: getRoleUserId(session.role)
+    };
+
+    state.sessions = Array.isArray(state.sessions) ? state.sessions : [];
+    state.sessions.unshift(item);
+    writeTelemedState(state);
+    return { ok: true, item: deepClone(item) };
+  }
+
+  function updateTelemedSession(sessionId, patch) {
+    var session = getSession();
+    if (!session || (session.role !== 'doctor' && session.role !== 'admin')) {
+      return { ok: false, error: 'forbidden' };
+    }
+    var state = readTelemedState();
+    var idx = (state.sessions || []).findIndex(function (item) {
+      return item.id === String(sessionId);
+    });
+    if (idx === -1) {
+      return { ok: false, error: 'not_found' };
+    }
+
+    var current = state.sessions[idx];
+    var next = Object.assign({}, current);
+    var input = patch || {};
+
+    if (typeof input.title === 'string' && input.title.trim()) {
+      next.title = input.title.trim();
+    }
+    if (typeof input.allowGuardian === 'boolean') {
+      next.allowGuardian = input.allowGuardian;
+    }
+    if (input.status === 'active' || input.status === 'ended') {
+      next.status = input.status;
+      if (input.status === 'ended' && !next.endedAt) {
+        next.endedAt = telemedNowIso();
+      }
+    }
+    if (typeof input.endReason === 'string' && input.endReason.trim()) {
+      next.endReason = input.endReason.trim();
+    }
+    next.updatedAt = telemedNowIso();
+
+    state.sessions[idx] = next;
+    writeTelemedState(state);
+    return { ok: true, item: deepClone(next) };
+  }
+
+  function endTelemedSession(sessionId, reason) {
+    return updateTelemedSession(sessionId, {
+      status: 'ended',
+      endReason: reason || 'انتهت الجلسة'
+    });
+  }
+
+  function getProjectBasePath() {
+    var normalized = currentRoute();
+    var pathname = window.location.pathname || '/';
+    if (normalized && pathname.slice(-normalized.length) === normalized) {
+      return pathname.slice(0, pathname.length - normalized.length);
+    }
+    var idx = pathname.lastIndexOf('/');
+    return idx === -1 ? '/' : pathname.slice(0, idx + 1);
+  }
+
+  function getTelemedRoomPath(sessionId) {
+    var safe = encodeURIComponent(String(sessionId || ''));
+    var route = 'src/pages/telemed-room.html?sid=' + safe;
+    return currentRoute().indexOf('src/pages/') === 0 ? route.slice('src/pages/'.length) : route;
+  }
+
+  function getTelemedRoomUrl(sessionId) {
+    var base = window.location.origin + getProjectBasePath();
+    if (!/\/$/.test(base)) {
+      base += '/';
+    }
+    return new URL('src/pages/telemed-room.html?sid=' + encodeURIComponent(String(sessionId || '')), base).toString();
+  }
+
+  function getTelemedEmbedUrl(roomName) {
+    var safeRoom = encodeURIComponent(String(roomName || 'smartclinic-room'));
+    return 'https://meet.jit.si/' + safeRoom + '#config.prejoinPageEnabled=true&config.startWithAudioMuted=false&config.startWithVideoMuted=false';
   }
 
   function demoNowIso() {
@@ -1579,6 +1804,16 @@
     getSession: getSession,
     getToken: getToken,
     canAccess: canAccess,
+    listTelemedSessions: listTelemedSessions,
+    getTelemedSessionById: getTelemedSessionById,
+    getLatestTelemedSession: getLatestTelemedSession,
+    createTelemedSession: createTelemedSession,
+    updateTelemedSession: updateTelemedSession,
+    endTelemedSession: endTelemedSession,
+    canJoinTelemedSession: canJoinTelemedSession,
+    getTelemedRoomPath: getTelemedRoomPath,
+    getTelemedRoomUrl: getTelemedRoomUrl,
+    getTelemedEmbedUrl: getTelemedEmbedUrl,
     isDemoMode: function () { return demoFallbackActive; },
     requireAccess: requireAccess,
     getHomePath: getHomePath,

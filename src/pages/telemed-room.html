@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>العيادة الافتراضية – Smart Clinic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:"Tajawal",sans-serif;background:linear-gradient(140deg,#07142a,#0d2d4d);color:#ecf8ff;padding:18px 14px}
+.shell{max-width:1180px;margin:0 auto}
+.top{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.chip{border:1px solid rgba(125,211,252,.35);border-radius:999px;background:rgba(255,255,255,.04);padding:8px 14px;color:#bcd9ec;font-size:13px}
+.btn{border:1px solid rgba(125,211,252,.35);background:transparent;color:#ecf8ff;border-radius:10px;padding:8px 12px;font:inherit;cursor:pointer}
+.btn.primary{background:#38bdf8;color:#05233a;border:none;font-weight:700}
+.btn.warn{background:#f59e0b;color:#24180a;border:none;font-weight:700}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.hero,.panel{background:rgba(9,34,56,.84);border:1px solid rgba(125,211,252,.28);border-radius:16px;padding:14px}
+.hero h1{margin:0;font-size:30px}
+.hero p{margin:6px 0 0;color:#bcd9ec}
+.meta{margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.m{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px}
+.l{font-size:12px;color:#bcd9ec}
+.v{font-size:16px;font-weight:700;margin-top:3px}
+.row{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+.grid{margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hint{font-size:13px;color:#bcd9ec;margin-top:8px}
+.frame-wrap{margin-top:10px;border-radius:14px;overflow:hidden;border:1px solid rgba(125,211,252,.32);background:#020817;min-height:560px}
+iframe{width:100%;height:560px;border:none;display:block}
+.toast{position:fixed;left:16px;bottom:16px;background:rgba(9,34,56,.95);border:1px solid rgba(125,211,252,.35);border-radius:10px;padding:9px 12px;font-size:12px;display:none}
+@media (max-width:900px){.grid{grid-template-columns:1fr}.frame-wrap,iframe{min-height:430px;height:430px}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <div class="chip">العيادة الافتراضية • صوت وصورة</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" onclick="SmartClinicSecurity.goToRoleHome()">العودة</button>
+      <button class="btn" data-action="logout">تسجيل الخروج</button>
+    </div>
+  </div>
+
+  <section class="hero">
+    <h1>جلسة متابعة مرئية</h1>
+    <p id="hero-sub">جاري تحميل بيانات الجلسة...</p>
+    <div class="meta">
+      <div class="m"><div class="l">معرف الجلسة</div><div class="v" id="session-id">-</div></div>
+      <div class="m"><div class="l">رقم الحالة</div><div class="v" id="case-id">-</div></div>
+      <div class="m"><div class="l">وضع مشاركة ولي الأمر</div><div class="v" id="guardian-status">-</div></div>
+      <div class="m"><div class="l">حالة الجلسة</div><div class="v" id="session-status">-</div></div>
+    </div>
+    <div class="row">
+      <button class="btn primary" id="join-btn" onclick="joinCall()" disabled>الدخول للصوت والصورة</button>
+      <button class="btn" onclick="refreshSession()">تحديث</button>
+    </div>
+    <div id="status-hint" class="hint">تحضير الجلسة...</div>
+  </section>
+
+  <section class="grid">
+    <section class="panel">
+      <h3 style="margin:0">مشاركة الروابط</h3>
+      <p class="hint">يستطيع الطالب الانضمام مباشرة. ولي الأمر ينضم فقط عند تفعيل المشاركة.</p>
+      <div class="row">
+        <button class="btn" id="copy-student-link" onclick="copyLink('student')" disabled>نسخ رابط الطالب</button>
+        <button class="btn" id="copy-parent-link" onclick="copyLink('parent')" disabled>نسخ رابط ولي الأمر</button>
+      </div>
+      <div class="hint" id="links-hint">الروابط ستظهر بعد تحميل الجلسة.</div>
+    </section>
+
+    <section class="panel" id="doctor-controls" hidden>
+      <h3 style="margin:0">تحكم الطبيب</h3>
+      <p class="hint">يمكنك تفعيل مشاركة ولي الأمر اختياريًا أثناء الجلسة.</p>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:8px">
+        <input type="checkbox" id="allow-guardian-check" onchange="toggleGuardian(this.checked)">
+        <span>السماح بمشاركة ولي الأمر</span>
+      </label>
+      <div class="row">
+        <button class="btn warn" onclick="endSession()">إنهاء الجلسة</button>
+      </div>
+    </section>
+  </section>
+
+  <div class="frame-wrap">
+    <iframe id="call-frame" title="Smart Clinic Telemedicine" allow="camera; microphone; fullscreen; display-capture"></iframe>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="../../assets/js/security.js"></script>
+<script>
+var currentSession = null;
+var currentRole = null;
+var sessionId = null;
+
+function qs(name) {
+  return new URLSearchParams(window.location.search).get(name);
+}
+
+function notify(text) {
+  var el = document.getElementById('toast');
+  el.textContent = text;
+  el.style.display = 'block';
+  window.setTimeout(function () { el.style.display = 'none'; }, 2200);
+}
+
+function canControlSession(role) {
+  return role === 'doctor' || role === 'admin';
+}
+
+function refreshButtons() {
+  var joinBtn = document.getElementById('join-btn');
+  var copyStudent = document.getElementById('copy-student-link');
+  var copyParent = document.getElementById('copy-parent-link');
+  var allowParent = Boolean(currentSession && currentSession.allowGuardian);
+  var ended = !currentSession || currentSession.status === 'ended';
+  var canJoin = currentSession && SmartClinicSecurity.canJoinTelemedSession(currentSession, currentRole);
+
+  joinBtn.disabled = !canJoin || ended;
+  copyStudent.disabled = !currentSession;
+  copyParent.disabled = !currentSession || !allowParent;
+}
+
+function renderSession(session) {
+  currentSession = session || null;
+  var heroSub = document.getElementById('hero-sub');
+  var statusHint = document.getElementById('status-hint');
+  var linksHint = document.getElementById('links-hint');
+
+  if (!session) {
+    heroSub.textContent = 'الجلسة غير موجودة أو تم حذفها.';
+    statusHint.textContent = 'تعذر الوصول لبيانات الجلسة.';
+    linksHint.textContent = 'لا توجد روابط متاحة.';
+    document.getElementById('session-id').textContent = '-';
+    document.getElementById('case-id').textContent = '-';
+    document.getElementById('guardian-status').textContent = '-';
+    document.getElementById('session-status').textContent = '-';
+    refreshButtons();
+    return;
+  }
+
+  var canJoin = SmartClinicSecurity.canJoinTelemedSession(session, currentRole);
+  if (!canJoin) {
+    heroSub.textContent = 'صلاحيتك لا تسمح بالانضمام لهذه الجلسة.';
+    statusHint.textContent = 'يمكن للطبيب/الإدارة الانضمام دائمًا، وولي الأمر عند تفعيل المشاركة.';
+  } else {
+    heroSub.textContent = session.title || 'جلسة متابعة مباشرة';
+    statusHint.textContent = session.status === 'ended'
+      ? 'تم إنهاء هذه الجلسة. يمكنك العودة للوحة الرئيسية.'
+      : 'اضغط "الدخول للصوت والصورة" لبدء التواصل المباشر.';
+  }
+
+  linksHint.textContent = session.allowGuardian
+    ? 'تم تفعيل مشاركة ولي الأمر.'
+    : 'مشاركة ولي الأمر غير مفعلة حاليًا.';
+  document.getElementById('session-id').textContent = session.id || '-';
+  document.getElementById('case-id').textContent = session.caseId || '-';
+  document.getElementById('guardian-status').textContent = session.allowGuardian ? 'مفعل' : 'غير مفعل';
+  document.getElementById('session-status').textContent = session.status === 'ended' ? 'منتهية' : 'نشطة';
+
+  var controls = document.getElementById('doctor-controls');
+  controls.hidden = !canControlSession(currentRole);
+  if (!controls.hidden) {
+    document.getElementById('allow-guardian-check').checked = Boolean(session.allowGuardian);
+  }
+
+  refreshButtons();
+}
+
+function refreshSession() {
+  if (!sessionId) {
+    renderSession(null);
+    return;
+  }
+  var session = SmartClinicSecurity.getTelemedSessionById(sessionId);
+  renderSession(session);
+}
+
+function joinCall() {
+  if (!currentSession) {
+    notify('لا توجد جلسة متاحة.');
+    return;
+  }
+  if (!SmartClinicSecurity.canJoinTelemedSession(currentSession, currentRole)) {
+    notify('لا توجد صلاحية للانضمام لهذه الجلسة.');
+    return;
+  }
+  if (currentSession.status === 'ended') {
+    notify('تم إنهاء الجلسة.');
+    return;
+  }
+  var frame = document.getElementById('call-frame');
+  frame.src = SmartClinicSecurity.getTelemedEmbedUrl(currentSession.roomName);
+  notify('تم فتح الاتصال المرئي.');
+}
+
+function safeCopy(text) {
+  if (!text) return Promise.reject(new Error('empty'));
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  var input = document.createElement('textarea');
+  input.value = text;
+  document.body.appendChild(input);
+  input.select();
+  document.execCommand('copy');
+  input.remove();
+  return Promise.resolve();
+}
+
+function copyLink(type) {
+  if (!currentSession) return;
+  if (type === 'parent' && !currentSession.allowGuardian) {
+    notify('فعّل مشاركة ولي الأمر أولًا.');
+    return;
+  }
+  var link = SmartClinicSecurity.getTelemedRoomUrl(currentSession.id);
+  var label = type === 'parent' ? 'ولي الأمر' : 'الطالب';
+  safeCopy(link).then(function () {
+    notify('تم نسخ رابط ' + label + '.');
+  }).catch(function () {
+    notify('تعذر نسخ الرابط، انسخه يدويًا: ' + link);
+  });
+}
+
+function toggleGuardian(checked) {
+  if (!currentSession || !canControlSession(currentRole)) return;
+  var result = SmartClinicSecurity.updateTelemedSession(currentSession.id, {
+    allowGuardian: Boolean(checked)
+  });
+  if (!result.ok) {
+    notify('تعذر تحديث إعداد المشاركة.');
+    return;
+  }
+  currentSession = result.item;
+  renderSession(currentSession);
+  notify(checked ? 'تم السماح بمشاركة ولي الأمر.' : 'تم إيقاف مشاركة ولي الأمر.');
+}
+
+function endSession() {
+  if (!currentSession || !canControlSession(currentRole)) return;
+  if (!window.confirm('تأكيد إنهاء الجلسة الحالية؟')) return;
+  var result = SmartClinicSecurity.endTelemedSession(currentSession.id, 'تم إنهاء الجلسة بواسطة الطبيب');
+  if (!result.ok) {
+    notify('تعذر إنهاء الجلسة.');
+    return;
+  }
+  currentSession = result.item;
+  renderSession(currentSession);
+  document.getElementById('call-frame').src = '';
+  notify('تم إنهاء الجلسة.');
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  var auth = SmartClinicSecurity.requireAccess(['student', 'doctor', 'parent', 'admin'], 'العيادة الافتراضية');
+  currentRole = auth ? auth.role : null;
+  sessionId = qs('sid');
+  refreshSession();
+  SmartClinicSecurity.createAutoRefresh(refreshSession, 10000, { immediate: false });
+});
+</script>
+</body>
+</html>

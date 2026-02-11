@@ -104,6 +104,7 @@ body {
   border-radius: 10px;
   cursor: pointer;
 }
+.cta:disabled, .muted-btn:disabled { opacity: .45; cursor: not-allowed; }
 .inline-row {
   display: flex;
   gap: 8px;
@@ -211,6 +212,15 @@ textarea, select {
       </div>
     </article>
 
+    <article class="card" data-permission="view.student">
+      <h3>العيادة الافتراضية (صوت وصورة)</h3>
+      <p id="telemed-student-status">جارٍ التحقق من وجود جلسة مباشرة...</p>
+      <div class="inline-row">
+        <button class="cta" id="telemed-student-join" onclick="joinStudentTelemed()" disabled>انضمام للجلسة</button>
+        <button class="muted-btn" onclick="refreshStudentTelemed()">تحديث حالة الجلسة</button>
+      </div>
+    </article>
+
     <article class="card" data-permission="view.alerts">
       <h3>تنبيهات صحية لك</h3>
       <p>آخر التنبيهات المرتبطة بمتابعتك الصحية.</p>
@@ -255,6 +265,7 @@ textarea, select {
 <script>
 var lastOverview = null;
 var tipIndex = 0;
+var studentTelemedSessionId = null;
 var tips = [
   'نظّم نومك إلى 8 ساعات يوميًا لتحسين التركيز والمناعة.',
   'اشرب الماء كل ساعة دراسية لتقليل الصداع والإجهاد.',
@@ -334,6 +345,7 @@ async function loadOverview() {
   var result = await SmartClinicSecurity.apiJson('/student/overview');
   if (!result.ok || !result.data) {
     notify(result.error === 'request_timeout' ? 'انتهت مهلة الاتصال، حاول مرة أخرى.' : 'تعذر تحميل بيانات الطالب.');
+    refreshStudentTelemed();
     return;
   }
   lastOverview = result.data;
@@ -341,6 +353,36 @@ async function loadOverview() {
   renderLatestCase(result.data.latestCase || null);
   renderAlerts(result.data.alerts || []);
   renderReports(result.data.reports || []);
+  refreshStudentTelemed();
+}
+
+function refreshStudentTelemed() {
+  var session = SmartClinicSecurity.getLatestTelemedSession({
+    role: 'student'
+  });
+  var status = document.getElementById('telemed-student-status');
+  var joinBtn = document.getElementById('telemed-student-join');
+
+  if (!session) {
+    studentTelemedSessionId = null;
+    status.textContent = 'لا توجد جلسة مباشرة نشطة الآن.';
+    joinBtn.disabled = true;
+    return;
+  }
+
+  studentTelemedSessionId = session.id;
+  var when = session.createdAt ? new Date(session.createdAt).toLocaleTimeString('ar-SA') : '-';
+  status.textContent = 'جلسة متاحة الآن • بدأت عند ' + when;
+  joinBtn.disabled = false;
+}
+
+function joinStudentTelemed() {
+  if (!studentTelemedSessionId) {
+    refreshStudentTelemed();
+    notify('لا توجد جلسة مرئية متاحة حاليًا.');
+    return;
+  }
+  window.location.href = 'telemed-room.html?sid=' + encodeURIComponent(studentTelemedSessionId);
 }
 
 function jumpToCases() {
@@ -418,6 +460,7 @@ async function sendClinicMessage() {
 window.addEventListener('DOMContentLoaded', function () {
   SmartClinicSecurity.requireAccess(['student', 'admin'], 'بوابة الطالب');
   document.getElementById('tip-text').textContent = tips[tipIndex];
+  refreshStudentTelemed();
   SmartClinicSecurity.createAutoRefresh(loadOverview, 20000, { immediate: true });
 });
 </script>

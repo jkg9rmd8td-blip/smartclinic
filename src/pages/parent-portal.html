@@ -41,6 +41,7 @@
   .mini h3 { margin: 0; font-size: 17px; }
   .mini p { margin: 6px 0 10px; color: var(--soft); font-size: 14px; }
   .cta { border: none; background: var(--accent); color: #053328; border-radius: 10px; padding: 8px 12px; font: inherit; font-weight: 700; cursor: pointer; }
+  .cta:disabled { opacity: .45; cursor: not-allowed; }
   .list { display: grid; gap: 6px; margin-top: 8px; }
   .item { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.12); border-radius: 10px; padding: 8px; font-size: 13px; }
 </style>
@@ -87,6 +88,12 @@
       <button class="cta" onclick="window.location.href='parent-messages.html'">إرسال استفسار</button>
     </article>
 
+    <article class="mini" data-permission="view.parent">
+      <h3>جلسة مباشرة مع الطبيب</h3>
+      <p id="telemed-parent-status">جارٍ التحقق من دعوة ولي الأمر...</p>
+      <button class="cta" id="telemed-parent-join" onclick="joinParentTelemed()" disabled>الانضمام للجلسة</button>
+    </article>
+
     <article class="mini" data-permission="view.notifications">
       <h3>مركز الإشعارات الموحد</h3>
       <p>فلترة الإشعارات حسب النوع: حرج، إجرائي، معلومة.</p>
@@ -97,6 +104,8 @@
 
 <script src="../../assets/js/security.js"></script>
 <script>
+var parentTelemedSessionId = null;
+
 function renderStats(snapshot) {
   var s = snapshot || {};
   var items = [
@@ -132,13 +141,44 @@ async function loadOverview() {
     var latest = payload.latestCase;
     document.getElementById('latest-case').textContent = latest ? (latest.title + ' • ' + latest.severity) : 'لا توجد حالة نشطة.';
     renderAlerts(payload.alerts || []);
+    refreshParentTelemed();
   } catch (err) {
     // Ignore and keep page usable.
+    refreshParentTelemed();
   }
+}
+
+function refreshParentTelemed() {
+  var session = SmartClinicSecurity.getLatestTelemedSession({
+    role: 'parent'
+  });
+  var status = document.getElementById('telemed-parent-status');
+  var joinBtn = document.getElementById('telemed-parent-join');
+
+  if (!session) {
+    parentTelemedSessionId = null;
+    status.textContent = 'لا توجد دعوة مرئية مفعلة لولي الأمر حاليًا.';
+    joinBtn.disabled = true;
+    return;
+  }
+
+  parentTelemedSessionId = session.id;
+  var when = session.createdAt ? new Date(session.createdAt).toLocaleTimeString('ar-SA') : '-';
+  status.textContent = 'الدعوة مفعلة • بداية الجلسة عند ' + when;
+  joinBtn.disabled = false;
+}
+
+function joinParentTelemed() {
+  if (!parentTelemedSessionId) {
+    refreshParentTelemed();
+    return;
+  }
+  window.location.href = 'telemed-room.html?sid=' + encodeURIComponent(parentTelemedSessionId);
 }
 
 window.addEventListener("DOMContentLoaded", function () {
   SmartClinicSecurity.requireAccess(["parent", "admin"], "بوابة ولي الأمر");
+  refreshParentTelemed();
   SmartClinicSecurity.createAutoRefresh(loadOverview, 20000, { immediate: true });
 });
 </script>
