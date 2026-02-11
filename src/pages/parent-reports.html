@@ -8,83 +8,243 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
-body { margin:0; font-family:"Tajawal",sans-serif; background:#06251f; color:#eafff8; padding:18px 14px; }
-.shell { max-width:980px; margin:0 auto; }
-.panel { background:rgba(7,36,31,.86); border:1px solid rgba(52,211,153,.35); border-radius:16px; padding:16px; }
-h1 { margin:0; font-size:30px; }
-p { color:#bde4dd; }
-.list { display:grid; gap:8px; margin-top:12px; }
-.item { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:10px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
-button { border:none; background:#34d399; color:#06362b; padding:7px 10px; border-radius:8px; font:inherit; font-weight:700; cursor:pointer; }
-.top { display:flex; justify-content:space-between; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
-.ghost { border:1px solid rgba(52,211,153,.35); background:transparent; color:#eafff8; }
-.msg { margin-top:10px; font-size:13px; color:#a7f3d0; }
+:root {
+  --bg1: #06251f;
+  --bg2: #0d322b;
+  --card: rgba(7, 36, 31, 0.88);
+  --line: rgba(52, 211, 153, 0.35);
+  --text: #eafff8;
+  --soft: #bde4dd;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Tajawal", sans-serif;
+  color: var(--text);
+  background: radial-gradient(900px 470px at 12% 0%, rgba(52, 211, 153, 0.22), transparent 60%), linear-gradient(135deg, var(--bg1), var(--bg2));
+  min-height: 100vh;
+  padding: 18px 14px;
+}
+.shell { max-width: 1020px; margin: 0 auto; }
+.top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.btn {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font: inherit;
+  cursor: pointer;
+}
+.panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+}
+.meta-row {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pill {
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.03);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--soft);
+}
+.controls {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 8px;
+}
+.input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+  font: inherit;
+  padding: 8px;
+}
+.list {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+.item {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.title {
+  font-weight: 700;
+}
+.meta {
+  margin-top: 3px;
+  color: var(--soft);
+  font-size: 12px;
+}
+.cta {
+  border: none;
+  background: #34d399;
+  color: #06362b;
+  border-radius: 8px;
+  padding: 7px 11px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ghost {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  border-radius: 8px;
+  padding: 7px 11px;
+  font: inherit;
+  cursor: pointer;
+}
+.empty { color: var(--soft); font-size: 13px; }
+.toast {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  background: rgba(7, 36, 31, 0.96);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 12px;
+  display: none;
+}
 </style>
 </head>
 <body>
 <div class="shell">
   <div class="top">
-    <button class="ghost" onclick="window.location.href='parent-portal.html'">العودة لبوابة ولي الأمر</button>
-    <button class="ghost" data-action="logout">تسجيل الخروج</button>
+    <button class="btn" onclick="window.location.href='parent-portal.html'">العودة لبوابة ولي الأمر</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn" data-permission="view.notifications" onclick="window.location.href='notifications-center.html'">مركز الإشعارات</button>
+      <button class="btn" onclick="loadReports()">تحديث</button>
+      <button class="btn" data-action="logout">تسجيل الخروج</button>
+    </div>
   </div>
   <section class="panel">
-    <h1>التقارير الصحية</h1>
-    <p>تحميل ومراجعة التقارير الدورية الخاصة بالطالب.</p>
+    <h1 style="margin:0;font-size:30px;">التقارير الصحية</h1>
+    <p style="color:#bde4dd;margin:6px 0 0;">تحميل ومراجعة التقارير الدورية الخاصة بالطالب.</p>
+    <div class="meta-row">
+      <span class="pill">النمط: <strong id="mode-pill">-</strong></span>
+      <span class="pill">آخر مزامنة: <strong id="sync-pill">-</strong></span>
+      <span class="pill">عدد التقارير: <strong id="count-pill">0</strong></span>
+    </div>
+    <div class="controls">
+      <input id="searchFilter" class="input" type="search" placeholder="ابحث باسم التقرير..." oninput="applyFilters()">
+      <select id="sortFilter" class="input" onchange="applyFilters()">
+        <option value="new">الأحدث أولًا</option>
+        <option value="old">الأقدم أولًا</option>
+      </select>
+    </div>
     <div id="reportsList" class="list"></div>
-    <div id="downloadMsg" class="msg"></div>
   </section>
 </div>
+<div id="toast" class="toast"></div>
 <script src="../../assets/js/security.js"></script>
 <script>
-function setMsg(text) {
-  document.getElementById('downloadMsg').textContent = text || '';
+var reportsCache = [];
+
+function notify(text) {
+  var el = document.getElementById('toast');
+  el.textContent = text;
+  el.style.display = 'block';
+  window.setTimeout(function () { el.style.display = 'none'; }, 2200);
 }
 
-async function exportReport(reportId, title) {
-  try {
-    var response = await SmartClinicSecurity.apiRequest('/reports/export', {
-      method: 'POST',
-      body: JSON.stringify({ reportId: reportId })
-    });
-    var payload = await response.json();
-    if (!response.ok) {
-      setMsg(payload.error || 'تعذر تجهيز التقرير.');
-      return;
-    }
-    setMsg('تم تجهيز التقرير: ' + (title || payload.filename || 'report.pdf'));
-  } catch (err) {
-    setMsg('تعذر الاتصال بالخادم.');
+function updateMeta(count) {
+  document.getElementById('mode-pill').textContent = SmartClinicSecurity.isDemoMode() ? 'Demo' : 'Live';
+  document.getElementById('sync-pill').textContent = new Date().toLocaleTimeString('ar-SA');
+  document.getElementById('count-pill').textContent = String(count || 0);
+}
+
+function renderReports(items) {
+  var wrap = document.getElementById('reportsList');
+  if (!items || !items.length) {
+    wrap.innerHTML = '<div class="empty">لا توجد تقارير مطابقة للفلاتر الحالية.</div>';
+    return;
   }
+  wrap.innerHTML = items.map(function (r) {
+    var date = r.createdAt ? new Date(r.createdAt).toLocaleDateString('ar-SA') : '-';
+    var title = r.title || 'تقرير صحي';
+    return '<div class="item">' +
+      '<div><div class="title">' + title + '</div><div class="meta">تاريخ التقرير: ' + date + '</div></div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+        '<button class="ghost" onclick="window.location.href=\'student-profile.html#reports\'">عرض بالمِلَف</button>' +
+        '<button class="cta" onclick="exportReport(\'' + r.id + '\', \'' + encodeURIComponent(title) + '\')">تنزيل</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function applyFilters() {
+  var query = String(document.getElementById('searchFilter').value || '').trim().toLowerCase();
+  var sort = document.getElementById('sortFilter').value || 'new';
+  var items = reportsCache.filter(function (r) {
+    return !query || String(r.title || '').toLowerCase().indexOf(query) !== -1;
+  }).slice();
+  items.sort(function (a, b) {
+    var av = new Date(a.createdAt || 0).getTime();
+    var bv = new Date(b.createdAt || 0).getTime();
+    return sort === 'old' ? (av - bv) : (bv - av);
+  });
+  updateMeta(items.length);
+  renderReports(items);
+}
+
+async function exportReport(reportId, encodedTitle) {
+  var title = decodeURIComponent(encodedTitle || 'report');
+  var result = await SmartClinicSecurity.apiJson('/reports/export', {
+    method: 'POST',
+    body: JSON.stringify({ reportId: reportId })
+  });
+  if (!result.ok || !result.data) {
+    notify(result.error || 'تعذر تجهيز التقرير.');
+    return;
+  }
+  notify('تم تجهيز التقرير: ' + (title || result.data.filename || 'report.pdf'));
 }
 
 async function loadReports() {
   var wrap = document.getElementById('reportsList');
-  wrap.innerHTML = 'جاري التحميل...';
-  try {
-    var response = await SmartClinicSecurity.apiRequest('/reports');
-    var payload = await response.json();
-    if (!response.ok) {
-      wrap.innerHTML = '<div style="color:#fecaca;">تعذر تحميل التقارير.</div>';
-      return;
-    }
-    var items = payload.items || [];
-    if (!items.length) {
-      wrap.innerHTML = '<div style="color:#bde4dd;">لا توجد تقارير متاحة.</div>';
-      return;
-    }
-    wrap.innerHTML = items.map(function (r) {
-      var date = r.createdAt ? new Date(r.createdAt).toLocaleDateString('ar-SA') : '-';
-      var encodedTitle = encodeURIComponent(r.title || 'report');
-      return '<div class="item"><span>' + r.title + ' • ' + date + '</span><button onclick="exportReport(\'' + r.id + '\', decodeURIComponent(\'' + encodedTitle + '\'))">تنزيل</button></div>';
-    }).join('');
-  } catch (err) {
-    wrap.innerHTML = '<div style="color:#fecaca;">تعذر الاتصال بالخادم.</div>';
+  wrap.innerHTML = '<div class="empty">جاري التحميل...</div>';
+  var result = await SmartClinicSecurity.apiJson('/reports');
+  if (!result.ok || !result.data) {
+    reportsCache = [];
+    updateMeta(0);
+    wrap.innerHTML = '<div class="empty">تعذر تحميل التقارير.</div>';
+    return;
   }
+  reportsCache = result.data.items || [];
+  applyFilters();
 }
 
-window.addEventListener("DOMContentLoaded", function(){
-  SmartClinicSecurity.requireAccess(["parent", "admin"], "تقارير ولي الأمر");
-  loadReports();
+window.addEventListener('DOMContentLoaded', function () {
+  SmartClinicSecurity.requireAccess(['parent', 'admin'], 'تقارير ولي الأمر');
+  SmartClinicSecurity.createAutoRefresh(loadReports, 30000, { immediate: true });
 });
 </script>
 </body>

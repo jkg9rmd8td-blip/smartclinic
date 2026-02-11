@@ -33,6 +33,21 @@
   .hero, .panel, .mini { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
   .hero h1 { margin: 0; font-size: 32px; }
   .hero p { margin: 6px 0 0; color: var(--soft); }
+  .hero-meta {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .status-pill {
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.04);
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-size: 12px;
+    color: var(--soft);
+  }
+  .status-pill strong { color: var(--text); }
   .stats { margin-top: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 8px; }
   .stat { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.12); border-radius: 12px; padding: 8px; }
   .stat .l { font-size: 11px; color: var(--soft); }
@@ -42,8 +57,43 @@
   .mini p { margin: 6px 0 10px; color: var(--soft); font-size: 14px; }
   .cta { border: none; background: var(--accent); color: #053328; border-radius: 10px; padding: 8px 12px; font: inherit; font-weight: 700; cursor: pointer; }
   .cta:disabled { opacity: .45; cursor: not-allowed; }
+  .muted-btn { border: 1px solid var(--line); background: transparent; color: var(--text); border-radius: 10px; padding: 8px 12px; font: inherit; cursor: pointer; }
+  .inline-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
   .list { display: grid; gap: 6px; margin-top: 8px; }
   .item { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.12); border-radius: 10px; padding: 8px; font-size: 13px; }
+  .badge {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+  }
+  .b-ok { background: rgba(34,197,94,.2); color: #86efac; }
+  .b-warn { background: rgba(245,158,11,.2); color: #fde68a; }
+  .b-danger { background: rgba(239,68,68,.2); color: #fca5a5; }
+  select {
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.04);
+    color: var(--text);
+    font: inherit;
+    padding: 8px;
+    margin-top: 8px;
+  }
+  .toast {
+    position: fixed;
+    left: 16px;
+    bottom: 16px;
+    background: rgba(8, 31, 36, 0.96);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 12px;
+    display: none;
+    z-index: 30;
+  }
 </style>
 </head>
 <body>
@@ -52,6 +102,7 @@
     <div class="chip">الدور الحالي: <strong data-session-role>ولي الأمر</strong></div>
     <div style="display:flex;gap:8px;">
       <button class="btn" onclick="window.location.href='../../index.html'">الرئيسية</button>
+      <button class="btn" data-permission="view.notifications" onclick="window.location.href='notifications-center.html'">الإشعارات</button>
       <button class="btn" data-action="logout">تسجيل الخروج</button>
     </div>
   </div>
@@ -59,6 +110,11 @@
   <section class="hero">
     <h1>بوابة ولي الأمر</h1>
     <p>متابعة صحية مباشرة للطالب مع تقارير وتنبيهات وتواصل فوري.</p>
+    <div class="hero-meta">
+      <div class="status-pill">النمط: <strong id="status-mode">-</strong></div>
+      <div class="status-pill">آخر مزامنة: <strong id="status-sync">-</strong></div>
+      <div class="status-pill">مستوى الخطر: <strong id="status-risk">-</strong></div>
+    </div>
     <div id="stats" class="stats"></div>
   </section>
 
@@ -66,20 +122,36 @@
     <article class="mini" data-permission="view.student">
       <h3>الملف الصحي للطالب</h3>
       <p id="latest-case">جاري تحميل أحدث حالة...</p>
-      <button class="cta" onclick="window.location.href='student-profile.html'">فتح الملف</button>
+      <span id="latest-case-badge" class="badge b-ok">مستقرة</span>
+      <div class="inline-row">
+        <button class="cta" onclick="window.location.href='student-profile.html'">فتح الملف</button>
+        <button class="muted-btn" onclick="window.location.href='student-profile.html#cases'">سجل الحالات</button>
+      </div>
     </article>
 
     <article class="mini" data-permission="export.report">
       <h3>التقارير الطبية</h3>
       <p>تحميل ومراجعة جميع التقارير المتاحة.</p>
-      <button class="cta" onclick="window.location.href='parent-reports.html'">فتح التقارير</button>
+      <div class="inline-row">
+        <button class="cta" onclick="window.location.href='parent-reports.html'">فتح التقارير</button>
+        <button class="muted-btn" data-permission="view.student" onclick="window.location.href='student-profile.html#reports'">تقارير سريعة</button>
+      </div>
     </article>
 
     <article class="mini" data-permission="view.alerts">
       <h3>تنبيهات اليوم</h3>
       <p>آخر التنبيهات المتعلقة بصحة الطالب.</p>
+      <select id="alert-filter" onchange="applyAlertFilter()">
+        <option value="all">كل التنبيهات</option>
+        <option value="critical">حرجة</option>
+        <option value="operational">تشغيلية</option>
+        <option value="info">معلوماتية</option>
+      </select>
       <div id="alerts-mini" class="list"></div>
-      <button class="cta" onclick="window.location.href='parent-alerts.html'">عرض الكل</button>
+      <div class="inline-row">
+        <button class="cta" onclick="window.location.href='parent-alerts.html'">عرض الكل</button>
+        <button class="muted-btn" onclick="loadOverview()">تحديث</button>
+      </div>
     </article>
 
     <article class="mini" data-permission="send.message">
@@ -91,7 +163,11 @@
     <article class="mini" data-permission="view.parent">
       <h3>جلسة مباشرة مع الطبيب</h3>
       <p id="telemed-parent-status">جارٍ التحقق من دعوة ولي الأمر...</p>
-      <button class="cta" id="telemed-parent-join" onclick="joinParentTelemed()" disabled>الانضمام للجلسة</button>
+      <span id="telemed-parent-badge" class="badge b-warn">غير نشطة</span>
+      <div class="inline-row">
+        <button class="cta" id="telemed-parent-join" onclick="joinParentTelemed()" disabled>الانضمام للجلسة</button>
+        <button class="muted-btn" onclick="refreshParentTelemed()">تحديث الجلسة</button>
+      </div>
     </article>
 
     <article class="mini" data-permission="view.notifications">
@@ -101,10 +177,12 @@
     </article>
   </section>
 </div>
+<div id="toast" class="toast"></div>
 
 <script src="../../assets/js/security.js"></script>
 <script>
 var parentTelemedSessionId = null;
+var alertsCache = [];
 
 function renderStats(snapshot) {
   var s = snapshot || {};
@@ -112,11 +190,49 @@ function renderStats(snapshot) {
     ['الحالات المفتوحة', Number(s.openCases || 0)],
     ['حالات حرجة', Number(s.criticalCases || 0)],
     ['التقارير', Number(s.reports || 0)],
-    ['التنبيهات', Number(s.alerts || 0)]
+    ['التنبيهات', Number(s.alerts || 0)],
+    ['طلبات معلقة', Number(s.pendingVisits || 0)]
   ];
   document.getElementById('stats').innerHTML = items.map(function (it) {
     return '<div class="stat"><div class="l">' + it[0] + '</div><div class="v">' + it[1] + '</div></div>';
   }).join('');
+}
+
+function riskLabel(risk) {
+  var map = {
+    critical: 'حرج',
+    warning: 'متابعة',
+    stable: 'مستقر',
+    medium: 'متوسط',
+    low: 'منخفض',
+    unknown: 'غير متوفر'
+  };
+  return map[risk] || map.unknown;
+}
+
+function statusBadgeClass(severity) {
+  if (severity === 'critical' || severity === 'high') return 'b-danger';
+  if (severity === 'medium') return 'b-warn';
+  return 'b-ok';
+}
+
+function refreshHeroMeta(payload) {
+  var snapshot = (payload && payload.snapshot) || {};
+  document.getElementById('status-mode').textContent = SmartClinicSecurity.isDemoMode() ? 'Demo' : 'Live';
+  document.getElementById('status-sync').textContent = new Date().toLocaleTimeString('ar-SA');
+  document.getElementById('status-risk').textContent = riskLabel(snapshot.latestVitalsRisk || 'unknown');
+}
+
+function renderLatestCase(item) {
+  if (!item) {
+    document.getElementById('latest-case').textContent = 'لا توجد حالة نشطة.';
+    document.getElementById('latest-case-badge').textContent = 'مستقرة';
+    document.getElementById('latest-case-badge').className = 'badge b-ok';
+    return;
+  }
+  document.getElementById('latest-case').textContent = item.title + ' • آخر تحديث: ' + new Date(item.updatedAt).toLocaleString('ar-SA');
+  document.getElementById('latest-case-badge').textContent = item.severity || 'low';
+  document.getElementById('latest-case-badge').className = 'badge ' + statusBadgeClass(item.severity);
 }
 
 function renderAlerts(items) {
@@ -126,30 +242,43 @@ function renderAlerts(items) {
     return;
   }
   wrap.innerHTML = items.slice(0, 3).map(function (a) {
-    return '<div class="item">' + (a.text || 'تنبيه') + '</div>';
+    var when = a.createdAt ? new Date(a.createdAt).toLocaleTimeString('ar-SA') : '-';
+    return '<div class="item"><strong>' + (a.text || 'تنبيه') + '</strong><div style="color:#b5d8d3;font-size:12px;">' + when + '</div></div>';
   }).join('');
+}
+
+function applyAlertFilter() {
+  var mode = document.getElementById('alert-filter') ? document.getElementById('alert-filter').value : 'all';
+  var filtered = alertsCache.slice();
+  if (mode === 'critical' || mode === 'operational' || mode === 'info') {
+    filtered = filtered.filter(function (a) { return (a.type || 'info') === mode; });
+  }
+  renderAlerts(filtered);
 }
 
 async function loadOverview() {
   try {
-    var response = await SmartClinicSecurity.apiRequest('/student/overview');
-    var payload = await response.json();
-    if (!response.ok) {
+    var result = await SmartClinicSecurity.apiJson('/student/overview');
+    if (!result.ok || !result.data) {
+      notifyParent(result.error || 'تعذر تحميل بيانات ولي الأمر.');
+      await refreshParentTelemed();
       return;
     }
+    var payload = result.data;
+    refreshHeroMeta(payload);
     renderStats(payload.snapshot || {});
-    var latest = payload.latestCase;
-    document.getElementById('latest-case').textContent = latest ? (latest.title + ' • ' + latest.severity) : 'لا توجد حالة نشطة.';
-    renderAlerts(payload.alerts || []);
-    refreshParentTelemed();
+    renderLatestCase(payload.latestCase || null);
+    alertsCache = payload.alerts || [];
+    applyAlertFilter();
+    await refreshParentTelemed();
   } catch (err) {
-    // Ignore and keep page usable.
-    refreshParentTelemed();
+    notifyParent('تعذر الاتصال بالخادم.');
+    await refreshParentTelemed();
   }
 }
 
-function refreshParentTelemed() {
-  var session = SmartClinicSecurity.getLatestTelemedSession({
+async function refreshParentTelemed() {
+  var session = await SmartClinicSecurity.getLatestTelemedSession({
     role: 'parent'
   });
   var status = document.getElementById('telemed-parent-status');
@@ -158,6 +287,8 @@ function refreshParentTelemed() {
   if (!session) {
     parentTelemedSessionId = null;
     status.textContent = 'لا توجد دعوة مرئية مفعلة لولي الأمر حاليًا.';
+    document.getElementById('telemed-parent-badge').className = 'badge b-warn';
+    document.getElementById('telemed-parent-badge').textContent = 'غير نشطة';
     joinBtn.disabled = true;
     return;
   }
@@ -165,15 +296,29 @@ function refreshParentTelemed() {
   parentTelemedSessionId = session.id;
   var when = session.createdAt ? new Date(session.createdAt).toLocaleTimeString('ar-SA') : '-';
   status.textContent = 'الدعوة مفعلة • بداية الجلسة عند ' + when;
+  document.getElementById('telemed-parent-badge').className = 'badge b-ok';
+  document.getElementById('telemed-parent-badge').textContent = 'نشطة الآن';
   joinBtn.disabled = false;
 }
 
-function joinParentTelemed() {
+async function joinParentTelemed() {
   if (!parentTelemedSessionId) {
-    refreshParentTelemed();
+    await refreshParentTelemed();
     return;
   }
-  window.location.href = 'telemed-room.html?sid=' + encodeURIComponent(parentTelemedSessionId);
+  var invite = await SmartClinicSecurity.createTelemedInvite(parentTelemedSessionId, 'parent');
+  if (!invite.ok || !invite.item || !invite.item.token) {
+    notifyParent('الدعوة غير متاحة حاليًا أو لم يتم تفعيل مشاركة ولي الأمر.');
+    return;
+  }
+  window.location.href = SmartClinicSecurity.getTelemedRoomPath(parentTelemedSessionId, invite.item.token);
+}
+
+function notifyParent(text) {
+  var el = document.getElementById('toast');
+  el.textContent = text;
+  el.style.display = 'block';
+  window.setTimeout(function () { el.style.display = 'none'; }, 2200);
 }
 
 window.addEventListener("DOMContentLoaded", function () {

@@ -1,75 +1,274 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>رسائل ولي الأمر – Smart Clinic</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
-body{margin:0;font-family:"Tajawal",sans-serif;background:#082620;color:#ecfffb;padding:18px 14px}.shell{max-width:980px;margin:0 auto}.panel{background:rgba(8,36,31,.86);border:1px solid rgba(52,211,153,.35);border-radius:16px;padding:16px}.top{display:flex;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap}.btn{border:1px solid rgba(52,211,153,.35);background:transparent;color:#ecfffb;padding:8px 12px;border-radius:8px;font:inherit;cursor:pointer}textarea{width:100%;min-height:120px;border-radius:10px;border:1px solid rgba(52,211,153,.35);background:rgba(255,255,255,.04);color:#ecfffb;padding:10px;font:inherit}textarea:focus{outline:none;border-color:#34d399}.send{margin-top:10px;border:none;background:#34d399;color:#06362b;padding:8px 12px;border-radius:8px;font:inherit;font-weight:700;cursor:pointer}.msg{margin-top:8px;color:#a7f3d0;font-size:13px}
+:root {
+  --bg1: #082620;
+  --bg2: #114139;
+  --card: rgba(8, 36, 31, 0.88);
+  --line: rgba(52, 211, 153, 0.35);
+  --text: #ecfffb;
+  --soft: #bde4dd;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Tajawal", sans-serif;
+  color: var(--text);
+  background: radial-gradient(900px 450px at 9% 0%, rgba(52, 211, 153, 0.22), transparent 60%), linear-gradient(135deg, var(--bg1), var(--bg2));
+  min-height: 100vh;
+  padding: 18px 14px;
+}
+.shell { max-width: 1020px; margin: 0 auto; }
+.top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.btn {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font: inherit;
+  cursor: pointer;
+}
+.panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+}
+.meta-row {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pill {
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.03);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--soft);
+}
+textarea,
+.input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+  font: inherit;
+  padding: 9px;
+}
+textarea {
+  min-height: 110px;
+  margin-top: 8px;
+}
+.inline-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.send {
+  border: none;
+  background: #34d399;
+  color: #06362b;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ghost {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font: inherit;
+  cursor: pointer;
+}
+.helper {
+  margin-top: 6px;
+  color: var(--soft);
+  font-size: 12px;
+}
+.list {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+.item {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px;
+  padding: 8px;
+}
+.item-meta {
+  font-size: 12px;
+  color: var(--soft);
+}
+.empty {
+  color: var(--soft);
+  font-size: 13px;
+}
+.toast {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  background: rgba(8, 36, 31, 0.96);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 12px;
+  display: none;
+}
 </style>
 </head>
 <body>
 <div class="shell">
   <div class="top">
     <button class="btn" onclick="window.location.href='parent-portal.html'">العودة لبوابة ولي الأمر</button>
-    <button class="btn" onclick="loadMessages()">تحديث</button>
-    <button class="btn" data-action="logout">تسجيل الخروج</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn" data-permission="view.notifications" onclick="window.location.href='notifications-center.html'">مركز الإشعارات</button>
+      <button class="btn" onclick="loadMessages()">تحديث</button>
+      <button class="btn" data-action="logout">تسجيل الخروج</button>
+    </div>
   </div>
   <section class="panel">
-    <h1 style="margin:0;font-size:30px">مراسلة العيادة</h1>
-    <p style="color:#bde4dd">اكتب استفسارك وسيصل مباشرة للفريق الصحي المدرسي.</p>
-    <textarea id="msg" placeholder="مثال: أود الاستفسار عن توصية الطبيب بخصوص النشاط الرياضي."></textarea>
-    <button class="send" onclick="sendMsg()">إرسال الرسالة</button>
-    <div id="statusMsg" class="msg"></div>
-    <div id="messagesList" style="margin-top:10px;display:grid;gap:8px;"></div>
+    <h1 style="margin:0;font-size:30px;">مراسلة العيادة</h1>
+    <p style="color:#bde4dd;margin:6px 0 0;">اكتب استفسارك وسيصل مباشرة للفريق الصحي المدرسي.</p>
+    <div class="meta-row">
+      <span class="pill">النمط: <strong id="mode-pill">-</strong></span>
+      <span class="pill">آخر مزامنة: <strong id="sync-pill">-</strong></span>
+      <span class="pill">عدد الرسائل: <strong id="count-pill">0</strong></span>
+    </div>
+    <div class="inline-row">
+      <button class="ghost" type="button" onclick="applyTemplate('أود الاستفسار عن خطة متابعة الحالة خلال الأسبوع الحالي.')">خطة المتابعة</button>
+      <button class="ghost" type="button" onclick="applyTemplate('هل يمكن توضيح التعليمات الدوائية والوقت المناسب لكل جرعة؟')">التعليمات الدوائية</button>
+      <button class="ghost" type="button" onclick="applyTemplate('أحتاج تحديثًا حول إمكانية مشاركة ولي الأمر في الجلسة المرئية القادمة.')">الجلسة المرئية</button>
+    </div>
+    <textarea id="msg" placeholder="مثال: أود الاستفسار عن توصية الطبيب بخصوص النشاط الرياضي." oninput="updateCounter()"></textarea>
+    <div class="helper">طول الرسالة: <span id="msgCount">0</span>/1000</div>
+    <div class="inline-row">
+      <button class="send" onclick="sendMsg()">إرسال الرسالة</button>
+      <button class="ghost" onclick="clearComposer()">مسح</button>
+    </div>
+    <div class="inline-row">
+      <input id="searchFilter" class="input" type="search" placeholder="بحث داخل الرسائل..." oninput="applyFilters()">
+    </div>
+    <div id="messagesList" class="list"></div>
   </section>
 </div>
+<div id="toast" class="toast"></div>
 <script src="../../assets/js/security.js"></script>
 <script>
-function setMsg(text) {
-  document.getElementById('statusMsg').textContent = text || '';
+var messagesCache = [];
+
+function notify(text) {
+  var el = document.getElementById('toast');
+  el.textContent = text;
+  el.style.display = 'block';
+  window.setTimeout(function () { el.style.display = 'none'; }, 2200);
 }
 
-async function loadMessages() {
+function updateMeta(count) {
+  document.getElementById('mode-pill').textContent = SmartClinicSecurity.isDemoMode() ? 'Demo' : 'Live';
+  document.getElementById('sync-pill').textContent = new Date().toLocaleTimeString('ar-SA');
+  document.getElementById('count-pill').textContent = String(count || 0);
+}
+
+function updateCounter() {
+  var value = document.getElementById('msg').value || '';
+  document.getElementById('msgCount').textContent = String(value.trim().length);
+}
+
+function applyTemplate(text) {
+  document.getElementById('msg').value = text || '';
+  updateCounter();
+}
+
+function clearComposer() {
+  document.getElementById('msg').value = '';
+  updateCounter();
+}
+
+function renderMessages(items) {
   var list = document.getElementById('messagesList');
-  list.innerHTML = 'جاري التحميل...';
-  var result = await SmartClinicSecurity.apiJson('/messages');
-  if (!result.ok || !result.data) {
-    list.innerHTML = '<div style="color:#fecaca;">تعذر الاتصال بالخادم.</div>';
+  if (!items || !items.length) {
+    list.innerHTML = '<div class="empty">لا توجد رسائل مطابقة للبحث الحالي.</div>';
     return;
   }
-  var items = result.data.items || [];
-  if (!items.length) {
-    list.innerHTML = '<div style="color:#bde4dd;">لا توجد رسائل بعد.</div>';
-    return;
-  }
-  list.innerHTML = items.slice().reverse().map(function (m) {
-    return '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px;">' +
-      '<div style="font-size:12px;color:#bde4dd;">' + new Date(m.createdAt).toLocaleString('ar-SA') + '</div>' +
-      '<div>' + m.text + '</div>' +
+  list.innerHTML = items.map(function (m) {
+    var when = m.createdAt ? new Date(m.createdAt).toLocaleString('ar-SA') : '-';
+    var role = m.fromRole || 'parent';
+    var roleLabel = role === 'admin' ? 'الإدارة' : (role === 'doctor' ? 'الطبيب' : (role === 'student' ? 'الطالب' : 'ولي الأمر'));
+    return '<div class="item">' +
+      '<div class="item-meta">' + when + ' • المرسل: ' + roleLabel + '</div>' +
+      '<div>' + (m.text || '-') + '</div>' +
     '</div>';
   }).join('');
 }
 
-async function sendMsg(){
-  var v = document.getElementById('msg').value.trim();
-  if(!v){ setMsg('يرجى كتابة الرسالة قبل الإرسال.'); return; }
-  var result = await SmartClinicSecurity.apiJson('/messages', {
-    method: 'POST',
-    body: JSON.stringify({ text: v })
-  });
-  if (!result.ok) {
-    setMsg(result.error || 'تعذر إرسال الرسالة.');
+function applyFilters() {
+  var query = String(document.getElementById('searchFilter').value || '').trim().toLowerCase();
+  var items = messagesCache.filter(function (m) {
+    return !query || String(m.text || '').toLowerCase().indexOf(query) !== -1;
+  }).slice().reverse();
+  updateMeta(items.length);
+  renderMessages(items);
+}
+
+async function loadMessages() {
+  var list = document.getElementById('messagesList');
+  list.innerHTML = '<div class="empty">جاري التحميل...</div>';
+  var result = await SmartClinicSecurity.apiJson('/messages');
+  if (!result.ok || !result.data) {
+    messagesCache = [];
+    updateMeta(0);
+    list.innerHTML = '<div class="empty">تعذر الاتصال بالخادم.</div>';
     return;
   }
-  setMsg('تم إرسال رسالتك بنجاح.');
-  document.getElementById('msg').value='';
+  messagesCache = result.data.items || [];
+  applyFilters();
+}
+
+async function sendMsg() {
+  var text = document.getElementById('msg').value.trim();
+  if (!text || text.length < 4) {
+    notify('يرجى كتابة رسالة أوضح (4 أحرف على الأقل).');
+    return;
+  }
+  var result = await SmartClinicSecurity.apiJson('/messages', {
+    method: 'POST',
+    body: JSON.stringify({ text: text })
+  });
+  if (!result.ok) {
+    notify(result.error || 'تعذر إرسال الرسالة.');
+    return;
+  }
+  notify('تم إرسال رسالتك بنجاح.');
+  clearComposer();
   await loadMessages();
 }
 
-window.addEventListener("DOMContentLoaded", function(){
-  SmartClinicSecurity.requireAccess(["parent", "admin"], "رسائل ولي الأمر");
+window.addEventListener('DOMContentLoaded', function () {
+  SmartClinicSecurity.requireAccess(['parent', 'admin'], 'رسائل ولي الأمر');
+  updateCounter();
   SmartClinicSecurity.createAutoRefresh(loadMessages, 25000, { immediate: true });
 });
 </script>

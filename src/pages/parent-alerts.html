@@ -4,48 +4,225 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>تنبيهات ولي الأمر – Smart Clinic</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
-body{margin:0;font-family:"Tajawal",sans-serif;background:#0a2a25;color:#ecfffb;padding:18px 14px}.shell{max-width:980px;margin:0 auto}.panel{background:rgba(8,39,34,.86);border:1px solid rgba(52,211,153,.35);border-radius:16px;padding:16px}.alert{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px;margin-top:8px}.meta{font-size:12px;color:#bde4dd;margin-top:4px}.top{display:flex;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap}.btn{border:1px solid rgba(52,211,153,.35);background:transparent;color:#ecfffb;padding:8px 12px;border-radius:8px;font:inherit;cursor:pointer}
+:root {
+  --bg1: #0a2a25;
+  --bg2: #103a33;
+  --card: rgba(8, 39, 34, 0.88);
+  --line: rgba(52, 211, 153, 0.35);
+  --text: #ecfffb;
+  --soft: #bde4dd;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Tajawal", sans-serif;
+  color: var(--text);
+  background: radial-gradient(900px 460px at 10% 0%, rgba(52, 211, 153, 0.22), transparent 60%), linear-gradient(135deg, var(--bg1), var(--bg2));
+  min-height: 100vh;
+  padding: 18px 14px;
+}
+.shell { max-width: 1020px; margin: 0 auto; }
+.top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.btn {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font: inherit;
+  cursor: pointer;
+}
+.panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+}
+.meta-row {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pill {
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.03);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--soft);
+}
+.controls {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 8px;
+}
+.input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+  font: inherit;
+  padding: 8px;
+}
+.list {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+.alert {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 10px;
+}
+.alert-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.badge {
+  border-radius: 999px;
+  font-size: 11px;
+  padding: 2px 8px;
+}
+.b-critical { background: rgba(239,68,68,.2); color: #fca5a5; }
+.b-operational { background: rgba(245,158,11,.2); color: #fde68a; }
+.b-info { background: rgba(56,189,248,.2); color: #bae6fd; }
+.meta { font-size: 12px; color: var(--soft); margin-top: 4px; }
+.empty { color: var(--soft); font-size: 13px; }
+.toast {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  background: rgba(8, 39, 34, 0.96);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 12px;
+  display: none;
+}
 </style>
 </head>
 <body>
 <div class="shell">
   <div class="top">
     <button class="btn" onclick="window.location.href='parent-portal.html'">العودة لبوابة ولي الأمر</button>
-    <button class="btn" onclick="loadAlerts()">تحديث</button>
-    <button class="btn" data-action="logout">تسجيل الخروج</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn" data-permission="view.notifications" onclick="window.location.href='notifications-center.html'">مركز الإشعارات</button>
+      <button class="btn" onclick="loadAlerts()">تحديث</button>
+      <button class="btn" data-action="logout">تسجيل الخروج</button>
+    </div>
   </div>
   <section class="panel">
-    <h1 style="margin:0;font-size:30px">تنبيهات اليوم</h1>
-    <p style="color:#bde4dd">آخر الإشعارات الصحية المتعلقة بالطالب.</p>
-    <div id="alertsList"></div>
+    <h1 style="margin:0;font-size:30px;">تنبيهات اليوم</h1>
+    <p style="color:#bde4dd;margin:6px 0 0;">آخر الإشعارات الصحية المتعلقة بالطالب.</p>
+    <div class="meta-row">
+      <span class="pill">النمط: <strong id="mode-pill">-</strong></span>
+      <span class="pill">آخر مزامنة: <strong id="sync-pill">-</strong></span>
+      <span class="pill">عدد التنبيهات: <strong id="count-pill">0</strong></span>
+    </div>
+    <div class="controls">
+      <select id="typeFilter" class="input" onchange="applyFilters()">
+        <option value="all">كل الأنواع</option>
+        <option value="critical">حرج</option>
+        <option value="operational">تشغيلي</option>
+        <option value="info">معلوماتي</option>
+      </select>
+      <input id="searchFilter" class="input" type="search" placeholder="بحث داخل نص التنبيه..." oninput="applyFilters()">
+    </div>
+    <div id="alertsList" class="list"></div>
   </section>
 </div>
+<div id="toast" class="toast"></div>
 <script src="../../assets/js/security.js"></script>
 <script>
-async function loadAlerts() {
+var alertsCache = [];
+
+function notify(text) {
+  var el = document.getElementById('toast');
+  el.textContent = text;
+  el.style.display = 'block';
+  window.setTimeout(function () { el.style.display = 'none'; }, 2200);
+}
+
+function typeLabel(type) {
+  if (type === 'critical') return 'حرج';
+  if (type === 'operational') return 'تشغيلي';
+  return 'معلوماتي';
+}
+
+function typeClass(type) {
+  if (type === 'critical') return 'b-critical';
+  if (type === 'operational') return 'b-operational';
+  return 'b-info';
+}
+
+function updateMeta(count) {
+  document.getElementById('mode-pill').textContent = SmartClinicSecurity.isDemoMode() ? 'Demo' : 'Live';
+  document.getElementById('sync-pill').textContent = new Date().toLocaleTimeString('ar-SA');
+  document.getElementById('count-pill').textContent = String(count || 0);
+}
+
+function renderAlerts(items) {
   var wrap = document.getElementById('alertsList');
-  wrap.innerHTML = '<div class="alert">جاري التحميل...</div>';
-  var result = await SmartClinicSecurity.apiJson('/alerts');
-  if (!result.ok || !result.data) {
-    wrap.innerHTML = '<div class="alert">تعذر الاتصال بالخادم.</div>';
-    return;
-  }
-  var items = result.data.items || [];
-  if (!items.length) {
-    wrap.innerHTML = '<div class="alert">لا توجد تنبيهات حالياً.</div>';
+  if (!items || !items.length) {
+    wrap.innerHTML = '<div class="empty">لا توجد تنبيهات مطابقة للفلاتر الحالية.</div>';
     return;
   }
   wrap.innerHTML = items.map(function (a) {
     var when = a.createdAt ? new Date(a.createdAt).toLocaleString('ar-SA') : '-';
-    return '<div class="alert"><div>' + a.text + '</div><div class="meta">' + when + '</div></div>';
+    var safeType = a.type || 'info';
+    return '<div class="alert">' +
+      '<div class="alert-head"><strong>' + (a.text || 'تنبيه') + '</strong><span class="badge ' + typeClass(safeType) + '">' + typeLabel(safeType) + '</span></div>' +
+      '<div class="meta">' + when + '</div>' +
+    '</div>';
   }).join('');
 }
 
-window.addEventListener("DOMContentLoaded", function(){
-  SmartClinicSecurity.requireAccess(["parent", "admin"], "تنبيهات ولي الأمر");
+function applyFilters() {
+  var type = document.getElementById('typeFilter').value || 'all';
+  var query = String(document.getElementById('searchFilter').value || '').trim().toLowerCase();
+  var items = alertsCache.filter(function (a) {
+    var matchType = type === 'all' || (a.type || 'info') === type;
+    var matchText = !query || String(a.text || '').toLowerCase().indexOf(query) !== -1;
+    return matchType && matchText;
+  });
+  updateMeta(items.length);
+  renderAlerts(items);
+}
+
+async function loadAlerts() {
+  var wrap = document.getElementById('alertsList');
+  wrap.innerHTML = '<div class="empty">جاري التحميل...</div>';
+  var result = await SmartClinicSecurity.apiJson('/alerts');
+  if (!result.ok || !result.data) {
+    alertsCache = [];
+    updateMeta(0);
+    wrap.innerHTML = '<div class="empty">تعذر الاتصال بالخادم.</div>';
+    return;
+  }
+  alertsCache = result.data.items || [];
+  applyFilters();
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  SmartClinicSecurity.requireAccess(['parent', 'admin'], 'تنبيهات ولي الأمر');
   SmartClinicSecurity.createAutoRefresh(loadAlerts, 25000, { immediate: true });
 });
 </script>
