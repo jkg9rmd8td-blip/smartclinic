@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>تفاصيل الحالة – Smart Clinic</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui;
+  background: radial-gradient(circle at top, #020617 0%, #000 70%);
+  color: #e5e7eb;
+  padding: 24px;
+}
+.shell {
+  max-width: 1280px;
+  margin: 0 auto;
+  background: radial-gradient(circle at top left, rgba(15,23,42,0.96), #020617 60%);
+  border-radius: 28px;
+  border: 1px solid rgba(148,163,184,0.35);
+  box-shadow: 0 26px 80px rgba(0,0,0,0.9);
+  padding: 20px 22px 22px;
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.header-title { font-size: 20px; font-weight: 600; }
+.header-sub { font-size: 12px; color: #9ca3af; }
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,0.5);
+  font-size: 11px;
+  color: #9ca3af;
+}
+.pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #22c55e;
+  box-shadow: 0 0 0 4px rgba(34,197,94,0.25);
+}
+.btn-ghost {
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,0.5);
+  background: transparent;
+  color: #e5e7eb;
+  font-size: 11px;
+  cursor: pointer;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 920px) {
+  .layout { grid-template-columns: 1fr; }
+}
+.card {
+  background: rgba(15,23,42,0.96);
+  border-radius: 22px;
+  border: 1px solid rgba(30,64,175,0.8);
+  padding: 14px 14px 12px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+}
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.card-title { font-size: 14px; font-weight: 600; }
+.card-sub { font-size: 11px; color: #9ca3af; }
+.card-pill {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,0.5);
+  color: #9ca3af;
+}
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 8px;
+  font-size: 12px;
+}
+.info-label { color: #9ca3af; font-size: 11px; }
+.info-value { font-size: 13px; }
+textarea {
+  width: 100%;
+  min-height: 98px;
+  border-radius: 14px;
+  border: 1px solid rgba(30,64,175,0.9);
+  background: rgba(15,23,42,0.96);
+  color: #e5e7eb;
+  font-size: 12px;
+  padding: 8px;
+  resize: vertical;
+}
+.actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.action-btn {
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(30,64,175,0.9);
+  background: rgba(15,23,42,0.96);
+  font-size: 11px;
+  color: #e5e7eb;
+  cursor: pointer;
+}
+.action-btn.primary { background: #0ea5e9; border-color: #0ea5e9; }
+.action-btn.danger { background: #ef4444; border-color: #ef4444; }
+.timeline { display: flex; flex-direction: column; gap: 6px; font-size: 11px; }
+.timeline-item {
+  padding: 8px;
+  border-radius: 14px;
+  border: 1px solid rgba(30,64,175,0.9);
+  background: rgba(15,23,42,0.96);
+}
+.small-muted { font-size: 10px; color: #9ca3af; margin-top: 4px; }
+.toast {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  background: rgba(15,23,42,0.96);
+  border: 1px solid rgba(148,163,184,0.5);
+  color: #e5e7eb;
+  border-radius: 10px;
+  font-size: 12px;
+  padding: 9px 12px;
+  display: none;
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="header">
+    <div>
+      <div class="header-title" id="case-title">تفاصيل الحالة</div>
+      <div class="header-sub" id="case-sub">جاري تحميل بيانات الحالة...</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="pill"><span class="pill-dot"></span><span id="case-status">قيد المعالجة</span></span>
+      <button class="btn-ghost" onclick="goRoleHome()">العودة</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">بيانات الحالة</div>
+          <div class="card-sub">معلومات الطالب، مستوى الخطورة، وآخر تحديث.</div>
+        </div>
+        <span class="card-pill" id="case-id-pill">Case</span>
+      </div>
+
+      <div class="info-grid">
+        <div><div class="info-label">اسم الطالب</div><div class="info-value" id="student-name">-</div></div>
+        <div><div class="info-label">عنوان الحالة</div><div class="info-value" id="case-topic">-</div></div>
+        <div><div class="info-label">الخطورة</div><div class="info-value" id="case-severity">-</div></div>
+        <div><div class="info-label">آخر تحديث</div><div class="info-value" id="case-updated">-</div></div>
+      </div>
+
+      <hr style="border:none;border-top:1px solid rgba(30,64,175,0.8);margin:10px 0;">
+
+      <div class="card-sub">الخطة العلاجية الحالية</div>
+      <textarea id="plan-box" data-permission="edit.careplan" placeholder="اكتب الخطة العلاجية المحدثة..."></textarea>
+
+      <div class="actions-row">
+        <button class="action-btn primary" data-permission="edit.careplan" onclick="savePlan()">حفظ الخطة</button>
+        <button class="action-btn" data-permission="update.vitals" onclick="recordCaseAction('vitals_update', 'تم تحديث العلامات الحيوية')">تحديث العلامات الحيوية</button>
+        <button class="action-btn" data-permission="contact.guardian" onclick="recordCaseAction('contact_guardian', 'تم التواصل مع ولي الأمر')">اتصال بولي الأمر</button>
+        <button class="action-btn danger" data-permission="approve.referral" onclick="recordCaseAction('external_referral', 'تم اعتماد تحويل الحالة للطوارئ الخارجية')">تحويل خارجي</button>
+        <button class="action-btn" data-permission="close.case" onclick="recordCaseAction('close_case', 'تم إنهاء الحالة وتوثيق القرار')">إنهاء الحالة</button>
+      </div>
+      <div class="small-muted">يتم حفظ جميع العمليات في سجل التدقيق وربطها بمعرف الحالة.</div>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">السجل الزمني للحالة</div>
+          <div class="card-sub">آخر الإجراءات الموثقة من الفريق الطبي.</div>
+        </div>
+        <span class="card-pill">Timeline</span>
+      </div>
+      <div id="timeline" class="timeline"></div>
+      <div class="actions-row">
+        <button class="action-btn" onclick="window.location.href='emergency-flow.html?id=' + encodeURIComponent(currentCaseId)">فتح مسار الطوارئ</button>
+        <button class="action-btn" onclick="window.location.href='student-profile.html'">فتح ملف الطالب</button>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="../../assets/js/security.js"></script>
+<script>
+var currentCaseId = 'case_1';
+
+function qs(name) {
+  var params = new URLSearchParams(window.location.search);
+  return params.get(name);
+}
+
+function normalizeCaseId(raw) {
+  if (!raw) return 'case_1';
+  if (/^case_/.test(raw)) return raw;
+  if (/^\d+$/.test(raw)) return 'case_' + raw;
+  return raw;
+}
+
+function notify(text) {
+  var el = document.getElementById('toast');
+  el.textContent = text;
+  el.style.display = 'block';
+  window.setTimeout(function () {
+    el.style.display = 'none';
+  }, 2200);
+}
+
+function renderTimeline(items) {
+  var wrap = document.getElementById('timeline');
+  if (!items || !items.length) {
+    wrap.innerHTML = '<div class="timeline-item">لا توجد أحداث مسجلة حتى الآن.</div>';
+    return;
+  }
+  wrap.innerHTML = items.map(function (entry) {
+    var when = entry.createdAt ? new Date(entry.createdAt).toLocaleString('ar-SA') : '-';
+    var details = entry.details && entry.details.note ? entry.details.note : 'بدون تفاصيل';
+    return '<div class="timeline-item"><strong>' + entry.action + '</strong><div class="small-muted">' + details + '</div><div class="small-muted">' + when + '</div></div>';
+  }).join('');
+}
+
+function renderCase(item, timeline) {
+  document.getElementById('case-title').textContent = 'فتح الحالة - ' + (item.studentName || '-');
+  document.getElementById('case-sub').textContent = (item.title || '-') + ' • صلاحية: ' + (SmartClinicSecurity.getSession() || {}).role;
+  document.getElementById('case-status').textContent = item.status || '-';
+  document.getElementById('case-id-pill').textContent = item.id;
+  document.getElementById('student-name').textContent = item.studentName || '-';
+  document.getElementById('case-topic').textContent = item.title || '-';
+  document.getElementById('case-severity').textContent = item.severity || '-';
+  document.getElementById('case-updated').textContent = item.updatedAt ? new Date(item.updatedAt).toLocaleString('ar-SA') : '-';
+  document.getElementById('plan-box').value = item.notes || '';
+  renderTimeline(timeline || []);
+}
+
+async function loadCase() {
+  try {
+    var response = await SmartClinicSecurity.apiRequest('/cases/' + encodeURIComponent(currentCaseId));
+    var payload = await response.json();
+    if (!response.ok) {
+      notify(payload.error || 'تعذر تحميل الحالة');
+      return;
+    }
+    renderCase(payload.item || {}, payload.timeline || []);
+  } catch (err) {
+    notify('تعذر الاتصال بالخادم.');
+  }
+}
+
+async function savePlan() {
+  var plan = document.getElementById('plan-box').value.trim();
+  try {
+    var response = await SmartClinicSecurity.apiRequest('/cases/' + encodeURIComponent(currentCaseId), {
+      method: 'PATCH',
+      body: JSON.stringify({ notes: plan })
+    });
+    var payload = await response.json();
+    if (!response.ok) {
+      notify(payload.error || 'تعذر حفظ الخطة');
+      return;
+    }
+    await recordCaseAction('careplan_save', 'تم حفظ الخطة العلاجية', { plan: plan }, true);
+    notify('تم حفظ الخطة بنجاح');
+  } catch (err) {
+    notify('تعذر الاتصال بالخادم.');
+  }
+}
+
+async function recordCaseAction(type, note, extra, silent) {
+  try {
+    var body = Object.assign({ type: type, note: note }, extra || {});
+    var response = await SmartClinicSecurity.apiRequest('/cases/' + encodeURIComponent(currentCaseId) + '/actions', {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+    var payload = await response.json();
+    if (!response.ok) {
+      notify(payload.error || 'تعذر تنفيذ الإجراء.');
+      return;
+    }
+    if (!silent) {
+      notify(note);
+    }
+    loadCase();
+  } catch (err) {
+    notify('تعذر الاتصال بالخادم.');
+  }
+}
+
+function goRoleHome() {
+  var session = SmartClinicSecurity.getSession();
+  if (session && session.role === 'admin') {
+    window.location.href = 'admin-dashboard.html';
+    return;
+  }
+  window.location.href = 'doctor.html';
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  SmartClinicSecurity.requireAccess(['doctor', 'admin'], 'تفاصيل الحالة');
+  currentCaseId = normalizeCaseId(qs('id'));
+  loadCase();
+});
+</script>
+</body>
+</html>

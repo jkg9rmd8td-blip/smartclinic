@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>التقرير التنفيذي – Smart Clinic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:"Tajawal",sans-serif;background:#1f2937;color:#f8fafc;padding:18px 14px}.shell{max-width:1020px;margin:0 auto}.panel{background:rgba(17,24,39,.9);border:1px solid rgba(148,163,184,.35);border-radius:16px;padding:16px}.top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px}.btn{border:1px solid rgba(148,163,184,.35);background:transparent;color:#f8fafc;padding:8px 12px;border-radius:8px;font:inherit;cursor:pointer}.primary{background:#fbbf24;color:#1f2937;border:none;font-weight:700}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-top:10px}.card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px}.l{font-size:12px;color:#cbd5e1}.v{font-size:24px;font-weight:800;margin-top:2px}.msg{margin-top:10px;font-size:13px;color:#cbd5e1}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <button class="btn" onclick="window.location.href='admin-dashboard.html'">العودة للوحة الإدارة</button>
+    <div style="display:flex;gap:8px;">
+      <button class="btn" onclick="loadReport()">تحديث</button>
+      <button class="btn primary" onclick="downloadPdf()">تنزيل PDF تنفيذي</button>
+      <button class="btn" data-action="logout">تسجيل الخروج</button>
+    </div>
+  </div>
+  <section class="panel">
+    <h1 style="margin:0;font-size:30px">التقرير التنفيذي للإدارة</h1>
+    <p style="color:#cbd5e1">قراءة مباشرة من system/overview و analytics مع تصدير PDF.</p>
+    <div id="stats" class="grid"></div>
+    <div id="msg" class="msg"></div>
+  </section>
+</div>
+<script src="../../assets/js/security.js"></script>
+<script>
+function setMsg(text) { document.getElementById('msg').textContent = text || ''; }
+
+function render(payload) {
+  var sys = payload.system || {};
+  var health = sys.health || {};
+  var snap = sys.snapshot || {};
+  var today = (payload.analytics || {}).today || {};
+  var ops = sys.operations || {};
+
+  var sla = payload.sla || {};
+  var items = [
+    ['حالة API', health.api || '-'],
+    ['Uptime (s)', Number(health.uptimeSec || 0)],
+    ['المستخدمون النشطون', Number(snap.activeUsers || 0)],
+    ['إجمالي الحالات', Number(snap.totalCases || 0)],
+    ['حالات حرجة', Number(snap.criticalCases || 0)],
+    ['طلبات معلقة', Number(ops.pending || 0)],
+    ['رسائل اليوم', Number(today.messages || 0)],
+    ['عمليات اليوم', Number(today.actions || 0)],
+    ['تجاوز SLA', Number((sla.summary || {}).breached || 0)]
+  ];
+
+  document.getElementById('stats').innerHTML = items.map(function (it) {
+    return '<div class="card"><div class="l">' + it[0] + '</div><div class="v">' + it[1] + '</div></div>';
+  }).join('');
+}
+
+async function loadReport() {
+  setMsg('جاري التحميل...');
+  try {
+    var responseReport = await SmartClinicSecurity.apiRequest('/reports/executive');
+    var payloadReport = await responseReport.json();
+    if (!responseReport.ok) {
+      setMsg(payloadReport.error || 'تعذر تحميل التقرير التنفيذي.');
+      return;
+    }
+    var responseSla = await SmartClinicSecurity.apiRequest('/sla/monitor');
+    var payloadSla = await responseSla.json();
+    if (!responseSla.ok) {
+      payloadSla = { summary: { breached: 0 } };
+    }
+    var merged = Object.assign({}, payloadReport, { sla: payloadSla });
+    render(merged);
+    setMsg('آخر تحديث: ' + new Date(payloadReport.generatedAt).toLocaleString('ar-SA'));
+  } catch (err) {
+    setMsg('تعذر الاتصال بالخادم.');
+  }
+}
+
+async function downloadPdf() {
+  setMsg('جاري تجهيز ملف PDF...');
+  try {
+    var response = await SmartClinicSecurity.apiRequest('/reports/executive/pdf');
+    if (!response.ok) {
+      setMsg('تعذر تنزيل ملف PDF التنفيذي.');
+      return;
+    }
+    var blob = await response.blob();
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'executive-report.pdf';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    setMsg('تم تنزيل التقرير التنفيذي PDF بنجاح.');
+  } catch (err) {
+    setMsg('تعذر الاتصال بالخادم أثناء التنزيل.');
+  }
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  SmartClinicSecurity.requireAccess(['admin'], 'التقرير التنفيذي');
+  loadReport();
+});
+</script>
+</body>
+</html>

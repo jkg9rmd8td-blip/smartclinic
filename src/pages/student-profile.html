@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>الملف الصحي للطالب – Smart Clinic</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui;
+  background: radial-gradient(circle at top, #020617 0%, #000 70%);
+  color: #e5e7eb;
+  padding: 24px;
+}
+.shell {
+  max-width: 1220px;
+  margin: 0 auto;
+  background: radial-gradient(circle at top left, rgba(15,23,42,0.96), #020617 60%);
+  border-radius: 28px;
+  border: 1px solid rgba(148,163,184,0.35);
+  box-shadow: 0 26px 80px rgba(0,0,0,0.9);
+  padding: 20px 22px 22px;
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.header-main { display: flex; align-items: center; gap: 14px; }
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: linear-gradient(135deg,#0ea5e9,#22c55e);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:22px;
+  font-weight:700;
+}
+.header-name { font-size: 18px; font-weight: 600; }
+.header-sub { font-size: 12px; color: #9ca3af; }
+.btn-ghost {
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,0.5);
+  background: transparent;
+  color: #e5e7eb;
+  font-size: 11px;
+  cursor: pointer;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 940px) {
+  .layout { grid-template-columns: 1fr; }
+}
+.card {
+  background: rgba(15,23,42,0.96);
+  border-radius: 22px;
+  border: 1px solid rgba(30,64,175,0.8);
+  padding: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+}
+.card-header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:10px;
+}
+.card-title { font-size:14px; font-weight:600; }
+.card-sub { font-size:11px; color:#9ca3af; }
+.pill {
+  font-size:10px;
+  padding:2px 8px;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,0.5);
+  color:#9ca3af;
+}
+.info-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+  font-size:12px;
+}
+.info-label { color:#9ca3af; font-size:11px; }
+.info-value { font-size:13px; }
+.stats {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 8px;
+}
+.stat {
+  border: 1px solid rgba(148,163,184,0.35);
+  border-radius: 12px;
+  padding: 8px;
+}
+.stat-label { font-size: 11px; color: #9ca3af; }
+.stat-value { font-size: 20px; font-weight: 700; margin-top: 2px; }
+.list {
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-size:12px;
+}
+.item {
+  padding:8px;
+  border-radius:12px;
+  border:1px solid rgba(30,64,175,0.85);
+  background:rgba(15,23,42,0.96);
+}
+.item-title { font-weight: 600; }
+.item-meta { color:#9ca3af; font-size:11px; margin-top:2px; }
+.inline-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.btn-primary {
+  padding:8px 14px;
+  border-radius:999px;
+  border:none;
+  background:#0ea5e9;
+  color:#fff;
+  font-size:12px;
+  cursor:pointer;
+}
+.btn-muted {
+  padding:8px 12px;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,0.5);
+  background:transparent;
+  color:#e5e7eb;
+  font-size:12px;
+  cursor:pointer;
+}
+textarea {
+  width: 100%;
+  margin-top: 8px;
+  border-radius: 12px;
+  border:1px solid rgba(30,64,175,0.85);
+  background: rgba(15,23,42,0.96);
+  color: #e5e7eb;
+  font-size: 12px;
+  padding: 8px;
+}
+.toast {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  background: rgba(15,23,42,0.96);
+  border: 1px solid rgba(148,163,184,0.5);
+  color: #e5e7eb;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 12px;
+  display: none;
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="header">
+    <div class="header-main">
+      <div class="avatar" id="avatar-letter">ط</div>
+      <div>
+        <div class="header-name" id="student-name">الملف الصحي للطالب</div>
+        <div class="header-sub">الوصول حسب الصلاحية: <span data-session-role>الطالب</span></div>
+      </div>
+    </div>
+    <button class="btn-ghost" onclick="goRoleHome()">العودة</button>
+  </div>
+
+  <div class="layout">
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">الملف الصحي الأساسي</div>
+          <div class="card-sub">بيانات الطالب، مؤشرات الحالة، وصلاحيات المتابعة.</div>
+        </div>
+        <span class="pill">Health Passport</span>
+      </div>
+
+      <div class="info-grid">
+        <div><div class="info-label">الاسم</div><div class="info-value" id="info-name">-</div></div>
+        <div><div class="info-label">المعرف</div><div class="info-value" id="info-id">-</div></div>
+        <div><div class="info-label">العمر</div><div class="info-value" id="info-age">-</div></div>
+        <div><div class="info-label">الصف</div><div class="info-value" id="info-grade">-</div></div>
+        <div><div class="info-label">تواصل ولي الأمر</div><div class="info-value" id="info-guardian">-</div></div>
+        <div><div class="info-label">آخر حالة</div><div class="info-value" id="info-latest-case">-</div></div>
+        <div><div class="info-label">آخر تحديث</div><div class="info-value" id="info-updated">-</div></div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><div class="stat-label">الحالات المفتوحة</div><div id="st-open" class="stat-value">0</div></div>
+        <div class="stat"><div class="stat-label">طلبات معلقة</div><div id="st-pending" class="stat-value">0</div></div>
+        <div class="stat"><div class="stat-label">التقارير</div><div id="st-reports" class="stat-value">0</div></div>
+      </div>
+
+      <div class="inline-row">
+        <button class="btn-primary" data-permission="request.visit" onclick="quickVisitRequest()">طلب زيارة سريع</button>
+        <button class="btn-muted" data-permission="send.message" onclick="focusMessageBox()">مراسلة العيادة</button>
+        <button class="btn-muted" data-permission="export.report" onclick="notify('تم تجهيز التقرير للطباعة من المتصفح')">تصدير تقرير</button>
+      </div>
+    </section>
+
+    <section class="card" id="cases">
+      <div class="card-header">
+        <div>
+          <div class="card-title">سجل الحالات</div>
+          <div class="card-sub">جميع الحالات المرتبطة بالطالب حسب الصلاحية.</div>
+        </div>
+        <span class="pill">Cases</span>
+      </div>
+      <div id="cases-list" class="list"></div>
+    </section>
+
+    <section class="card" id="reports">
+      <div class="card-header">
+        <div>
+          <div class="card-title">التقارير الصحية</div>
+          <div class="card-sub">التقارير المتاحة للعرض أو التصدير.</div>
+        </div>
+        <span class="pill">Reports</span>
+      </div>
+      <div id="reports-list" class="list"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">التنبيهات والتواصل</div>
+          <div class="card-sub">تنبيهاتك الصحية مع قناة تواصل مباشرة.</div>
+        </div>
+        <span class="pill">Alerts & Messages</span>
+      </div>
+      <div id="alerts-list" class="list"></div>
+      <textarea id="msg-box" rows="3" data-permission="send.message" placeholder="اكتب رسالتك للعيادة..."></textarea>
+      <div class="inline-row">
+        <button class="btn-primary" data-permission="send.message" onclick="sendMessage()">إرسال الرسالة</button>
+        <button class="btn-muted" onclick="loadProfile()">تحديث</button>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="../../assets/js/security.js"></script>
+<script>
+var latestData = null;
+
+function notify(text) {
+  var el = document.getElementById('toast');
+  el.textContent = text;
+  el.style.display = 'block';
+  window.setTimeout(function () { el.style.display = 'none'; }, 2200);
+}
+
+function fmtDate(value) {
+  if (!value) return '-';
+  return new Date(value).toLocaleString('ar-SA');
+}
+
+function renderList(id, items, emptyText, mapper) {
+  var wrap = document.getElementById(id);
+  if (!items || !items.length) {
+    wrap.innerHTML = '<div class="item">' + emptyText + '</div>';
+    return;
+  }
+  wrap.innerHTML = items.map(mapper).join('');
+}
+
+function renderProfile(data) {
+  latestData = data || {};
+  var student = latestData.student || {};
+  var snapshot = latestData.snapshot || {};
+  var latestCase = latestData.latestCase || null;
+
+  var name = student.name || 'طالب';
+  document.getElementById('student-name').textContent = name;
+  document.getElementById('avatar-letter').textContent = name.charAt(0);
+  document.getElementById('info-name').textContent = name;
+  document.getElementById('info-id').textContent = student.id || '-';
+  document.getElementById('info-age').textContent = student.age ? (student.age + ' سنة') : '-';
+  document.getElementById('info-grade').textContent = student.grade || '-';
+  document.getElementById('info-guardian').textContent = student.guardianPhone || '-';
+  document.getElementById('info-latest-case').textContent = latestCase ? (latestCase.title + ' (' + latestCase.severity + ')') : 'لا توجد حالة';
+  document.getElementById('info-updated').textContent = latestCase ? fmtDate(latestCase.updatedAt) : '-';
+
+  document.getElementById('st-open').textContent = Number(snapshot.openCases || 0);
+  document.getElementById('st-pending').textContent = Number(snapshot.pendingVisits || 0);
+  document.getElementById('st-reports').textContent = Number(snapshot.reports || 0);
+
+  renderList('cases-list', latestData.cases, 'لا توجد حالات مسجلة.', function (c) {
+    return '<div class="item"><div class="item-title">' + (c.title || 'حالة') + '</div><div class="item-meta">الخطورة: ' + (c.severity || '-') + ' • الحالة: ' + (c.status || '-') + ' • ' + fmtDate(c.updatedAt) + '</div></div>';
+  });
+
+  renderList('reports-list', latestData.reports, 'لا توجد تقارير متاحة.', function (r) {
+    return '<div class="item"><div class="item-title">' + (r.title || 'تقرير') + '</div><div class="item-meta">' + fmtDate(r.createdAt) + '</div></div>';
+  });
+
+  renderList('alerts-list', latestData.alerts, 'لا توجد تنبيهات جديدة.', function (a) {
+    return '<div class="item"><div class="item-title">' + (a.text || 'تنبيه') + '</div><div class="item-meta">' + fmtDate(a.createdAt) + '</div></div>';
+  });
+}
+
+async function loadProfile() {
+  try {
+    var response = await SmartClinicSecurity.apiRequest('/student/overview');
+    var payload = await response.json();
+    if (!response.ok) {
+      notify(payload.error || 'تعذر تحميل الملف الصحي.');
+      return;
+    }
+    renderProfile(payload);
+  } catch (err) {
+    notify('تعذر الاتصال بالخادم.');
+  }
+}
+
+async function quickVisitRequest() {
+  try {
+    var response = await SmartClinicSecurity.apiRequest('/visit-requests', {
+      method: 'POST',
+      body: JSON.stringify({ reason: 'طلب زيارة سريع من صفحة الملف الصحي' })
+    });
+    var payload = await response.json();
+    if (!response.ok) {
+      notify(payload.error || 'تعذر إرسال الطلب.');
+      return;
+    }
+    notify('تم إرسال طلب الزيارة.');
+    loadProfile();
+  } catch (err) {
+    notify('تعذر الاتصال بالخادم.');
+  }
+}
+
+function focusMessageBox() {
+  var box = document.getElementById('msg-box');
+  if (box) box.focus();
+}
+
+async function sendMessage() {
+  var text = document.getElementById('msg-box').value.trim();
+  if (!text) {
+    notify('اكتب رسالة أولًا.');
+    return;
+  }
+  try {
+    var response = await SmartClinicSecurity.apiRequest('/messages', {
+      method: 'POST',
+      body: JSON.stringify({ text: text })
+    });
+    var payload = await response.json();
+    if (!response.ok) {
+      notify(payload.error || 'تعذر إرسال الرسالة.');
+      return;
+    }
+    document.getElementById('msg-box').value = '';
+    notify('تم إرسال الرسالة للفريق الصحي.');
+  } catch (err) {
+    notify('تعذر الاتصال بالخادم.');
+  }
+}
+
+function goRoleHome() {
+  var session = SmartClinicSecurity.getSession();
+  if (!session) {
+    window.location.href = '../../  index.html';
+    return;
+  }
+  var map = {
+    student: 'student-portal.html',
+    doctor: 'doctor.html',
+    parent: 'parent-portal.html',
+    admin: 'admin-dashboard.html'
+  };
+  window.location.href = map[session.role] || '../../  index.html';
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  SmartClinicSecurity.requireAccess(['student', 'doctor', 'parent', 'admin'], 'ملف الطالب');
+  SmartClinicSecurity.createAutoRefresh(loadProfile, 20000, { immediate: true });
+});
+</script>
+</body>
+</html>

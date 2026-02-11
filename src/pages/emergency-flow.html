@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>مسار الطوارئ – Smart Clinic</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { margin: 0; font-family: "Segoe UI", system-ui; background: radial-gradient(circle at top, #111827 0%, #000 70%); color: #e5e7eb; padding: 24px; }
+.shell { max-width: 1040px; margin: 0 auto; background: radial-gradient(circle at top, rgba(127,29,29,0.9), #020617 70%); border-radius: 28px; border: 1px solid rgba(248,113,113,0.6); box-shadow: 0 30px 90px rgba(0,0,0,0.95); padding: 20px 22px 22px; }
+.header { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom: 14px; }
+.header-title { font-size: 20px; font-weight: 700; }
+.header-sub { font-size: 12px; color:#fecaca; }
+.badges { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.badge { padding:4px 10px; border-radius:999px; border:1px solid rgba(248,113,113,0.8); font-size:11px; color:#fecaca; display:inline-flex; gap:6px; align-items:center; }
+.dot { width:7px; height:7px; border-radius:999px; background:#ef4444; box-shadow:0 0 0 4px rgba(248,113,113,0.4); }
+.btn-ghost { padding:7px 12px; border-radius:999px; border:1px solid rgba(248,113,113,0.7); background:transparent; color:#fee2e2; font-size:11px; cursor:pointer; }
+.kpis { display:grid; grid-template-columns: repeat(auto-fit, minmax(170px,1fr)); gap:8px; margin: 10px 0 12px; }
+.kpi { border:1px solid rgba(248,113,113,0.45); border-radius:12px; background:rgba(24,24,27,0.9); padding:8px; }
+.kpi-l { font-size:11px; color:#fecaca; }
+.kpi-v { font-size:22px; font-weight:700; margin-top:2px; color:#fee2e2; }
+.progress { border:1px solid rgba(248,113,113,0.45); border-radius:12px; overflow:hidden; background:rgba(24,24,27,0.9); margin-bottom: 12px; }
+.progress-fill { height:10px; background: linear-gradient(90deg, #ef4444, #f97316); width:0%; transition: width .3s ease; }
+.progress-label { font-size:11px; color:#fecaca; padding:6px 8px; }
+.recommendation { border:1px solid rgba(248,113,113,0.45); border-radius:12px; padding:9px 10px; background:rgba(24,24,27,0.9); font-size:12px; color:#fee2e2; margin-bottom: 12px; }
+.timer { margin: 8px 0 14px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+.timer-main { font-size:32px; font-weight:700; color:#fee2e2; }
+.timer-sub { font-size:11px; color:#fecaca; }
+.grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+@media (max-width: 920px) { .grid { grid-template-columns:1fr; } }
+.panel { border:1px solid rgba(248,113,113,0.45); border-radius:14px; background:rgba(24,24,27,0.9); padding:10px; }
+.steps { display:flex; flex-direction:column; gap:8px; }
+.step { padding:9px 10px; border-radius:12px; border:1px solid rgba(248,113,113,0.5); display:flex; justify-content:space-between; gap:8px; font-size:12px; }
+.step-status { font-size:11px; }
+.st-done { color:#bbf7d0; }
+.st-progress { color:#fde68a; }
+.st-todo { color:#fecaca; }
+.actions-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.action-btn { padding:8px 12px; border-radius:999px; border:none; font-size:12px; cursor:pointer; }
+.action-btn.primary { background:#ef4444; color:#fff; }
+.action-btn.secondary { background:#0ea5e9; color:#fff; }
+.action-btn.success { background:#22c55e; color:#052e16; }
+.action-btn.ghost { background:transparent; border:1px solid rgba(248,113,113,0.7); color:#fee2e2; }
+.log-item { font-size:11px; color:#fecaca; padding:7px 0; border-bottom:1px dashed rgba(248,113,113,0.35); }
+.log-item:last-child { border-bottom:none; }
+.toast { position:fixed; left:16px; bottom:16px; background:rgba(24,24,27,0.95); border:1px solid rgba(248,113,113,0.6); color:#fee2e2; border-radius:10px; padding:9px 12px; font-size:12px; display:none; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="header">
+    <div>
+      <div class="header-title" id="case-title">مسار الطوارئ</div>
+      <div class="header-sub" id="case-sub">تحميل بيانات الحالة الحرجة...</div>
+    </div>
+    <div class="badges">
+      <span class="badge"><span class="dot"></span><span id="status-badge">قيد المعالجة</span></span>
+      <span class="badge" id="triage-badge">Triage: RED</span>
+      <span class="badge" id="sla-badge">SLA: ضمن الزمن</span>
+      <button class="btn-ghost" onclick="goRoleHome()">إنهاء المسار</button>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-l">الوقت المنقضي</div><div class="kpi-v" id="elapsed-kpi">0 د</div></div>
+    <div class="kpi"><div class="kpi-l">حد SLA</div><div class="kpi-v" id="allowed-kpi">0 د</div></div>
+    <div class="kpi"><div class="kpi-l">إنجاز المسار</div><div class="kpi-v" id="progress-kpi">0%</div></div>
+    <div class="kpi"><div class="kpi-l">حالة الخطر</div><div class="kpi-v" id="severity-kpi">-</div></div>
+  </div>
+
+  <div class="progress">
+    <div id="progress-fill" class="progress-fill"></div>
+    <div class="progress-label" id="progress-label">التقدم: 0%</div>
+  </div>
+
+  <div id="recommendation" class="recommendation">يوصى بتقييم الحالة فورًا.</div>
+
+  <div class="timer">
+    <div>
+      <div class="timer-main" id="timer">00:00</div>
+      <div class="timer-sub">الوقت منذ بدء مسار الطوارئ</div>
+    </div>
+    <div class="timer-sub" id="goal-text">الهدف: استقرار العلامات الحيوية خلال أقل من 15 دقيقة.</div>
+  </div>
+
+  <div class="grid">
+    <section class="panel">
+      <div style="font-size:13px;font-weight:700;margin-bottom:6px;">الخطوات التنفيذية</div>
+      <div id="steps-list" class="steps"></div>
+      <div class="actions-row">
+        <button class="action-btn primary" data-permission="edit.careplan" onclick="runEmergencyAction('emergency_protocol', 'تم تفعيل بروتوكول الطوارئ الكامل')">بدء البروتوكول</button>
+        <button class="action-btn secondary" data-permission="update.vitals" onclick="runEmergencyAction('oxygen_support', 'تم بدء دعم الأكسجين للحالة')">دعم أكسجين</button>
+        <button class="action-btn secondary" data-permission="update.vitals" onclick="runEmergencyAction('bronchodilator', 'تم إعطاء موسع قصبي حسب البروتوكول')">موسع قصبي</button>
+        <button class="action-btn ghost" data-permission="contact.guardian" onclick="runEmergencyAction('contact_guardian', 'تم إرسال اتصال وتنبيه لولي الأمر')">اتصال ولي الأمر</button>
+        <button class="action-btn ghost" data-permission="send.report" onclick="runEmergencyAction('send_report', 'تم إرسال التقرير للمركز الصحي')">إرسال تقرير</button>
+        <button class="action-btn primary" data-permission="approve.referral" onclick="runEmergencyAction('ambulance_dispatch', 'تم طلب إسعاف وتحويل الحالة للطوارئ الخارجية')">طلب إسعاف</button>
+        <button class="action-btn success" data-permission="close.case" onclick="runEmergencyAction('stabilized_case', 'تم استقرار الحالة ومتابعتها داخليًا')">توثيق استقرار</button>
+        <button class="action-btn success" data-permission="close.case" onclick="runEmergencyAction('handover_complete', 'تم التسليم وإغلاق مسار الطوارئ')">تسليم وإغلاق</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div style="font-size:13px;font-weight:700;margin-bottom:6px;">سجل التشغيل اللحظي</div>
+      <div id="timeline"></div>
+    </section>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="../../assets/js/security.js"></script>
+<script>
+var currentCaseId = 'case_1';
+var timerInterval = null;
+
+function qs(name) { return new URLSearchParams(window.location.search).get(name); }
+function normalizeCaseId(raw) {
+  if (!raw) return 'case_1';
+  if (/^case_/.test(raw)) return raw;
+  if (/^\d+$/.test(raw)) return 'case_' + raw;
+  return raw;
+}
+function notify(text) {
+  var el = document.getElementById('toast');
+  el.textContent = text;
+  el.style.display = 'block';
+  setTimeout(function () { el.style.display = 'none'; }, 2200);
+}
+function statusClass(status) {
+  if (status === 'done') return 'st-done';
+  if (status === 'in_progress') return 'st-progress';
+  return 'st-todo';
+}
+function statusLabel(status) {
+  if (status === 'done') return 'تم';
+  if (status === 'in_progress') return 'قيد التنفيذ';
+  return 'قادم';
+}
+function renderSteps(steps) {
+  var wrap = document.getElementById('steps-list');
+  if (!steps || !steps.length) {
+    wrap.innerHTML = '<div class="step"><span>لا توجد خطوات متاحة</span></div>';
+    return;
+  }
+  wrap.innerHTML = steps.map(function (step) {
+    return '<div class="step"><div>' + step.label + '</div><div class="step-status ' + statusClass(step.status) + '">' + statusLabel(step.status) + '</div></div>';
+  }).join('');
+}
+function renderTimeline(items) {
+  var wrap = document.getElementById('timeline');
+  if (!items || !items.length) {
+    wrap.innerHTML = '<div class="log-item">لا توجد أحداث مسجلة بعد.</div>';
+    return;
+  }
+  wrap.innerHTML = items.map(function (entry) {
+    var when = entry.createdAt ? new Date(entry.createdAt).toLocaleString('ar-SA') : '-';
+    var details = entry.details && entry.details.note ? entry.details.note : entry.action;
+    return '<div class="log-item"><strong>' + details + '</strong><div>' + when + '</div></div>';
+  }).join('');
+}
+function startTimer(startedAt) {
+  var base = startedAt ? new Date(startedAt).getTime() : Date.now();
+  if (timerInterval) clearInterval(timerInterval);
+  function paint() {
+    var secs = Math.max(0, Math.floor((Date.now() - base) / 1000));
+    var m = String(Math.floor(secs / 60)).padStart(2, '0');
+    var s = String(secs % 60).padStart(2, '0');
+    document.getElementById('timer').textContent = m + ':' + s;
+  }
+  paint();
+  timerInterval = setInterval(paint, 1000);
+}
+function renderEmergency(payload) {
+  var c = payload.case || {};
+  var u = payload.urgency || {};
+  var progress = Number(payload.progress || 0);
+  document.getElementById('case-title').textContent = 'مسار الطوارئ - ' + (c.studentName || '-');
+  document.getElementById('case-sub').textContent = (c.title || '-') + ' • صلاحية: ' + ((SmartClinicSecurity.getSession() || {}).role || '-');
+  document.getElementById('status-badge').textContent = (c.status || 'in_progress') + ' / ' + (c.severity || 'critical');
+  document.getElementById('triage-badge').textContent = 'Triage: ' + (u.triage || 'RED');
+  document.getElementById('sla-badge').textContent = (u.breached ? 'SLA: متجاوز' : 'SLA: ضمن الزمن');
+  document.getElementById('elapsed-kpi').textContent = Number(u.elapsedMin || 0) + ' د';
+  document.getElementById('allowed-kpi').textContent = Number(u.allowedMin || 0) + ' د';
+  document.getElementById('progress-kpi').textContent = progress + '%';
+  document.getElementById('severity-kpi').textContent = c.severity || '-';
+  document.getElementById('progress-fill').style.width = Math.max(0, Math.min(100, progress)) + '%';
+  document.getElementById('progress-label').textContent = 'التقدم: ' + progress + '%';
+  document.getElementById('goal-text').textContent = 'هدف الاستجابة: إنهاء التدخل خلال ' + Number(u.allowedMin || 15) + ' دقيقة.';
+  document.getElementById('recommendation').textContent = payload.recommendation || 'استمر في البروتوكول.';
+  renderSteps(payload.steps || []);
+  renderTimeline(payload.timeline || []);
+  startTimer(payload.startedAt);
+}
+async function loadEmergency() {
+  try {
+    var response = await SmartClinicSecurity.apiRequest('/emergency/' + encodeURIComponent(currentCaseId));
+    var payload = await response.json();
+    if (!response.ok) {
+      notify(payload.error || 'تعذر تحميل مسار الطوارئ');
+      return;
+    }
+    renderEmergency(payload);
+  } catch (err) {
+    notify('تعذر الاتصال بالخادم.');
+  }
+}
+async function runEmergencyAction(type, note) {
+  try {
+    var response = await SmartClinicSecurity.apiRequest('/cases/' + encodeURIComponent(currentCaseId) + '/actions', {
+      method: 'POST',
+      body: JSON.stringify({ type: type, note: note })
+    });
+    var payload = await response.json();
+    if (!response.ok) {
+      notify(payload.error || 'تعذر تنفيذ الإجراء.');
+      return;
+    }
+    notify(note);
+    loadEmergency();
+  } catch (err) {
+    notify('تعذر الاتصال بالخادم.');
+  }
+}
+function goRoleHome() {
+  var session = SmartClinicSecurity.getSession();
+  if (session && session.role === 'admin') {
+    window.location.href = 'admin-dashboard.html';
+    return;
+  }
+  window.location.href = 'doctor.html';
+}
+window.addEventListener('DOMContentLoaded', function () {
+  SmartClinicSecurity.requireAccess(['doctor', 'admin'], 'مسار الطوارئ');
+  currentCaseId = normalizeCaseId(qs('id'));
+  loadEmergency();
+  setInterval(loadEmergency, 15000);
+});
+</script>
+</body>
+</html>

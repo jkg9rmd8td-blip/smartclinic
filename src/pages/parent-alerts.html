@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تنبيهات ولي الأمر – Smart Clinic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:"Tajawal",sans-serif;background:#0a2a25;color:#ecfffb;padding:18px 14px}.shell{max-width:980px;margin:0 auto}.panel{background:rgba(8,39,34,.86);border:1px solid rgba(52,211,153,.35);border-radius:16px;padding:16px}.alert{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px;margin-top:8px}.meta{font-size:12px;color:#bde4dd;margin-top:4px}.top{display:flex;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap}.btn{border:1px solid rgba(52,211,153,.35);background:transparent;color:#ecfffb;padding:8px 12px;border-radius:8px;font:inherit;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <button class="btn" onclick="window.location.href='parent-portal.html'">العودة لبوابة ولي الأمر</button>
+    <button class="btn" onclick="loadAlerts()">تحديث</button>
+    <button class="btn" data-action="logout">تسجيل الخروج</button>
+  </div>
+  <section class="panel">
+    <h1 style="margin:0;font-size:30px">تنبيهات اليوم</h1>
+    <p style="color:#bde4dd">آخر الإشعارات الصحية المتعلقة بالطالب.</p>
+    <div id="alertsList"></div>
+  </section>
+</div>
+<script src="../../assets/js/security.js"></script>
+<script>
+async function loadAlerts() {
+  var wrap = document.getElementById('alertsList');
+  wrap.innerHTML = '<div class="alert">جاري التحميل...</div>';
+  try {
+    var response = await SmartClinicSecurity.apiRequest('/alerts');
+    var payload = await response.json();
+    if (!response.ok) {
+      wrap.innerHTML = '<div class="alert">تعذر تحميل التنبيهات.</div>';
+      return;
+    }
+    var items = payload.items || [];
+    if (!items.length) {
+      wrap.innerHTML = '<div class="alert">لا توجد تنبيهات حالياً.</div>';
+      return;
+    }
+    wrap.innerHTML = items.map(function (a) {
+      var when = a.createdAt ? new Date(a.createdAt).toLocaleString('ar-SA') : '-';
+      return '<div class="alert"><div>' + a.text + '</div><div class="meta">' + when + '</div></div>';
+    }).join('');
+  } catch (err) {
+    wrap.innerHTML = '<div class="alert">تعذر الاتصال بالخادم.</div>';
+  }
+}
+
+window.addEventListener("DOMContentLoaded", function(){
+  SmartClinicSecurity.requireAccess(["parent", "admin"], "تنبيهات ولي الأمر");
+  loadAlerts();
+  setInterval(loadAlerts, 25000);
+});
+</script>
+</body>
+</html>

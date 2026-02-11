@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التمريض – العيادة المدرسية الذكية</title>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded" rel="stylesheet" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- الهيدر -->
+    <header class="app-header glass">
+      <div class="brand">
+        <div class="brand-mark">SC</div>
+        <div class="brand-text">
+          <span class="brand-title">العيادة المدرسية الذكية</span>
+          <span class="brand-subtitle">منظومة وقائية ذكية في البيئة التعليمية</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="user-info">
+          <span class="user-name">الأخصائي عبدالعزيز جميل الربيعي</span>
+          <span class="user-role">مشغل منصة – لوحة تشغيل داخلية</span>
+        </div>
+        <button class="icon-btn" title="الإعدادات" onclick="openSystemSettings()">
+          <span class="material-symbols-rounded">settings</span>
+        </button>
+        <button class="icon-btn danger" title="تسجيل الخروج" data-action="logout">
+          <span class="material-symbols-rounded">logout</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="app-main">
+      <!-- الصف العلوي: البطاقات -->
+      <section class="status-row">
+        <div class="status-card glass" id="card-active">
+          <div class="status-label">الحالات الحالية</div>
+          <div class="status-value" id="active-count">0</div>
+          <div class="status-meta">طلاب تحت المتابعة الآن</div>
+        </div>
+        <div class="status-card glass critical" id="card-critical">
+          <div class="status-label">الحالات الحرجة</div>
+          <div class="status-value" id="critical-count">0</div>
+          <div class="status-meta">تحتاج تدخل فوري</div>
+        </div>
+        <div class="status-card glass pending" id="card-pending">
+          <div class="status-label">الحالات المنتظرة</div>
+          <div class="status-value" id="pending-count">0</div>
+          <div class="status-meta">بانتظار الفحص</div>
+        </div>
+        <div class="status-card glass completed" id="card-completed">
+          <div class="status-label">الحالات المكتملة</div>
+          <div class="status-value" id="completed-count">0</div>
+          <div class="status-meta">تم إنهاؤها اليوم</div>
+        </div>
+      </section>
+
+      <!-- الصف الأوسط: جدول + تنبيهات -->
+      <section class="middle-row">
+        <!-- جدول الحالات -->
+        <section class="cases-panel glass">
+          <div class="panel-header">
+            <div>
+              <h2>الحالات اليوم</h2>
+              <p>تحديث لحظي مباشر من API للحالات والتنبيهات والعمليات</p>
+            </div>
+            <button class="primary-btn" onclick="openNewCase()">
+              + إضافة فحص جديد
+            </button>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="cases-table">
+              <thead>
+                <tr>
+                  <th>اسم الطالب</th>
+                  <th>العمر</th>
+                  <th>مستوى الخطورة</th>
+                  <th>وقت الفحص</th>
+                  <th>الإجراء</th>
+                </tr>
+              </thead>
+              <tbody id="cases-body">
+                <!-- يتم تعبئتها من JS -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- لوحة التنبيهات -->
+        <aside class="alerts-panel glass">
+          <div class="panel-header">
+            <h2>التنبيهات الذكية</h2>
+            <p>تنبيهات تشغيلية ذكية مرتبطة بآخر الإجراءات المسجلة</p>
+          </div>
+          <div id="alerts-list" class="alerts-list">
+            <!-- تنبيهات من الذكاء الاصطناعي -->
+          </div>
+        </aside>
+      </section>
+
+      <!-- الصف السفلي: إجراءات سريعة -->
+      <section class="quick-actions glass">
+        <button class="quick-btn" onclick="openStudentSearch()">
+          <span class="material-symbols-rounded">person_search</span>
+          <span>فتح ملف طالب</span>
+        </button>
+        <button class="quick-btn danger" onclick="openEmergencyFlow()">
+          <span class="material-symbols-rounded">emergency</span>
+          <span>تفعيل مسار الطوارئ</span>
+        </button>
+        <button class="quick-btn" onclick="printReport()">
+          <span class="material-symbols-rounded">picture_as_pdf</span>
+          <span>تقرير يومي</span>
+        </button>
+        <button class="quick-btn" onclick="goToDoctorDashboard()" data-permission="view.doctor">
+          <span class="material-symbols-rounded">monitor_heart</span>
+          <span>لوحة الطبيب</span>
+        </button>
+      </section>
+    </main>
+  </div>
+
+  <script src="../../assets/js/security.js"></script>
+  <script src="../../assets/js/ai-engine.js"></script>
+  <script src="../../assets/js/dashboard.js"></script>
+  <script>
+    window.addEventListener("DOMContentLoaded", function () {
+      SmartClinicSecurity.requireAccess(["admin"], "لوحة التمريض");
+    });
+  </script>
+</body>
+</html>

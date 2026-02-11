@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>لوحة الطبيب – Smart Clinic</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-1: #061122;
+  --bg-2: #0d2338;
+  --card: rgba(8, 24, 41, 0.78);
+  --line: rgba(170, 220, 255, 0.25);
+  --text-main: #eef8ff;
+  --text-soft: #abc4d7;
+  --danger: #ef4444;
+  --primary: #0ea5e9;
+  --success: #22c55e;
+  --warning: #f59e0b;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Tajawal", sans-serif;
+  color: var(--text-main);
+  background:
+    radial-gradient(850px 460px at 18% 0%, rgba(56, 189, 248, 0.22), transparent 60%),
+    radial-gradient(800px 500px at 90% 95%, rgba(34, 197, 94, 0.18), transparent 65%),
+    linear-gradient(130deg, var(--bg-1), var(--bg-2));
+  min-height: 100vh;
+  padding: 20px 14px 24px;
+}
+.shell { width: min(1240px, 100%); margin: 0 auto; }
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.chip {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: var(--text-soft);
+  background: rgba(255, 255, 255, 0.04);
+}
+.topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.ghost-btn {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-main);
+  font: inherit;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.header {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 14px;
+}
+.header h1 { margin: 0; font-size: clamp(28px, 4vw, 42px); font-weight: 800; }
+.header p { margin: 6px 0 0; color: var(--text-soft); font-size: 16px; }
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+.stat {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px;
+}
+.stat-label { color: var(--text-soft); font-size: 13px; }
+.stat-value { margin-top: 4px; font-size: 30px; font-weight: 800; }
+.critical-zone {
+  background: linear-gradient(125deg, rgba(239, 68, 68, 0.22), rgba(0, 0, 0, 0.22));
+  border: 1px solid rgba(248, 113, 113, 0.55);
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.critical-title { margin: 0; font-size: 18px; font-weight: 700; }
+.critical-sub { margin: 2px 0 0; color: #fecaca; font-size: 14px; }
+.btn-danger,
+.btn-primary,
+.btn-success,
+.btn-warning {
+  border: none;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font: inherit;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+}
+.btn-danger { background: var(--danger); }
+.btn-primary { background: var(--primary); }
+.btn-success { background: var(--success); }
+.btn-warning { background: var(--warning); color: #111827; }
+.services-title, .queue-title, .cases-title { margin: 0 0 10px; font-size: 22px; font-weight: 700; }
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.service-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.service-card h3 { margin: 0; font-size: 17px; }
+.service-card p { margin: 0; color: var(--text-soft); font-size: 14px; line-height: 1.5; }
+.layout { display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; }
+.panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px;
+}
+.queue-list, .cases-grid, .mini-log { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.queue-item, .case-card, .mini-log-item {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 10px;
+}
+.ai-panel {
+  margin-top: 12px;
+}
+.ai-result {
+  margin-top: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 10px;
+  font-size: 14px;
+}
+.ai-actions {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ai-action-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.queue-item { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.queue-name, .case-name { font-weight: 700; }
+.queue-type, .case-type, .mini-log-item { color: var(--text-soft); font-size: 13px; }
+.case-type { margin: 4px 0 8px; }
+.toast {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  background: rgba(6, 18, 35, 0.94);
+  color: var(--text-main);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: none;
+  z-index: 30;
+}
+@media (max-width: 980px) {
+  .layout { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="topbar">
+    <div class="chip">الدور الحالي: <strong data-session-role>الطبيب</strong></div>
+    <div class="topbar-actions">
+      <button class="ghost-btn" onclick="window.location.href='../../  index.html'">الرجوع للرئيسية</button>
+      <button class="ghost-btn" data-action="logout">تسجيل الخروج</button>
+    </div>
+  </div>
+
+  <div class="header">
+    <h1>لوحة الطبيب المتقدمة</h1>
+    <p>إدارة الحالات، القرارات الطبية، والطوارئ بشكل حي من API.</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">حالات حرجة</div><div class="stat-value" id="stat-critical">0</div></div>
+    <div class="stat"><div class="stat-label">حالات قيد المعالجة</div><div class="stat-value" id="stat-progress">0</div></div>
+    <div class="stat"><div class="stat-label">طلبات زيارة معلقة</div><div class="stat-value" id="stat-pending">0</div></div>
+    <div class="stat"><div class="stat-label">نشاط اليوم</div><div class="stat-value" id="stat-actions">0</div></div>
+  </div>
+
+  <section class="critical-zone">
+    <div>
+      <p class="critical-title">تنبيه طبي عالي الخطورة</p>
+      <p class="critical-sub" id="critical-sub">جاري تحليل الحالات الحرجة...</p>
+    </div>
+    <button class="btn-danger" id="critical-open" onclick="openCriticalCase()">فتح مسار الطوارئ</button>
+  </section>
+
+  <h2 class="services-title">الخدمات والميزات الطبية</h2>
+  <section class="services-grid">
+    <article class="service-card" data-permission="view.student">
+      <h3>ملف الطالب الموحد</h3>
+      <p>الوصول إلى التاريخ المرضي والحساسية والزيارات السابقة بشكل فوري.</p>
+      <button class="btn-primary" onclick="go('student-profile.html')">فتح الملف</button>
+    </article>
+    <article class="service-card" data-permission="prescribe.medication">
+      <h3>الوصفة الدوائية</h3>
+      <p>إصدار وصفة مع تسجيل الحدث مباشرة في سجل الحالة.</p>
+      <button class="btn-success" onclick="recordCaseAction('prescription', 'إصدار وصفة دوائية')">إصدار وصفة</button>
+    </article>
+    <article class="service-card" data-permission="order.labs">
+      <h3>طلبات المختبر</h3>
+      <p>طلب فحوصات مخبرية عاجلة أو دورية مع توثيق القرار.</p>
+      <button class="btn-primary" onclick="recordCaseAction('lab_order', 'تم إرسال طلب فحص مخبري عاجل')">طلب فحص</button>
+    </article>
+    <article class="service-card" data-permission="approve.referral">
+      <h3>التحويل للمستشفى</h3>
+      <p>اعتماد تحويل رسمي للحالات التي تتطلب رعاية أعلى.</p>
+      <button class="btn-warning" onclick="recordCaseAction('external_referral', 'تم اعتماد تحويل الحالة للمستشفى')">اعتماد التحويل</button>
+    </article>
+    <article class="service-card" data-permission="start.telemed">
+      <h3>استشارة طبية عن بعد</h3>
+      <p>تفعيل جلسة استشارية وربطها مباشرة بالحالة الحالية.</p>
+      <button class="btn-primary" onclick="recordCaseAction('telemed', 'تم بدء جلسة استشارة عن بعد')">بدء جلسة</button>
+    </article>
+    <article class="service-card" data-permission="view.analytics">
+      <h3>تحليلات سريرية</h3>
+      <p>عرض مؤشرات حية للأداء الطبي والتشغيلي.</p>
+      <button class="btn-primary" onclick="go('admin-analytics.html')">عرض التحليلات</button>
+    </article>
+
+    <article class="service-card" data-permission="view.notifications">
+      <h3>مركز الإشعارات</h3>
+      <p>إشعارات موحدة للفريق الطبي مع فلترة سريعة حسب النوع.</p>
+      <button class="btn-primary" onclick="go('notifications-center.html')">فتح المركز</button>
+    </article>
+  </section>
+
+  <section class="layout">
+    <div class="panel">
+      <h2 class="queue-title">قائمة الانتظار</h2>
+      <div class="queue-list" id="queue-list"></div>
+    </div>
+
+    <div class="panel">
+      <h2 class="cases-title">الحالات المفتوحة</h2>
+      <div class="cases-grid" id="cases-grid"></div>
+      <div class="mini-log" id="mini-log"></div>
+    </div>
+  </section>
+
+  <section class="panel ai-panel" data-permission="use.ai.assistant">
+    <h2 class="queue-title">مساعد القرار الطبي AI</h2>
+    <p style="margin:0;color:var(--text-soft);">تحليل الحالة النشطة وتقديم أولويات التدخل وخطة الرعاية التشغيلية.</p>
+    <textarea id="ai-doctor-note" rows="3" placeholder="ملاحظات سريرية إضافية (اختياري)" style="width:100%;margin-top:10px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,0.03);color:var(--text-main);font:inherit;padding:9px;"></textarea>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+      <button class="btn-primary" onclick="runDoctorAi()">تحليل الحالة الحالية</button>
+      <button class="ghost-btn" onclick="document.getElementById('ai-doctor-note').value=''">مسح الملاحظة</button>
+    </div>
+    <div id="ai-doctor-result" class="ai-result">لم يتم تشغيل التحليل بعد.</div>
+  </section>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="../../assets/js/security.js"></script>
+<script>
+var casesCache = [];
+var activeCaseId = 'case_1';
+var latestDoctorAi = null;
+
+function actionLabel(type) {
+  var labels = {
+    emergency_protocol: 'تفعيل بروتوكول الطوارئ',
+    external_referral: 'تحويل خارجي',
+    vitals_update: 'تحديث العلامات الحيوية',
+    careplan_save: 'حفظ خطة الرعاية'
+  };
+  return labels[type] || type;
+}
+
+function go(path) {
+  window.location.href = path;
+}
+
+function notify(text) {
+  var toast = document.getElementById('toast');
+  toast.textContent = text;
+  toast.style.display = 'block';
+  window.setTimeout(function () {
+    toast.style.display = 'none';
+  }, 2200);
+}
+
+function formatCaseLine(item) {
+  return (item.title || 'حالة عامة') + ' • ' + (item.status || '-') + ' • ' + (item.severity || '-');
+}
+
+function renderCases(items) {
+  var queue = document.getElementById('queue-list');
+  var grid = document.getElementById('cases-grid');
+  if (!items.length) {
+    queue.innerHTML = '<div class="queue-item">لا توجد حالات في الانتظار</div>';
+    grid.innerHTML = '<article class="case-card">لا توجد حالات مفتوحة</article>';
+    return;
+  }
+
+  queue.innerHTML = items.map(function (item) {
+    return '<div class="queue-item"><div><div class="queue-name">' + item.studentName + '</div><div class="queue-type">' + formatCaseLine(item) + '</div></div><button class="btn-primary" onclick="openCase(\'' + item.id + '\')">فتح</button></div>';
+  }).join('');
+
+  grid.innerHTML = items.map(function (item) {
+    return '<article class="case-card"><div class="case-name">' + item.studentName + '</div><div class="case-type">' + formatCaseLine(item) + '</div><button class="btn-success" onclick="openCase(\'' + item.id + '\')">استكمال الفحص</button></article>';
+  }).join('');
+}
+
+function renderStats(overview) {
+  var dist = (overview.distributions && overview.distributions.statusCounts) || {};
+  var severity = (overview.distributions && overview.distributions.severityCounts) || {};
+  document.getElementById('stat-critical').textContent = Number(severity.critical || 0);
+  document.getElementById('stat-progress').textContent = Number(dist.in_progress || 0) + Number(dist.open || 0);
+  document.getElementById('stat-pending').textContent = Number((overview.snapshot || {}).pendingVisitRequests || 0);
+  document.getElementById('stat-actions').textContent = Number((overview.today || {}).actions || 0);
+}
+
+function renderCritical(items) {
+  var critical = items.find(function (item) { return item.severity === 'critical'; });
+  if (!critical) {
+    document.getElementById('critical-sub').textContent = 'لا توجد حالات حرجة نشطة حاليًا.';
+    activeCaseId = items[0] ? items[0].id : 'case_1';
+    return;
+  }
+  activeCaseId = critical.id;
+  document.getElementById('critical-sub').textContent = 'الطالب: ' + critical.studentName + ' | ' + critical.title + ' | يلزم تدخل سريع';
+}
+
+function renderMiniLog(logs) {
+  var wrap = document.getElementById('mini-log');
+  if (!logs || !logs.length) {
+    wrap.innerHTML = '<div class="mini-log-item">لا توجد عمليات حديثة.</div>';
+    return;
+  }
+  wrap.innerHTML = logs.slice(0, 3).map(function (item) {
+    var when = new Date(item.createdAt).toLocaleTimeString('ar-SA');
+    return '<div class="mini-log-item">' + when + ' - ' + item.action + '</div>';
+  }).join('');
+}
+
+async function loadDoctorData() {
+  var summary = await SmartClinicSecurity.apiJson('/analytics/overview');
+  if (!summary.ok || !summary.data) {
+    notify('تعذر تحميل مؤشرات التحليل.');
+    return;
+  }
+  var casesResult = await SmartClinicSecurity.apiJson('/cases');
+  if (!casesResult.ok || !casesResult.data) {
+    notify('تعذر تحميل الحالات.');
+    return;
+  }
+
+  casesCache = (casesResult.data.items || []).filter(function (item) {
+    return item.status !== 'closed';
+  });
+  renderStats(summary.data);
+  renderCases(casesCache);
+  renderCritical(casesCache);
+  renderMiniLog(summary.data.recentLogs || []);
+}
+
+function openCase(caseId) {
+  window.location.href = 'case-details.html?id=' + encodeURIComponent(caseId || activeCaseId);
+}
+
+function openCriticalCase() {
+  window.location.href = 'emergency-flow.html?id=' + encodeURIComponent(activeCaseId || 'case_1');
+}
+
+async function recordCaseAction(type, note) {
+  var result = await SmartClinicSecurity.apiJson('/cases/' + encodeURIComponent(activeCaseId) + '/actions', {
+    method: 'POST',
+    body: JSON.stringify({ type: type, note: note })
+  });
+  if (!result.ok) {
+    notify(result.error || 'تعذر تنفيذ الإجراء.');
+    return;
+  }
+  notify(note);
+  loadDoctorData();
+}
+
+function renderDoctorAi(item) {
+  if (!item) {
+    latestDoctorAi = null;
+    document.getElementById('ai-doctor-result').textContent = 'تعذر عرض نتيجة AI.';
+    return;
+  }
+  latestDoctorAi = item;
+  var actions = buildAiActionPlan(item);
+  var actionsHtml = actions.map(function (action, index) {
+    var actionId = 'ai-action-' + index;
+    return '<label class="ai-action-item" for="' + actionId + '">' +
+      '<input type="checkbox" id="' + actionId + '" data-ai-action-index="' + index + '" checked>' +
+      '<span><strong>' + actionLabel(action.type) + '</strong> - ' + action.note + '</span>' +
+      '</label>';
+  }).join('');
+
+  var priorityLabel = item.priority === 'immediate' ? 'فوري' : (item.priority === 'urgent' ? 'عاجل' : 'قياسي');
+  var checklist = (item.checklist || []).map(function (x) { return '<div class="mini-log-item">• ' + x + '</div>'; }).join('');
+  var plan = (item.carePlan || []).map(function (x) { return '<div class="mini-log-item">• ' + x + '</div>'; }).join('');
+  document.getElementById('ai-doctor-result').innerHTML =
+    '<div><strong>الأولوية: ' + priorityLabel + ' | TRIAGE: ' + (item.triage || '-') + '</strong></div>' +
+    '<div style="margin-top:6px;color:var(--text-soft);">توصية رئيسية: ' + (item.recommendation || '-') + '</div>' +
+    '<div style="margin-top:8px;color:var(--text-soft);">Checklist تنفيذي</div>' + checklist +
+    '<div style="margin-top:8px;color:var(--text-soft);">خطة رعاية مقترحة</div>' + plan +
+    '<div style="margin-top:10px;color:var(--text-soft);">إجراءات AI المقترحة (قابلة للتحديد)</div>' +
+    '<div class="ai-actions">' + actionsHtml + '</div>' +
+    '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">' +
+      '<button class="btn-success" onclick="applyDoctorAiPlan()">تنفيذ المحدد</button>' +
+      '<button class="ghost-btn" onclick="selectAllAiActions(true)">تحديد الكل</button>' +
+      '<button class="ghost-btn" onclick="selectAllAiActions(false)">إلغاء الكل</button>' +
+    '</div>';
+}
+
+async function runDoctorAi() {
+  var note = document.getElementById('ai-doctor-note').value.trim();
+  var result = await SmartClinicSecurity.apiJson('/ai/doctor-support', {
+    method: 'POST',
+    body: JSON.stringify({ caseId: activeCaseId, note: note })
+  });
+  if (!result.ok || !result.data) {
+    notify(result.error || 'فشل تحليل AI للطبيب.');
+    return;
+  }
+  renderDoctorAi(result.data.item || null);
+  notify('تم تحديث توصية AI للحالة النشطة.');
+}
+
+function buildAiActionPlan(ai) {
+  var plan = [];
+  if (!ai) return plan;
+
+  if (ai.priority === 'immediate') {
+    plan.push({ type: 'emergency_protocol', note: 'تنفيذ AI: تفعيل بروتوكول الطوارئ' });
+  }
+
+  if (ai.sla && ai.sla.breached) {
+    plan.push({ type: 'external_referral', note: 'تنفيذ AI: تحويل خارجي بسبب تجاوز SLA' });
+  }
+
+  plan.push({ type: 'vitals_update', note: 'تنفيذ AI: تحديث العلامات الحيوية للحالة' });
+  plan.push({ type: 'careplan_save', note: 'تنفيذ AI: حفظ خطة الرعاية المقترحة', plan: (ai.carePlan || []).join(' | ') });
+  return plan;
+}
+
+function selectedAiActions(allActions) {
+  var selected = [];
+  for (var i = 0; i < allActions.length; i += 1) {
+    var check = document.querySelector('[data-ai-action-index="' + i + '"]');
+    if (check && check.checked) {
+      selected.push(allActions[i]);
+    }
+  }
+  return selected;
+}
+
+function selectAllAiActions(checked) {
+  var checks = document.querySelectorAll('[data-ai-action-index]');
+  checks.forEach(function (box) {
+    box.checked = Boolean(checked);
+  });
+}
+
+async function applyDoctorAiPlan() {
+  if (!latestDoctorAi) {
+    notify('شغّل تحليل AI أولًا ثم نفّذ الخطة.');
+    return;
+  }
+
+  var actions = selectedAiActions(buildAiActionPlan(latestDoctorAi));
+  if (!actions.length) {
+    notify('اختر إجراء واحد على الأقل للتنفيذ.');
+    return;
+  }
+
+  if (!window.confirm('تأكيد تنفيذ ' + actions.length + ' إجراء على الحالة النشطة؟')) {
+    return;
+  }
+
+  try {
+    for (var i = 0; i < actions.length; i += 1) {
+      var action = actions[i];
+      var result = await SmartClinicSecurity.apiJson('/cases/' + encodeURIComponent(activeCaseId) + '/actions', {
+        method: 'POST',
+        body: JSON.stringify({
+          type: action.type,
+          note: action.note,
+          plan: action.plan || ''
+        })
+      });
+      if (!result.ok) {
+        notify(result.error || 'فشل تنفيذ جزء من الخطة.');
+        return;
+      }
+    }
+
+    notify('تم تنفيذ خطة AI للحالة النشطة بنجاح.');
+    await loadDoctorData();
+    await runDoctorAi();
+  } catch (err) {
+    notify('تعذر تنفيذ خطة AI تلقائيًا.');
+  }
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  SmartClinicSecurity.requireAccess(['doctor', 'admin'], 'لوحة الطبيب');
+  SmartClinicSecurity.createAutoRefresh(loadDoctorData, 15000, { immediate: true });
+});
+</script>
+</body>
+</html>

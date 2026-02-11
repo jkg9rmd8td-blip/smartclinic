@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>رسائل ولي الأمر – Smart Clinic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:"Tajawal",sans-serif;background:#082620;color:#ecfffb;padding:18px 14px}.shell{max-width:980px;margin:0 auto}.panel{background:rgba(8,36,31,.86);border:1px solid rgba(52,211,153,.35);border-radius:16px;padding:16px}.top{display:flex;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap}.btn{border:1px solid rgba(52,211,153,.35);background:transparent;color:#ecfffb;padding:8px 12px;border-radius:8px;font:inherit;cursor:pointer}textarea{width:100%;min-height:120px;border-radius:10px;border:1px solid rgba(52,211,153,.35);background:rgba(255,255,255,.04);color:#ecfffb;padding:10px;font:inherit}textarea:focus{outline:none;border-color:#34d399}.send{margin-top:10px;border:none;background:#34d399;color:#06362b;padding:8px 12px;border-radius:8px;font:inherit;font-weight:700;cursor:pointer}.msg{margin-top:8px;color:#a7f3d0;font-size:13px}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <button class="btn" onclick="window.location.href='parent-portal.html'">العودة لبوابة ولي الأمر</button>
+    <button class="btn" onclick="loadMessages()">تحديث</button>
+    <button class="btn" data-action="logout">تسجيل الخروج</button>
+  </div>
+  <section class="panel">
+    <h1 style="margin:0;font-size:30px">مراسلة العيادة</h1>
+    <p style="color:#bde4dd">اكتب استفسارك وسيصل مباشرة للفريق الصحي المدرسي.</p>
+    <textarea id="msg" placeholder="مثال: أود الاستفسار عن توصية الطبيب بخصوص النشاط الرياضي."></textarea>
+    <button class="send" onclick="sendMsg()">إرسال الرسالة</button>
+    <div id="statusMsg" class="msg"></div>
+    <div id="messagesList" style="margin-top:10px;display:grid;gap:8px;"></div>
+  </section>
+</div>
+<script src="../../assets/js/security.js"></script>
+<script>
+function setMsg(text) {
+  document.getElementById('statusMsg').textContent = text || '';
+}
+
+async function loadMessages() {
+  var list = document.getElementById('messagesList');
+  list.innerHTML = 'جاري التحميل...';
+  try {
+    var response = await SmartClinicSecurity.apiRequest('/messages');
+    var payload = await response.json();
+    if (!response.ok) {
+      list.innerHTML = '<div style="color:#fecaca;">تعذر تحميل الرسائل.</div>';
+      return;
+    }
+    var items = payload.items || [];
+    if (!items.length) {
+      list.innerHTML = '<div style="color:#bde4dd;">لا توجد رسائل بعد.</div>';
+      return;
+    }
+    list.innerHTML = items.slice().reverse().map(function (m) {
+      return '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px;">' +
+        '<div style="font-size:12px;color:#bde4dd;">' + new Date(m.createdAt).toLocaleString('ar-SA') + '</div>' +
+        '<div>' + m.text + '</div>' +
+      '</div>';
+    }).join('');
+  } catch (err) {
+    list.innerHTML = '<div style="color:#fecaca;">تعذر الاتصال بالخادم.</div>';
+  }
+}
+
+async function sendMsg(){
+  var v = document.getElementById('msg').value.trim();
+  if(!v){ setMsg('يرجى كتابة الرسالة قبل الإرسال.'); return; }
+  try {
+    var response = await SmartClinicSecurity.apiRequest('/messages', {
+      method: 'POST',
+      body: JSON.stringify({ text: v })
+    });
+    var payload = await response.json();
+    if (!response.ok) {
+      setMsg(payload.error || 'تعذر إرسال الرسالة.');
+      return;
+    }
+    setMsg('تم إرسال رسالتك بنجاح.');
+    document.getElementById('msg').value='';
+    await loadMessages();
+  } catch (err) {
+    setMsg('تعذر الاتصال بالخادم.');
+  }
+}
+
+window.addEventListener("DOMContentLoaded", function(){
+  SmartClinicSecurity.requireAccess(["parent", "admin"], "رسائل ولي الأمر");
+  loadMessages();
+  setInterval(loadMessages, 25000);
+});
+</script>
+</body>
+</html>

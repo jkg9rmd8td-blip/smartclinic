@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>بوابة الطالب – Smart Clinic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg1: #0b1e34;
+  --bg2: #113650;
+  --card: rgba(9, 34, 56, 0.84);
+  --line: rgba(125, 211, 252, 0.32);
+  --text: #eef8ff;
+  --soft: #bfd5e6;
+  --accent: #38bdf8;
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --danger: #ef4444;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Tajawal", sans-serif;
+  background: radial-gradient(900px 480px at 8% 0%, rgba(56, 189, 248, 0.24), transparent 60%), linear-gradient(140deg, var(--bg1), var(--bg2));
+  color: var(--text);
+  min-height: 100vh;
+  padding: 18px 14px;
+}
+.shell { max-width: 1180px; margin: 0 auto; }
+.top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.chip {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.04);
+  color: var(--soft);
+  font-size: 13px;
+  padding: 8px 14px;
+}
+.btn {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+.hero, .card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px;
+}
+.hero h1 { margin: 0; font-size: 32px; }
+.hero p { margin: 6px 0 0; color: var(--soft); }
+.stats {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+.stat {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 10px;
+}
+.stat-label { color: var(--soft); font-size: 12px; }
+.stat-value { margin-top: 4px; font-size: 24px; font-weight: 800; }
+.grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+}
+.card h3 { margin: 0; font-size: 18px; }
+.card p { margin: 6px 0 10px; color: var(--soft); font-size: 14px; }
+.cta {
+  border: none;
+  background: var(--accent);
+  color: #0b2237;
+  font: inherit;
+  font-weight: 700;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.muted-btn {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.inline-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+textarea, select {
+  width: 100%;
+  margin-top: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+  font: inherit;
+  padding: 8px;
+}
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+.item {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 8px;
+  font-size: 13px;
+}
+.badge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+.b-ok { background: rgba(34,197,94,.2); color: #86efac; }
+.b-warn { background: rgba(245,158,11,.2); color: #fde68a; }
+.b-danger { background: rgba(239,68,68,.2); color: #fca5a5; }
+.toast {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  background: rgba(8,34,56,0.95);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 12px;
+  display: none;
+}
+.ai-box {
+  margin-top: 8px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 10px;
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <div class="chip">الدور الحالي: <strong data-session-role>الطالب</strong></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn" onclick="window.location.href='../../  index.html'">الرئيسية</button>
+      <button class="btn" data-action="logout">تسجيل الخروج</button>
+    </div>
+  </div>
+
+  <section class="hero">
+    <h1>بوابة الطالب الصحية المتقدمة</h1>
+    <p>ملفك الصحي المباشر، طلبات الزيارة، التنبيهات، والمراسلة مع العيادة في مكان واحد.</p>
+    <div id="stats" class="stats"></div>
+  </section>
+
+  <section class="grid">
+    <article class="card" data-permission="view.student">
+      <h3>حالة اليوم</h3>
+      <p id="latest-case-text">جاري تحميل أحدث حالة...</p>
+      <span id="latest-case-badge" class="badge b-ok">مستقرة</span>
+      <div class="inline-row" style="margin-top:10px;">
+        <button class="cta" onclick="window.location.href='student-profile.html'">فتح الملف الصحي الكامل</button>
+        <button class="muted-btn" data-permission="view.cases" onclick="jumpToCases()">عرض الحالات</button>
+      </div>
+    </article>
+
+    <article class="card" data-permission="request.visit">
+      <h3>طلب زيارة للعيادة</h3>
+      <p>أرسل طلب فحص عادي أو مستعجل للفريق الصحي.</p>
+      <select id="visit-priority">
+        <option value="normal">عادي</option>
+        <option value="urgent">مستعجل</option>
+      </select>
+      <textarea id="visit-reason" rows="3" placeholder="اكتب سبب الطلب..."></textarea>
+      <button class="cta" onclick="requestVisit()">إرسال الطلب</button>
+    </article>
+
+    <article class="card" data-permission="send.message">
+      <h3>مراسلة العيادة</h3>
+      <p>تواصل مع الفريق الصحي لأي استفسار أو متابعة.</p>
+      <textarea id="message-text" rows="3" placeholder="اكتب رسالتك..." data-permission="send.message"></textarea>
+      <div class="inline-row">
+        <button class="cta" data-permission="send.message" onclick="sendClinicMessage()">إرسال الرسالة</button>
+        <button class="muted-btn" data-permission="view.alerts" onclick="loadOverview()">تحديث البيانات</button>
+      </div>
+    </article>
+
+    <article class="card" data-permission="view.alerts">
+      <h3>تنبيهات صحية لك</h3>
+      <p>آخر التنبيهات المرتبطة بمتابعتك الصحية.</p>
+      <div id="alerts-list" class="list"></div>
+    </article>
+
+    <article class="card" data-permission="view.notifications">
+      <h3>مركز الإشعارات الموحد</h3>
+      <p>استعرض إشعاراتك مع الفلاتر حسب النوع.</p>
+      <button class="cta" onclick="window.location.href='notifications-center.html'">فتح المركز</button>
+    </article>
+
+    <article class="card" data-permission="use.ai.assistant">
+      <h3>مستشار الطالب AI</h3>
+      <p>تحليل فوري للأعراض الحالية وتوصيات عملية حسب ملفك الصحي.</p>
+      <textarea id="ai-student-input" rows="3" placeholder="اكتب الأعراض أو حالتك الآن..."></textarea>
+      <div class="inline-row">
+        <button class="cta" onclick="askStudentAi()">تحليل الحالة</button>
+        <button class="muted-btn" onclick="document.getElementById('ai-student-input').value=''">مسح</button>
+      </div>
+      <div id="ai-student-output" class="ai-box">لم يتم تشغيل التحليل بعد.</div>
+    </article>
+
+    <article class="card" data-permission="view.reports">
+      <h3>تقاريري الصحية</h3>
+      <p>أحدث التقارير الطبية المتاحة لك.</p>
+      <div id="reports-list" class="list"></div>
+      <button class="muted-btn" data-permission="export.report" onclick="notify('يمكنك طباعة التقرير من صفحة الملف الصحي')">تصدير التقرير</button>
+    </article>
+
+    <article class="card" data-permission="view.tips">
+      <h3>نصيحة ذكية اليوم</h3>
+      <p id="tip-text">جاري اختيار نصيحة مناسبة...</p>
+      <button class="cta" onclick="nextTip()">نصيحة جديدة</button>
+    </article>
+  </section>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="../../assets/js/security.js"></script>
+<script>
+var lastOverview = null;
+var tipIndex = 0;
+var tips = [
+  'نظّم نومك إلى 8 ساعات يوميًا لتحسين التركيز والمناعة.',
+  'اشرب الماء كل ساعة دراسية لتقليل الصداع والإجهاد.',
+  'إذا شعرت بضيق تنفس متكرر، اطلب زيارة فورية للعيادة.',
+  'قلّل المشروبات السكرية واستبدلها بوجبات خفيفة صحية.'
+];
+
+function notify(text) {
+  var el = document.getElementById('toast');
+  el.textContent = text;
+  el.style.display = 'block';
+  window.setTimeout(function () { el.style.display = 'none'; }, 2200);
+}
+
+function nextTip() {
+  tipIndex = (tipIndex + 1) % tips.length;
+  document.getElementById('tip-text').textContent = tips[tipIndex];
+}
+
+function statusBadgeClass(severity) {
+  if (severity === 'critical' || severity === 'high') return 'b-danger';
+  if (severity === 'medium') return 'b-warn';
+  return 'b-ok';
+}
+
+function renderStats(snapshot) {
+  var s = snapshot || {};
+  var items = [
+    ['الحالات المفتوحة', Number(s.openCases || 0)],
+    ['حالات حرجة', Number(s.criticalCases || 0)],
+    ['تقارير متاحة', Number(s.reports || 0)],
+    ['طلبات معلقة', Number(s.pendingVisits || 0)],
+    ['تنبيهات', Number(s.alerts || 0)]
+  ];
+  document.getElementById('stats').innerHTML = items.map(function (it) {
+    return '<div class="stat"><div class="stat-label">' + it[0] + '</div><div class="stat-value">' + it[1] + '</div></div>';
+  }).join('');
+}
+
+function renderLatestCase(item) {
+  if (!item) {
+    document.getElementById('latest-case-text').textContent = 'لا توجد حالات مسجلة حاليًا.';
+    document.getElementById('latest-case-badge').textContent = 'مستقرة';
+    document.getElementById('latest-case-badge').className = 'badge b-ok';
+    return;
+  }
+  document.getElementById('latest-case-text').textContent = (item.title || 'حالة صحية') + ' • آخر تحديث: ' + new Date(item.updatedAt).toLocaleString('ar-SA');
+  document.getElementById('latest-case-badge').textContent = item.severity || 'low';
+  document.getElementById('latest-case-badge').className = 'badge ' + statusBadgeClass(item.severity);
+}
+
+function renderAlerts(items) {
+  var wrap = document.getElementById('alerts-list');
+  if (!items || !items.length) {
+    wrap.innerHTML = '<div class="item">لا توجد تنبيهات جديدة.</div>';
+    return;
+  }
+  wrap.innerHTML = items.slice(0, 4).map(function (a) {
+    var when = a.createdAt ? new Date(a.createdAt).toLocaleString('ar-SA') : '-';
+    return '<div class="item"><strong>' + (a.text || 'تنبيه') + '</strong><div style="color:#bfd5e6;font-size:12px;">' + when + '</div></div>';
+  }).join('');
+}
+
+function renderReports(items) {
+  var wrap = document.getElementById('reports-list');
+  if (!items || !items.length) {
+    wrap.innerHTML = '<div class="item">لا توجد تقارير متاحة حاليًا.</div>';
+    return;
+  }
+  wrap.innerHTML = items.slice(0, 4).map(function (r) {
+    var when = r.createdAt ? new Date(r.createdAt).toLocaleDateString('ar-SA') : '-';
+    return '<div class="item"><strong>' + (r.title || 'تقرير صحي') + '</strong><div style="color:#bfd5e6;font-size:12px;">' + when + '</div></div>';
+  }).join('');
+}
+
+async function loadOverview() {
+  var result = await SmartClinicSecurity.apiJson('/student/overview');
+  if (!result.ok || !result.data) {
+    notify(result.error === 'request_timeout' ? 'انتهت مهلة الاتصال، حاول مرة أخرى.' : 'تعذر تحميل بيانات الطالب.');
+    return;
+  }
+  lastOverview = result.data;
+  renderStats(result.data.snapshot || {});
+  renderLatestCase(result.data.latestCase || null);
+  renderAlerts(result.data.alerts || []);
+  renderReports(result.data.reports || []);
+}
+
+function jumpToCases() {
+  window.location.href = 'student-profile.html#cases';
+}
+
+function renderStudentAi(item) {
+  if (!item) {
+    document.getElementById('ai-student-output').textContent = 'تعذر عرض نتيجة التحليل.';
+    return;
+  }
+  var riskLabel = item.risk === 'critical' ? 'حرج' : (item.risk === 'medium' ? 'متوسط' : 'منخفض');
+  var actions = (item.actions || []).map(function (a) { return '<div class="item">• ' + a + '</div>'; }).join('');
+  var triggers = (item.triggers || []).map(function (t) { return '<div class="item">' + t + '</div>'; }).join('');
+  document.getElementById('ai-student-output').innerHTML =
+    '<div><strong>مستوى الخطورة: ' + riskLabel + '</strong></div>' +
+    '<div style="margin-top:6px;color:#bfd5e6;">مسببات التقييم</div>' + triggers +
+    '<div style="margin-top:6px;color:#bfd5e6;">إجراءات مقترحة</div>' + actions;
+}
+
+async function askStudentAi() {
+  var text = document.getElementById('ai-student-input').value.trim();
+  var result = await SmartClinicSecurity.apiJson('/ai/student-support', {
+    method: 'POST',
+    body: JSON.stringify({ text: text })
+  });
+  if (!result.ok || !result.data) {
+    notify(result.error || 'فشل تحليل AI.');
+    return;
+  }
+  renderStudentAi(result.data.item || null);
+  notify('تم توليد توصية AI للطالب.');
+}
+
+async function requestVisit() {
+  var priority = document.getElementById('visit-priority').value;
+  var reason = document.getElementById('visit-reason').value.trim();
+  if (!reason) {
+    notify('اكتب سبب الطلب أولًا.');
+    return;
+  }
+
+  var result = await SmartClinicSecurity.apiJson('/visit-requests', {
+    method: 'POST',
+    body: JSON.stringify({ reason: '[' + priority + '] ' + reason })
+  });
+  if (!result.ok) {
+    notify(result.error || 'تعذر إرسال الطلب.');
+    return;
+  }
+  document.getElementById('visit-reason').value = '';
+  notify('تم إرسال طلب الزيارة بنجاح.');
+  loadOverview();
+}
+
+async function sendClinicMessage() {
+  var text = document.getElementById('message-text').value.trim();
+  if (!text) {
+    notify('اكتب رسالة قبل الإرسال.');
+    return;
+  }
+
+  var result = await SmartClinicSecurity.apiJson('/messages', {
+    method: 'POST',
+    body: JSON.stringify({ text: text })
+  });
+  if (!result.ok) {
+    notify(result.error || 'فشل إرسال الرسالة.');
+    return;
+  }
+  document.getElementById('message-text').value = '';
+  notify('تم إرسال الرسالة للفريق الصحي.');
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  SmartClinicSecurity.requireAccess(['student', 'admin'], 'بوابة الطالب');
+  document.getElementById('tip-text').textContent = tips[tipIndex];
+  SmartClinicSecurity.createAutoRefresh(loadOverview, 20000, { immediate: true });
+});
+</script>
+</body>
+</html>

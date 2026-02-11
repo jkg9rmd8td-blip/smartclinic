@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard تحليلي – Smart Clinic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg1: #0e1a2b;
+  --bg2: #152f47;
+  --card: rgba(12, 34, 56, 0.82);
+  --line: rgba(147, 197, 253, 0.3);
+  --text: #f1f8ff;
+  --soft: #b8cee2;
+  --accent: #38bdf8;
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --danger: #ef4444;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Tajawal", sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(900px 460px at 8% 0%, rgba(56,189,248,.2), transparent 60%),
+    linear-gradient(130deg, var(--bg1), var(--bg2));
+  min-height: 100vh;
+  padding: 18px 14px;
+}
+.shell { max-width: 1240px; margin: 0 auto; }
+.top {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.btn {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+.chip {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.04);
+  color: var(--soft);
+  padding: 8px 14px;
+  font-size: 13px;
+}
+.hero {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px;
+}
+.hero h1 { margin: 0; font-size: 32px; }
+.hero p { margin: 6px 0 0; color: var(--soft); }
+.stats {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+.stat {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+}
+.stat .label { color: var(--soft); font-size: 13px; }
+.stat .value { margin-top: 4px; font-size: 30px; font-weight: 800; }
+.grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+}
+.panel h2 { margin: 0 0 8px; font-size: 20px; }
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px;
+  padding: 8px;
+  margin-top: 6px;
+}
+.badge { border-radius: 999px; padding: 2px 8px; font-size: 12px; }
+.b-ok { background: rgba(34,197,94,.18); color: #86efac; }
+.b-warn { background: rgba(245,158,11,.2); color: #fcd34d; }
+.b-danger { background: rgba(239,68,68,.2); color: #fca5a5; }
+.log {
+  margin-top: 6px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px;
+  padding: 8px;
+}
+.log .meta { color: var(--soft); font-size: 12px; }
+@media (max-width: 900px) {
+  .grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <div class="chip">Dashboard حي • تحديث تلقائي كل 15 ثانية</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn" onclick="window.location.href='admin-dashboard.html'">لوحة الإدارة</button>
+      <button class="btn" data-action="logout">تسجيل الخروج</button>
+    </div>
+  </div>
+
+  <section class="hero">
+    <h1>التحليلات الحية للمنصة</h1>
+    <p>قراءة مباشرة من API للحالات، المستخدمين، الطلبات، والأنشطة التشغيلية.</p>
+  </section>
+
+  <section id="snapshot" class="stats"></section>
+
+  <section class="grid">
+    <section class="panel">
+      <h2>توزيع الحالات</h2>
+      <div id="statusDist"></div>
+      <h2 style="margin-top:10px;">توزيع الخطورة</h2>
+      <div id="severityDist"></div>
+    </section>
+
+    <section class="panel">
+      <h2>توزيع الأدوار</h2>
+      <div id="rolesDist"></div>
+      <h2 style="margin-top:10px;">نشاط اليوم</h2>
+      <div id="todayDist"></div>
+    </section>
+  </section>
+
+  <section class="panel" style="margin-top:10px;">
+    <h2>آخر العمليات</h2>
+    <div id="recentLogs"></div>
+  </section>
+</div>
+
+<script src="../../assets/js/security.js"></script>
+<script>
+function rowHtml(label, value, cls) {
+  return '<div class="row"><span>' + label + '</span><span class="badge ' + cls + '">' + value + '</span></div>';
+}
+
+function safeNum(v) { return typeof v === 'number' ? v : 0; }
+
+function renderSnapshot(s) {
+  var items = [
+    ['إجمالي المستخدمين', safeNum(s.totalUsers)],
+    ['المستخدمون النشطون', safeNum(s.activeUsers)],
+    ['إجمالي الحالات', safeNum(s.totalCases)],
+    ['حالات حرجة', safeNum(s.criticalCases)],
+    ['طلبات زيارة معلقة', safeNum(s.pendingVisitRequests)],
+    ['تنبيهات مفتوحة', safeNum(s.openAlerts)]
+  ];
+  document.getElementById('snapshot').innerHTML = items.map(function (it) {
+    return '<article class="stat"><div class="label">' + it[0] + '</div><div class="value">' + it[1] + '</div></article>';
+  }).join('');
+}
+
+function renderDist(id, obj) {
+  var keys = Object.keys(obj || {});
+  if (!keys.length) {
+    document.getElementById(id).innerHTML = '<div class="row">لا توجد بيانات</div>';
+    return;
+  }
+  document.getElementById(id).innerHTML = keys.map(function (k) {
+    var val = safeNum(obj[k]);
+    var cls = val >= 3 ? 'b-danger' : (val >= 1 ? 'b-warn' : 'b-ok');
+    return rowHtml(k, val, cls);
+  }).join('');
+}
+
+function renderRecent(logs) {
+  var wrap = document.getElementById('recentLogs');
+  if (!logs || !logs.length) {
+    wrap.innerHTML = '<div class="log">لا توجد عمليات مسجلة.</div>';
+    return;
+  }
+  wrap.innerHTML = logs.map(function (l) {
+    var when = new Date(l.createdAt).toLocaleString('ar-SA');
+    return '<div class="log"><div><strong>' + l.action + '</strong></div><div class="meta">المستهدف: ' + (l.target || '-') + ' | الدور: ' + (l.actorRole || '-') + '</div><div class="meta">' + when + '</div></div>';
+  }).join('');
+}
+
+async function loadAnalytics() {
+  try {
+    var response = await SmartClinicSecurity.apiRequest('/analytics/overview');
+    var payload = await response.json();
+    if (!response.ok) {
+      document.getElementById('snapshot').innerHTML = '<article class="stat"><div class="label">خطأ</div><div class="value">تعذر التحميل</div></article>';
+      return;
+    }
+
+    renderSnapshot(payload.snapshot || {});
+    renderDist('statusDist', payload.distributions && payload.distributions.statusCounts);
+    renderDist('severityDist', payload.distributions && payload.distributions.severityCounts);
+    renderDist('rolesDist', payload.distributions && payload.distributions.roleCounts);
+    renderDist('todayDist', payload.today || {});
+    renderRecent(payload.recentLogs || []);
+  } catch (err) {
+    document.getElementById('snapshot').innerHTML = '<article class="stat"><div class="label">خطأ</div><div class="value">الخادم غير متاح</div></article>';
+  }
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  SmartClinicSecurity.requireAccess(['doctor', 'admin'], 'Dashboard التحليلات');
+  loadAnalytics();
+  setInterval(loadAnalytics, 15000);
+});
+</script>
+</body>
+</html>

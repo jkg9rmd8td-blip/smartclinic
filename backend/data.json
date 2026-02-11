@@ -1,0 +1,705 @@
+{
+  "users": [
+    {
+      "id": "u_admin_1",
+      "name": "مدير المنصة",
+      "role": "admin",
+      "active": true
+    },
+    {
+      "id": "u_doctor_1",
+      "name": "د. أحمد الشمري",
+      "role": "doctor",
+      "active": true
+    },
+    {
+      "id": "u_parent_1",
+      "name": "ولية أمر - سارة الغامدي",
+      "role": "parent",
+      "active": true
+    },
+    {
+      "id": "u_student_1",
+      "name": "عمر الحارثي",
+      "age": 17,
+      "grade": "ثاني ثانوي - 2/ب",
+      "guardianPhone": "05********",
+      "role": "student",
+      "active": true
+    }
+  ],
+  "cases": [
+    {
+      "id": "case_1",
+      "studentId": "u_student_1",
+      "studentName": "ع. م. الحارثي",
+      "title": "نوبة ربو حادة",
+      "severity": "critical",
+      "status": "in_progress",
+      "notes": "متابعة SpO2 كل 10 دقائق",
+      "updatedAt": "2026-02-11T01:10:25.233Z"
+    },
+    {
+      "id": "case_2",
+      "studentId": "u_student_1",
+      "studentName": "ع. م. الحارثي",
+      "title": "صداع وإجهاد",
+      "severity": "medium",
+      "status": "open",
+      "notes": "راحة + سوائل",
+      "updatedAt": "2026-02-10T07:20:00.000Z"
+    }
+  ],
+  "visitRequests": [
+    {
+      "id": "vr_0d39f563",
+      "studentId": "u_student_1",
+      "reason": "طلب فحص من بوابة الطالب",
+      "status": "pending",
+      "createdAt": "2026-02-11T00:27:55.639Z"
+    },
+    {
+      "id": "vr_408f9845",
+      "studentId": "u_student_1",
+      "reason": "طلب فحص من بوابة الطالب",
+      "status": "pending",
+      "createdAt": "2026-02-11T00:27:56.837Z"
+    },
+    {
+      "id": "vr_8de94c27",
+      "studentId": "u_student_1",
+      "reason": "طلب زيارة سريع من صفحة الملف الصحي",
+      "status": "pending",
+      "createdAt": "2026-02-11T00:33:40.071Z"
+    },
+    {
+      "id": "vr_36ef2fab",
+      "studentId": "u_student_1",
+      "reason": "طلب زيارة سريع من صفحة الملف الصحي",
+      "status": "pending",
+      "createdAt": "2026-02-11T00:33:53.453Z"
+    },
+    {
+      "id": "vr_feabe75d",
+      "studentId": "u_student_1",
+      "reason": "[urgent] pain",
+      "status": "pending",
+      "createdAt": "2026-02-11T01:08:58.433Z"
+    }
+  ],
+  "messages": [],
+  "reports": [
+    {
+      "id": "rep_1",
+      "studentId": "u_student_1",
+      "title": "تقرير المتابعة الأسبوعي",
+      "createdAt": "2026-02-09T12:00:00.000Z"
+    }
+  ],
+  "alerts": [
+    {
+      "id": "al_1",
+      "roles": [
+        "parent",
+        "doctor",
+        "admin"
+      ],
+      "text": "تمت مراجعة المؤشرات الحيوية للطالب وهي مستقرة.",
+      "createdAt": "2026-02-10T09:00:00.000Z"
+    },
+    {
+      "id": "al_b4e0b20e",
+      "roles": [
+        "admin",
+        "doctor",
+        "parent"
+      ],
+      "text": "تحديث حالة ع. م. الحارثي: تم إرسال التقرير للمركز الصحي",
+      "createdAt": "2026-02-11T00:17:07.940Z"
+    },
+    {
+      "id": "al_f3d907bd",
+      "roles": [
+        "admin",
+        "doctor",
+        "parent"
+      ],
+      "text": "تحديث حالة ع. م. الحارثي: تم إرسال اتصال وتنبيه لولي الأمر",
+      "createdAt": "2026-02-11T00:17:08.875Z"
+    },
+    {
+      "id": "al_3edcadcc",
+      "roles": [
+        "doctor",
+        "admin",
+        "parent"
+      ],
+      "text": "طلب زيارة جديد: طلب فحص من بوابة الطالب",
+      "createdAt": "2026-02-11T00:27:55.639Z"
+    },
+    {
+      "id": "al_ebc3c0e2",
+      "roles": [
+        "doctor",
+        "admin",
+        "parent"
+      ],
+      "text": "طلب زيارة جديد: طلب فحص من بوابة الطالب",
+      "createdAt": "2026-02-11T00:27:56.837Z"
+    },
+    {
+      "id": "al_b3f783e6",
+      "roles": [
+        "doctor",
+        "admin",
+        "parent"
+      ],
+      "text": "طلب زيارة جديد: طلب زيارة سريع من صفحة الملف الصحي",
+      "createdAt": "2026-02-11T00:33:40.072Z"
+    },
+    {
+      "id": "al_6829199d",
+      "roles": [
+        "doctor",
+        "admin",
+        "parent"
+      ],
+      "text": "طلب زيارة جديد: طلب زيارة سريع من صفحة الملف الصحي",
+      "createdAt": "2026-02-11T00:33:53.453Z"
+    },
+    {
+      "id": "al_5a375f29",
+      "roles": [
+        "admin",
+        "doctor",
+        "parent"
+      ],
+      "text": "تحديث حالة ع. م. الحارثي: تم تفعيل بروتوكول الطوارئ الكامل",
+      "createdAt": "2026-02-11T00:36:27.503Z"
+    },
+    {
+      "id": "al_d89cee55",
+      "roles": [
+        "admin",
+        "doctor",
+        "parent"
+      ],
+      "text": "تحديث حالة ع. م. الحارثي: تم تسجيل العلامات الحيوية للحالة",
+      "createdAt": "2026-02-11T00:36:30.519Z"
+    },
+    {
+      "id": "al_5b95a8e8",
+      "roles": [
+        "admin",
+        "doctor",
+        "parent"
+      ],
+      "text": "تحديث حالة ع. م. الحارثي: تم اعتماد تحويل الحالة للطوارئ الخارجية",
+      "createdAt": "2026-02-11T00:36:31.253Z"
+    },
+    {
+      "id": "al_186457f5",
+      "roles": [
+        "admin",
+        "doctor",
+        "parent"
+      ],
+      "text": "تحديث حالة ع. م. الحارثي: تم تفعيل بروتوكول الطوارئ الكامل",
+      "createdAt": "2026-02-11T00:36:33.485Z"
+    },
+    {
+      "id": "al_0f3a8138",
+      "roles": [
+        "admin",
+        "doctor",
+        "parent"
+      ],
+      "text": "تحديث حالة ع. م. الحارثي: تم إرسال اتصال وتنبيه لولي الأمر",
+      "createdAt": "2026-02-11T00:36:34.085Z"
+    },
+    {
+      "id": "al_0d4e61b7",
+      "roles": [
+        "doctor",
+        "admin",
+        "parent"
+      ],
+      "text": "طلب زيارة جديد: [urgent] pain",
+      "createdAt": "2026-02-11T01:08:58.433Z"
+    },
+    {
+      "id": "al_31e601fe",
+      "roles": [
+        "admin",
+        "doctor",
+        "parent"
+      ],
+      "text": "تحديث حالة ع. م. الحارثي: إصدار وصفة دوائية",
+      "createdAt": "2026-02-11T01:09:34.984Z"
+    },
+    {
+      "id": "al_51ab2fc1",
+      "roles": [
+        "admin",
+        "doctor",
+        "parent"
+      ],
+      "text": "تحديث حالة ع. م. الحارثي: تم إرسال طلب فحص مخبري عاجل",
+      "createdAt": "2026-02-11T01:09:37.133Z"
+    },
+    {
+      "id": "al_2f8f5b16",
+      "roles": [
+        "admin",
+        "doctor",
+        "parent"
+      ],
+      "text": "تحديث حالة ع. م. الحارثي: تم اعتماد تحويل الحالة للمستشفى",
+      "createdAt": "2026-02-11T01:09:37.767Z"
+    },
+    {
+      "id": "al_4c5a5487",
+      "roles": [
+        "admin",
+        "doctor",
+        "parent"
+      ],
+      "text": "تحديث حالة ع. م. الحارثي: تم إرسال التقرير للمركز الصحي",
+      "createdAt": "2026-02-11T01:10:23.083Z"
+    },
+    {
+      "id": "al_3e5246ef",
+      "roles": [
+        "admin",
+        "doctor",
+        "parent"
+      ],
+      "text": "تحديث حالة ع. م. الحارثي: تم تسجيل العلامات الحيوية للحالة",
+      "createdAt": "2026-02-11T01:10:23.816Z"
+    },
+    {
+      "id": "al_5c237ce6",
+      "roles": [
+        "admin",
+        "doctor",
+        "parent"
+      ],
+      "text": "تحديث حالة ع. م. الحارثي: تم اعتماد تحويل الحالة للطوارئ الخارجية",
+      "createdAt": "2026-02-11T01:10:24.383Z"
+    },
+    {
+      "id": "al_7ec53ec1",
+      "roles": [
+        "admin",
+        "doctor",
+        "parent"
+      ],
+      "text": "تحديث حالة ع. م. الحارثي: تم تفعيل بروتوكول الطوارئ الكامل",
+      "createdAt": "2026-02-11T01:10:25.233Z"
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "log_b9068c30",
+      "action": "auth.login",
+      "actorId": "u_student_1",
+      "actorRole": "student",
+      "target": "session",
+      "details": {
+        "role": "student"
+      },
+      "createdAt": "2026-02-11T00:16:49.128Z"
+    },
+    {
+      "id": "log_8f2a819e",
+      "action": "auth.login",
+      "actorId": "u_doctor_1",
+      "actorRole": "doctor",
+      "target": "session",
+      "details": {
+        "role": "doctor"
+      },
+      "createdAt": "2026-02-11T00:16:53.392Z"
+    },
+    {
+      "id": "log_2b184aef",
+      "action": "case.action.send_report",
+      "actorId": "u_doctor_1",
+      "actorRole": "doctor",
+      "target": "case_1",
+      "details": {
+        "note": "تم إرسال التقرير للمركز الصحي"
+      },
+      "createdAt": "2026-02-11T00:17:07.940Z"
+    },
+    {
+      "id": "log_2eddd83b",
+      "action": "case.action.contact_guardian",
+      "actorId": "u_doctor_1",
+      "actorRole": "doctor",
+      "target": "case_1",
+      "details": {
+        "note": "تم إرسال اتصال وتنبيه لولي الأمر"
+      },
+      "createdAt": "2026-02-11T00:17:08.875Z"
+    },
+    {
+      "id": "log_1fe416e9",
+      "action": "auth.logout",
+      "actorId": "u_doctor_1",
+      "actorRole": "doctor",
+      "target": "session",
+      "details": {},
+      "createdAt": "2026-02-11T00:17:11.274Z"
+    },
+    {
+      "id": "log_b6fbf03d",
+      "action": "auth.login",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "session",
+      "details": {
+        "role": "admin"
+      },
+      "createdAt": "2026-02-11T00:17:14.576Z"
+    },
+    {
+      "id": "log_97c2c4c8",
+      "action": "auth.login",
+      "actorId": "u_student_1",
+      "actorRole": "student",
+      "target": "session",
+      "details": {
+        "role": "student"
+      },
+      "createdAt": "2026-02-11T00:27:47.423Z"
+    },
+    {
+      "id": "log_51f38c65",
+      "action": "visit.request.create",
+      "actorId": "u_student_1",
+      "actorRole": "student",
+      "target": "vr_0d39f563",
+      "details": {
+        "id": "vr_0d39f563",
+        "studentId": "u_student_1",
+        "reason": "طلب فحص من بوابة الطالب",
+        "status": "pending",
+        "createdAt": "2026-02-11T00:27:55.639Z"
+      },
+      "createdAt": "2026-02-11T00:27:55.639Z"
+    },
+    {
+      "id": "log_6412b326",
+      "action": "visit.request.create",
+      "actorId": "u_student_1",
+      "actorRole": "student",
+      "target": "vr_408f9845",
+      "details": {
+        "id": "vr_408f9845",
+        "studentId": "u_student_1",
+        "reason": "طلب فحص من بوابة الطالب",
+        "status": "pending",
+        "createdAt": "2026-02-11T00:27:56.837Z"
+      },
+      "createdAt": "2026-02-11T00:27:56.837Z"
+    },
+    {
+      "id": "log_6e84a10e",
+      "action": "auth.login",
+      "actorId": "u_student_1",
+      "actorRole": "student",
+      "target": "session",
+      "details": {
+        "role": "student"
+      },
+      "createdAt": "2026-02-11T00:33:25.505Z"
+    },
+    {
+      "id": "log_8060ad50",
+      "action": "visit.request.create",
+      "actorId": "u_student_1",
+      "actorRole": "student",
+      "target": "vr_8de94c27",
+      "details": {
+        "id": "vr_8de94c27",
+        "studentId": "u_student_1",
+        "reason": "طلب زيارة سريع من صفحة الملف الصحي",
+        "status": "pending",
+        "createdAt": "2026-02-11T00:33:40.071Z"
+      },
+      "createdAt": "2026-02-11T00:33:40.072Z"
+    },
+    {
+      "id": "log_f7486f6b",
+      "action": "visit.request.create",
+      "actorId": "u_student_1",
+      "actorRole": "student",
+      "target": "vr_36ef2fab",
+      "details": {
+        "id": "vr_36ef2fab",
+        "studentId": "u_student_1",
+        "reason": "طلب زيارة سريع من صفحة الملف الصحي",
+        "status": "pending",
+        "createdAt": "2026-02-11T00:33:53.453Z"
+      },
+      "createdAt": "2026-02-11T00:33:53.453Z"
+    },
+    {
+      "id": "log_4ccaecb5",
+      "action": "auth.login",
+      "actorId": "u_doctor_1",
+      "actorRole": "doctor",
+      "target": "session",
+      "details": {
+        "role": "doctor"
+      },
+      "createdAt": "2026-02-11T00:33:58.871Z"
+    },
+    {
+      "id": "log_021288d9",
+      "action": "auth.login",
+      "actorId": "u_parent_1",
+      "actorRole": "parent",
+      "target": "session",
+      "details": {
+        "role": "parent"
+      },
+      "createdAt": "2026-02-11T00:34:12.904Z"
+    },
+    {
+      "id": "log_ad74fb92",
+      "action": "auth.login",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "session",
+      "details": {
+        "role": "admin"
+      },
+      "createdAt": "2026-02-11T00:36:19.871Z"
+    },
+    {
+      "id": "log_57c5bf4a",
+      "action": "case.action.emergency_protocol",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "case_1",
+      "details": {
+        "note": "تم تفعيل بروتوكول الطوارئ الكامل"
+      },
+      "createdAt": "2026-02-11T00:36:27.503Z"
+    },
+    {
+      "id": "log_4d1eef3d",
+      "action": "case.action.vitals_update",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "case_1",
+      "details": {
+        "note": "تم تسجيل العلامات الحيوية للحالة"
+      },
+      "createdAt": "2026-02-11T00:36:30.519Z"
+    },
+    {
+      "id": "log_d85a19dd",
+      "action": "case.action.external_referral",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "case_1",
+      "details": {
+        "note": "تم اعتماد تحويل الحالة للطوارئ الخارجية"
+      },
+      "createdAt": "2026-02-11T00:36:31.253Z"
+    },
+    {
+      "id": "log_8e5cc7a3",
+      "action": "case.action.emergency_protocol",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "case_1",
+      "details": {
+        "note": "تم تفعيل بروتوكول الطوارئ الكامل"
+      },
+      "createdAt": "2026-02-11T00:36:33.485Z"
+    },
+    {
+      "id": "log_e00ddd4a",
+      "action": "case.action.contact_guardian",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "case_1",
+      "details": {
+        "note": "تم إرسال اتصال وتنبيه لولي الأمر"
+      },
+      "createdAt": "2026-02-11T00:36:34.085Z"
+    },
+    {
+      "id": "log_a6f16c2a",
+      "action": "auth.logout",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "session",
+      "details": {},
+      "createdAt": "2026-02-11T00:36:46.420Z"
+    },
+    {
+      "id": "log_6ffec5fe",
+      "action": "auth.login",
+      "actorId": "u_student_1",
+      "actorRole": "student",
+      "target": "session",
+      "details": {
+        "role": "student"
+      },
+      "createdAt": "2026-02-11T00:36:50.553Z"
+    },
+    {
+      "id": "log_2a4a01bf",
+      "action": "auth.logout",
+      "actorId": "u_student_1",
+      "actorRole": "student",
+      "target": "session",
+      "details": {},
+      "createdAt": "2026-02-11T00:37:03.652Z"
+    },
+    {
+      "id": "log_19bdeb2f",
+      "action": "auth.login",
+      "actorId": "u_student_1",
+      "actorRole": "student",
+      "target": "session",
+      "details": {
+        "role": "student"
+      },
+      "createdAt": "2026-02-11T01:08:45.386Z"
+    },
+    {
+      "id": "log_30274638",
+      "action": "visit.request.create",
+      "actorId": "u_student_1",
+      "actorRole": "student",
+      "target": "vr_feabe75d",
+      "details": {
+        "id": "vr_feabe75d",
+        "studentId": "u_student_1",
+        "reason": "[urgent] pain",
+        "status": "pending",
+        "createdAt": "2026-02-11T01:08:58.433Z"
+      },
+      "createdAt": "2026-02-11T01:08:58.433Z"
+    },
+    {
+      "id": "log_e48912f5",
+      "action": "auth.login",
+      "actorId": "u_doctor_1",
+      "actorRole": "doctor",
+      "target": "session",
+      "details": {
+        "role": "doctor"
+      },
+      "createdAt": "2026-02-11T01:09:20.366Z"
+    },
+    {
+      "id": "log_70fbf949",
+      "action": "case.action.prescription",
+      "actorId": "u_doctor_1",
+      "actorRole": "doctor",
+      "target": "case_1",
+      "details": {
+        "note": "إصدار وصفة دوائية"
+      },
+      "createdAt": "2026-02-11T01:09:34.983Z"
+    },
+    {
+      "id": "log_58662905",
+      "action": "case.action.lab_order",
+      "actorId": "u_doctor_1",
+      "actorRole": "doctor",
+      "target": "case_1",
+      "details": {
+        "note": "تم إرسال طلب فحص مخبري عاجل"
+      },
+      "createdAt": "2026-02-11T01:09:37.133Z"
+    },
+    {
+      "id": "log_9f7dbf66",
+      "action": "case.action.external_referral",
+      "actorId": "u_doctor_1",
+      "actorRole": "doctor",
+      "target": "case_1",
+      "details": {
+        "note": "تم اعتماد تحويل الحالة للمستشفى"
+      },
+      "createdAt": "2026-02-11T01:09:37.767Z"
+    },
+    {
+      "id": "log_a8519f3e",
+      "action": "auth.login",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "session",
+      "details": {
+        "role": "admin"
+      },
+      "createdAt": "2026-02-11T01:09:45.233Z"
+    },
+    {
+      "id": "log_43c8fa57",
+      "action": "case.action.send_report",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "case_1",
+      "details": {
+        "note": "تم إرسال التقرير للمركز الصحي"
+      },
+      "createdAt": "2026-02-11T01:10:23.083Z"
+    },
+    {
+      "id": "log_677adf9b",
+      "action": "case.action.vitals_update",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "case_1",
+      "details": {
+        "note": "تم تسجيل العلامات الحيوية للحالة"
+      },
+      "createdAt": "2026-02-11T01:10:23.816Z"
+    },
+    {
+      "id": "log_36490321",
+      "action": "case.action.external_referral",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "case_1",
+      "details": {
+        "note": "تم اعتماد تحويل الحالة للطوارئ الخارجية"
+      },
+      "createdAt": "2026-02-11T01:10:24.383Z"
+    },
+    {
+      "id": "log_48e8ebb2",
+      "action": "case.action.emergency_protocol",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "case_1",
+      "details": {
+        "note": "تم تفعيل بروتوكول الطوارئ الكامل"
+      },
+      "createdAt": "2026-02-11T01:10:25.233Z"
+    }
+  ],
+  "settings": {
+    "sessionPolicy": {
+      "ttlHours": 8,
+      "inactivityMinutes": 60
+    },
+    "alerts": {
+      "minimumLevel": "info"
+    },
+    "sla": {
+      "criticalResponseMinutes": 5,
+      "highResponseMinutes": 15,
+      "normalResponseMinutes": 30
+    }
+  }
+}

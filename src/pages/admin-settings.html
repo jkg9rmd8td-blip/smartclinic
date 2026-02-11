@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>إعدادات المنصة – Smart Clinic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:"Tajawal",sans-serif;background:#2a1a06;color:#f8fafc;padding:18px 14px}.shell{max-width:980px;margin:0 auto}.panel{background:rgba(35,30,20,.86);border:1px solid rgba(251,191,36,.35);border-radius:16px;padding:16px}.top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px}.btn{border:1px solid rgba(251,191,36,.35);background:transparent;color:#f8fafc;padding:8px 12px;border-radius:8px;font:inherit;cursor:pointer}label{display:block;font-size:13px;color:#d7d1c0;margin-top:8px}input,select{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(251,191,36,.35);background:rgba(255,255,255,.04);color:#f8fafc;font:inherit}.save{margin-top:12px;border:none;background:#fbbf24;color:#1f2937;padding:9px 12px;border-radius:8px;font:inherit;font-weight:700;cursor:pointer}.msg{margin-top:8px;color:#fcd34d;font-size:13px}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <button class="btn" onclick="window.location.href='admin-dashboard.html'">العودة للوحة الإدارة</button>
+    <button class="btn" data-action="logout">تسجيل الخروج</button>
+  </div>
+  <section class="panel">
+    <h1 style="margin:0;font-size:30px">إعدادات المنصة</h1>
+    <p style="color:#d7d1c0">سياسات الجلسة، مستوى التنبيه الأدنى، ومعايير SLA التشغيلية.</p>
+
+    <label>مدة صلاحية الجلسة (بالساعات)</label>
+    <input id="ttlHours" type="number" min="1" max="24">
+
+    <label>مهلة عدم النشاط (بالدقائق)</label>
+    <input id="inactivityMinutes" type="number" min="5" max="480">
+
+    <label>الحد الأدنى لمستوى الإشعارات</label>
+    <select id="minimumLevel">
+      <option value="info">معلومة</option>
+      <option value="operational">إجرائي</option>
+      <option value="critical">حرج</option>
+    </select>
+
+    <label>SLA للحالات الحرجة (دقيقة)</label>
+    <input id="slaCritical" type="number" min="1">
+
+    <label>SLA للحالات العالية (دقيقة)</label>
+    <input id="slaHigh" type="number" min="1">
+
+    <label>SLA للحالات العادية (دقيقة)</label>
+    <input id="slaNormal" type="number" min="1">
+
+    <button class="save" onclick="saveSettings()">حفظ الإعدادات</button>
+    <div id="msg" class="msg"></div>
+  </section>
+</div>
+<script src="../../assets/js/security.js"></script>
+<script>
+function setMsg(text) { document.getElementById('msg').textContent = text || ''; }
+
+function fill(settings) {
+  var s = settings || {};
+  var sp = s.sessionPolicy || {};
+  var al = s.alerts || {};
+  var sla = s.sla || {};
+  document.getElementById('ttlHours').value = sp.ttlHours || 8;
+  document.getElementById('inactivityMinutes').value = sp.inactivityMinutes || 60;
+  document.getElementById('minimumLevel').value = al.minimumLevel || 'info';
+  document.getElementById('slaCritical').value = sla.criticalResponseMinutes || 5;
+  document.getElementById('slaHigh').value = sla.highResponseMinutes || 15;
+  document.getElementById('slaNormal').value = sla.normalResponseMinutes || 30;
+}
+
+async function loadSettings() {
+  try {
+    var response = await SmartClinicSecurity.apiRequest('/settings');
+    var payload = await response.json();
+    if (!response.ok) {
+      setMsg(payload.error || 'تعذر تحميل الإعدادات.');
+      return;
+    }
+    fill(payload.settings || {});
+  } catch (err) {
+    setMsg('تعذر الاتصال بالخادم.');
+  }
+}
+
+async function saveSettings() {
+  var body = {
+    settings: {
+      sessionPolicy: {
+        ttlHours: Number(document.getElementById('ttlHours').value || 8),
+        inactivityMinutes: Number(document.getElementById('inactivityMinutes').value || 60)
+      },
+      alerts: {
+        minimumLevel: document.getElementById('minimumLevel').value
+      },
+      sla: {
+        criticalResponseMinutes: Number(document.getElementById('slaCritical').value || 5),
+        highResponseMinutes: Number(document.getElementById('slaHigh').value || 15),
+        normalResponseMinutes: Number(document.getElementById('slaNormal').value || 30)
+      }
+    }
+  };
+
+  try {
+    var response = await SmartClinicSecurity.apiRequest('/settings', {
+      method: 'PATCH',
+      body: JSON.stringify(body)
+    });
+    var payload = await response.json();
+    if (!response.ok) {
+      setMsg(payload.error || 'فشل حفظ الإعدادات.');
+      return;
+    }
+    setMsg('تم تحديث إعدادات المنصة بنجاح.');
+    fill(payload.settings || {});
+  } catch (err) {
+    setMsg('تعذر الاتصال بالخادم.');
+  }
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  SmartClinicSecurity.requireAccess(['admin'], 'إعدادات المنصة');
+  loadSettings();
+});
+</script>
+</body>
+</html>

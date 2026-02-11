@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مركز الإشعارات – Smart Clinic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:"Tajawal",sans-serif;background:#0b1e34;color:#eef8ff;padding:18px 14px}.shell{max-width:1040px;margin:0 auto}.panel{background:rgba(9,34,56,.85);border:1px solid rgba(125,211,252,.35);border-radius:16px;padding:16px}.top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px}.btn{border:1px solid rgba(125,211,252,.35);background:transparent;color:#eef8ff;padding:8px 12px;border-radius:8px;font:inherit;cursor:pointer}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.tab{padding:7px 10px;border-radius:999px;border:1px solid rgba(125,211,252,.35);background:transparent;color:#cde6f7;cursor:pointer}.tab.active{background:#38bdf8;color:#06263d;border-color:#38bdf8}.item{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px;margin-top:8px}.meta{font-size:12px;color:#bcd9ec;margin-top:4px}.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px}.b-critical{background:rgba(239,68,68,.2);color:#fecaca}.b-operational{background:rgba(245,158,11,.2);color:#fde68a}.b-info{background:rgba(56,189,248,.2);color:#bae6fd}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <button class="btn" onclick="goHome()">العودة</button>
+    <div style="display:flex;gap:8px;">
+      <button class="btn" onclick="loadNotifications()">تحديث</button>
+      <button class="btn" data-action="logout">تسجيل الخروج</button>
+    </div>
+  </div>
+  <section class="panel">
+    <h1 style="margin:0;font-size:30px">مركز الإشعارات الموحد</h1>
+    <p style="color:#bcd9ec">فلترة الإشعارات حسب النوع: حرج، إجرائي، أو معلوماتي.</p>
+    <div class="tabs">
+      <button class="tab active" data-type="all" onclick="setType('all', this)">الكل</button>
+      <button class="tab" data-type="critical" onclick="setType('critical', this)">حرج</button>
+      <button class="tab" data-type="operational" onclick="setType('operational', this)">إجرائي</button>
+      <button class="tab" data-type="info" onclick="setType('info', this)">معلومة</button>
+    </div>
+    <div id="list"></div>
+  </section>
+</div>
+<script src="../../assets/js/security.js"></script>
+<script>
+var currentType = 'all';
+var stream = null;
+
+function goHome() {
+  SmartClinicSecurity.goToRoleHome();
+}
+
+function badgeClass(type) {
+  if (type === 'critical') return 'b-critical';
+  if (type === 'operational') return 'b-operational';
+  return 'b-info';
+}
+
+function typeLabel(type) {
+  if (type === 'critical') return 'حرج';
+  if (type === 'operational') return 'إجرائي';
+  return 'معلومة';
+}
+
+function setType(type, btn) {
+  currentType = type;
+  document.querySelectorAll('.tab').forEach(function (t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  loadNotifications();
+}
+
+function connectStream() {
+  try {
+    var token = SmartClinicSecurity.getToken && SmartClinicSecurity.getToken();
+    if (!token) return;
+    if (stream) {
+      stream.close();
+    }
+    stream = new EventSource('/api/stream?token=' + encodeURIComponent(token));
+    stream.addEventListener('notifications', function () {
+      loadNotifications();
+    });
+    stream.addEventListener('connected', function () {
+      // Connection established.
+    });
+    stream.onerror = function () {
+      // Keep fallback polling active.
+    };
+  } catch (err) {
+    // SSE not supported or failed.
+  }
+}
+
+async function loadNotifications() {
+  var list = document.getElementById('list');
+  list.innerHTML = '<div class="item">جاري التحميل...</div>';
+  var q = currentType === 'all' ? '' : ('?type=' + encodeURIComponent(currentType));
+  var result = await SmartClinicSecurity.apiJson('/notifications' + q);
+  if (!result.ok || !result.data) {
+    list.innerHTML = '<div class="item">تعذر الاتصال بالخادم.</div>';
+    return;
+  }
+  var items = result.data.items || [];
+  if (!items.length) {
+    list.innerHTML = '<div class="item">لا توجد إشعارات في هذا التصنيف.</div>';
+    return;
+  }
+  list.innerHTML = items.map(function (n) {
+    return '<div class="item"><span class="badge ' + badgeClass(n.type) + '">' + typeLabel(n.type) + '</span> ' + (n.text || '-') + '<div class="meta">' + new Date(n.createdAt).toLocaleString('ar-SA') + ' • المصدر: ' + (n.source || '-') + '</div></div>';
+  }).join('');
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  SmartClinicSecurity.requireAccess(['student', 'parent', 'doctor', 'admin'], 'مركز الإشعارات');
+  loadNotifications();
+  connectStream();
+  SmartClinicSecurity.createAutoRefresh(loadNotifications, 15000, { immediate: false });
+});
+
+window.addEventListener('beforeunload', function () {
+  if (stream) stream.close();
+});
+</script>
+</body>
+</html>

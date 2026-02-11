@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>بوابة ولي الأمر – Smart Clinic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg1: #07211c;
+    --bg2: #0d2f38;
+    --card: rgba(8, 31, 36, 0.8);
+    --line: rgba(167, 243, 208, 0.28);
+    --text: #eefcf9;
+    --soft: #b5d8d3;
+    --accent: #34d399;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Tajawal", sans-serif;
+    color: var(--text);
+    background: radial-gradient(900px 480px at 8% 2%, rgba(52, 211, 153, 0.22), transparent 60%), linear-gradient(135deg, var(--bg1), var(--bg2));
+    min-height: 100vh;
+    padding: 18px 14px;
+  }
+  .shell { max-width: 1120px; margin: 0 auto; }
+  .top { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .chip { border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; font-size: 13px; color: var(--soft); background: rgba(255, 255, 255, 0.04); }
+  .btn { border: 1px solid var(--line); background: transparent; color: var(--text); border-radius: 10px; padding: 8px 12px; font: inherit; cursor: pointer; }
+  .hero, .panel, .mini { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
+  .hero h1 { margin: 0; font-size: 32px; }
+  .hero p { margin: 6px 0 0; color: var(--soft); }
+  .stats { margin-top: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 8px; }
+  .stat { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.12); border-radius: 12px; padding: 8px; }
+  .stat .l { font-size: 11px; color: var(--soft); }
+  .stat .v { font-size: 24px; font-weight: 800; margin-top: 3px; }
+  .grid { margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+  .mini h3 { margin: 0; font-size: 17px; }
+  .mini p { margin: 6px 0 10px; color: var(--soft); font-size: 14px; }
+  .cta { border: none; background: var(--accent); color: #053328; border-radius: 10px; padding: 8px 12px; font: inherit; font-weight: 700; cursor: pointer; }
+  .list { display: grid; gap: 6px; margin-top: 8px; }
+  .item { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.12); border-radius: 10px; padding: 8px; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <div class="chip">الدور الحالي: <strong data-session-role>ولي الأمر</strong></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn" onclick="window.location.href='../../  index.html'">الرئيسية</button>
+      <button class="btn" data-action="logout">تسجيل الخروج</button>
+    </div>
+  </div>
+
+  <section class="hero">
+    <h1>بوابة ولي الأمر</h1>
+    <p>متابعة صحية مباشرة للطالب مع تقارير وتنبيهات وتواصل فوري.</p>
+    <div id="stats" class="stats"></div>
+  </section>
+
+  <section class="grid">
+    <article class="mini" data-permission="view.student">
+      <h3>الملف الصحي للطالب</h3>
+      <p id="latest-case">جاري تحميل أحدث حالة...</p>
+      <button class="cta" onclick="window.location.href='student-profile.html'">فتح الملف</button>
+    </article>
+
+    <article class="mini" data-permission="export.report">
+      <h3>التقارير الطبية</h3>
+      <p>تحميل ومراجعة جميع التقارير المتاحة.</p>
+      <button class="cta" onclick="window.location.href='parent-reports.html'">فتح التقارير</button>
+    </article>
+
+    <article class="mini" data-permission="view.alerts">
+      <h3>تنبيهات اليوم</h3>
+      <p>آخر التنبيهات المتعلقة بصحة الطالب.</p>
+      <div id="alerts-mini" class="list"></div>
+      <button class="cta" onclick="window.location.href='parent-alerts.html'">عرض الكل</button>
+    </article>
+
+    <article class="mini" data-permission="send.message">
+      <h3>التواصل مع العيادة</h3>
+      <p>إرسال استفسار مباشر لفريق العيادة المدرسية.</p>
+      <button class="cta" onclick="window.location.href='parent-messages.html'">إرسال استفسار</button>
+    </article>
+
+    <article class="mini" data-permission="view.notifications">
+      <h3>مركز الإشعارات الموحد</h3>
+      <p>فلترة الإشعارات حسب النوع: حرج، إجرائي، معلومة.</p>
+      <button class="cta" onclick="window.location.href='notifications-center.html'">فتح المركز</button>
+    </article>
+  </section>
+</div>
+
+<script src="../../assets/js/security.js"></script>
+<script>
+function renderStats(snapshot) {
+  var s = snapshot || {};
+  var items = [
+    ['الحالات المفتوحة', Number(s.openCases || 0)],
+    ['حالات حرجة', Number(s.criticalCases || 0)],
+    ['التقارير', Number(s.reports || 0)],
+    ['التنبيهات', Number(s.alerts || 0)]
+  ];
+  document.getElementById('stats').innerHTML = items.map(function (it) {
+    return '<div class="stat"><div class="l">' + it[0] + '</div><div class="v">' + it[1] + '</div></div>';
+  }).join('');
+}
+
+function renderAlerts(items) {
+  var wrap = document.getElementById('alerts-mini');
+  if (!items || !items.length) {
+    wrap.innerHTML = '<div class="item">لا توجد تنبيهات جديدة.</div>';
+    return;
+  }
+  wrap.innerHTML = items.slice(0, 3).map(function (a) {
+    return '<div class="item">' + (a.text || 'تنبيه') + '</div>';
+  }).join('');
+}
+
+async function loadOverview() {
+  try {
+    var response = await SmartClinicSecurity.apiRequest('/student/overview');
+    var payload = await response.json();
+    if (!response.ok) {
+      return;
+    }
+    renderStats(payload.snapshot || {});
+    var latest = payload.latestCase;
+    document.getElementById('latest-case').textContent = latest ? (latest.title + ' • ' + latest.severity) : 'لا توجد حالة نشطة.';
+    renderAlerts(payload.alerts || []);
+  } catch (err) {
+    // Ignore and keep page usable.
+  }
+}
+
+window.addEventListener("DOMContentLoaded", function () {
+  SmartClinicSecurity.requireAccess(["parent", "admin"], "بوابة ولي الأمر");
+  loadOverview();
+  setInterval(loadOverview, 20000);
+});
+</script>
+</body>
+</html>

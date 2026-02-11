@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>منصة العيادة المدرسية الذكية</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="منصة العيادة المدرسية الذكية: بوابات الطالب والطبيب وولي الأمر والإدارة مع صلاحيات وتنقلات متكاملة.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-1: #0d1b2a;
+      --bg-2: #15344f;
+      --card: rgba(14, 33, 52, 0.72);
+      --line: rgba(173, 216, 255, 0.22);
+      --text-main: #f4fbff;
+      --text-soft: #c3d7e6;
+      --student: #38bdf8;
+      --doctor: #00b4d8;
+      --parent: #34d399;
+      --admin: #ffb703;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Tajawal", "Noto Kufi Arabic", sans-serif;
+      background:
+        radial-gradient(900px 500px at 12% 10%, rgba(56, 189, 248, 0.25), transparent 60%),
+        radial-gradient(850px 500px at 90% 92%, rgba(34, 197, 94, 0.2), transparent 60%),
+        linear-gradient(120deg, var(--bg-1), var(--bg-2));
+      color: var(--text-main);
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.2;
+      background-image:
+        linear-gradient(to right, rgba(255, 255, 255, 0.18) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.18) 1px, transparent 1px);
+      background-size: 42px 42px;
+    }
+    .container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 32px 24px 20px;
+      max-width: 1240px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 999px;
+      font-size: 14px;
+      padding: 8px 14px;
+      color: var(--text-soft);
+      backdrop-filter: blur(8px);
+    }
+    .status { color: #86efac; font-weight: 700; }
+    .status.offline { color: #fca5a5; }
+    .title {
+      text-align: center;
+      font-size: clamp(32px, 5vw, 56px);
+      font-weight: 800;
+      margin: 16px 0 8px;
+      opacity: 0;
+      animation: fadeIn 0.9s ease forwards;
+    }
+    .subtitle {
+      text-align: center;
+      max-width: 780px;
+      margin: 0 auto 28px;
+      color: var(--text-soft);
+      font-size: clamp(16px, 2.1vw, 20px);
+      line-height: 1.65;
+      opacity: 0;
+      animation: fadeIn 1.2s ease forwards;
+      animation-delay: 0.15s;
+    }
+    .roles {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 18px;
+      width: 100%;
+    }
+    .role-card {
+      background: var(--card);
+      border-radius: 24px;
+      padding: 24px 20px;
+      text-align: right;
+      border: 1px solid var(--line);
+      box-shadow: 0 16px 44px rgba(2, 12, 24, 0.35);
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+      transform: translateY(20px);
+      opacity: 0;
+      animation: fadeUp 0.8s ease forwards;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 220px;
+      outline: none;
+    }
+    .role-card:hover,
+    .role-card:focus-visible {
+      transform: translateY(-7px);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+      border-color: rgba(255, 255, 255, 0.36);
+    }
+    .icon {
+      width: 52px;
+      height: 52px;
+      display: grid;
+      place-items: center;
+      font-size: 28px;
+      border-radius: 16px;
+      margin-bottom: 8px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .role-title { font-size: 24px; font-weight: 700; margin: 0; }
+    .role-desc { font-size: 15px; color: var(--text-soft); margin: 0; line-height: 1.6; }
+    .btn {
+      padding: 10px 16px;
+      border-radius: 12px;
+      border: none;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      transition: transform 0.2s ease, filter 0.2s ease;
+      margin-top: auto;
+      width: fit-content;
+    }
+    .doctor-btn { background: var(--doctor); }
+    .student-btn { background: var(--student); }
+    .parent-btn { background: var(--parent); }
+    .admin-btn { background: var(--admin); color: #16202a; }
+    .btn:hover { filter: brightness(1.08); transform: translateX(-3px); }
+    @keyframes fadeIn { to { opacity: 1; } }
+    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+    footer {
+      text-align: center;
+      font-size: 13px;
+      color: #96adbf;
+      margin-top: 28px;
+      line-height: 1.8;
+    }
+    @media (max-width: 700px) {
+      .container { padding: 22px 14px 16px; }
+      .role-card { min-height: 200px; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="top-bar">
+    <div class="badge">العيادة المدرسية الذكية • الصلاحية الحالية: <strong data-session-role>زائر</strong></div>
+    <div class="badge"><span id="api-dot" class="status">●</span> <span id="api-status">جارٍ فحص حالة النظام...</span></div>
+  </div>
+
+  <div class="title">منصة العيادة المدرسية الذكية</div>
+  <p class="subtitle">بوابة موحدة لأدوار المنصة الأساسية: الطالب، الطبيب، ولي الأمر، والإدارة مع دخول حسب الصلاحيات.</p>
+
+  <div class="roles">
+    <div class="role-card" onclick="openSecureRoute('src/pages/student-portal.html', 'student')" onkeydown="cardKey(event, 'src/pages/student-portal.html', 'student')" tabindex="0" style="animation-delay:0.2s;"><div class="icon">🎓</div><div class="role-title">الطالب</div><div class="role-desc">بوابة الطالب للخدمات الذاتية: الملف الصحي، الطلبات، والتنبيهات المدرسية.</div><button class="btn student-btn">دخول الطالب</button></div>
+    <div class="role-card" onclick="openSecureRoute('src/pages/doctor.html', 'doctor')" onkeydown="cardKey(event, 'src/pages/doctor.html', 'doctor')" tabindex="0" style="animation-delay:0.35s;"><div class="icon">🩺</div><div class="role-title">الطبيب</div><div class="role-desc">تشخيص الحالة، مراجعة السجل الصحي، وتوصيات علاجية مدعومة بالبيانات.</div><button class="btn doctor-btn">دخول الطبيب</button></div>
+    <div class="role-card" onclick="openSecureRoute('src/pages/parent-portal.html', 'parent')" onkeydown="cardKey(event, 'src/pages/parent-portal.html', 'parent')" tabindex="0" style="animation-delay:0.5s;"><div class="icon">👨‍👩‍👧</div><div class="role-title">ولي الأمر</div><div class="role-desc">متابعة الحالة الصحية للابن، التقارير، والتواصل مع العيادة المدرسية.</div><button class="btn parent-btn">دخول ولي الأمر</button></div>
+    <div class="role-card" onclick="openSecureRoute('src/pages/admin-dashboard.html', 'admin')" onkeydown="cardKey(event, 'src/pages/admin-dashboard.html', 'admin')" tabindex="0" style="animation-delay:0.65s;"><div class="icon">🏛️</div><div class="role-title">الإدارة</div><div class="role-desc">إدارة النظام، الصلاحيات، ومؤشرات الأداء التشغيلية للعيادة المدرسية.</div><button class="btn admin-btn">دخول الإدارة</button></div>
+  </div>
+
+  <footer>
+    نسخة عرض حكومي • 2026
+    <br>
+    Smart School Clinic Platform
+  </footer>
+</div>
+
+<script src="assets/js/security.js"></script>
+<script>
+function updateRoleBadge() {
+  var session = SmartClinicSecurity.getSession();
+  var label = session ? SmartClinicSecurity.roles[session.role] : 'زائر';
+  document.querySelectorAll('[data-session-role]').forEach(function (el) { el.textContent = label; });
+}
+
+async function updateApiStatus() {
+  try {
+    var response = await fetch('/api/health', { cache: 'no-store' });
+    if (!response.ok) {
+      throw new Error('health_error');
+    }
+    document.getElementById('api-status').textContent = 'النظام يعمل الآن';
+    document.getElementById('api-dot').className = 'status';
+  } catch (err) {
+    document.getElementById('api-status').textContent = 'الخادم غير متصل';
+    document.getElementById('api-dot').className = 'status offline';
+  }
+}
+
+async function openSecureRoute(route, role) {
+  var result = await SmartClinicSecurity.login(role);
+  if (!result.ok || !SmartClinicSecurity.canAccess(route, role)) {
+    window.alert('لا يمكن تسجيل الدخول بهذا الدور لهذه الصفحة.');
+    return;
+  }
+  updateRoleBadge();
+  window.location.href = route;
+}
+
+async function cardKey(event, page, role) {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    await openSecureRoute(page, role);
+  }
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  updateRoleBadge();
+  SmartClinicSecurity.initFlashNotice();
+  updateApiStatus();
+  setInterval(updateApiStatus, 15000);
+});
+</script>
+</body>
+</html>

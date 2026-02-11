@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تقارير ولي الأمر – Smart Clinic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+body { margin:0; font-family:"Tajawal",sans-serif; background:#06251f; color:#eafff8; padding:18px 14px; }
+.shell { max-width:980px; margin:0 auto; }
+.panel { background:rgba(7,36,31,.86); border:1px solid rgba(52,211,153,.35); border-radius:16px; padding:16px; }
+h1 { margin:0; font-size:30px; }
+p { color:#bde4dd; }
+.list { display:grid; gap:8px; margin-top:12px; }
+.item { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:10px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+button { border:none; background:#34d399; color:#06362b; padding:7px 10px; border-radius:8px; font:inherit; font-weight:700; cursor:pointer; }
+.top { display:flex; justify-content:space-between; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+.ghost { border:1px solid rgba(52,211,153,.35); background:transparent; color:#eafff8; }
+.msg { margin-top:10px; font-size:13px; color:#a7f3d0; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <button class="ghost" onclick="window.location.href='parent-portal.html'">العودة لبوابة ولي الأمر</button>
+    <button class="ghost" data-action="logout">تسجيل الخروج</button>
+  </div>
+  <section class="panel">
+    <h1>التقارير الصحية</h1>
+    <p>تحميل ومراجعة التقارير الدورية الخاصة بالطالب.</p>
+    <div id="reportsList" class="list"></div>
+    <div id="downloadMsg" class="msg"></div>
+  </section>
+</div>
+<script src="../../assets/js/security.js"></script>
+<script>
+function setMsg(text) {
+  document.getElementById('downloadMsg').textContent = text || '';
+}
+
+async function exportReport(reportId, title) {
+  try {
+    var response = await SmartClinicSecurity.apiRequest('/reports/export', {
+      method: 'POST',
+      body: JSON.stringify({ reportId: reportId })
+    });
+    var payload = await response.json();
+    if (!response.ok) {
+      setMsg(payload.error || 'تعذر تجهيز التقرير.');
+      return;
+    }
+    setMsg('تم تجهيز التقرير: ' + (title || payload.filename || 'report.pdf'));
+  } catch (err) {
+    setMsg('تعذر الاتصال بالخادم.');
+  }
+}
+
+async function loadReports() {
+  var wrap = document.getElementById('reportsList');
+  wrap.innerHTML = 'جاري التحميل...';
+  try {
+    var response = await SmartClinicSecurity.apiRequest('/reports');
+    var payload = await response.json();
+    if (!response.ok) {
+      wrap.innerHTML = '<div style="color:#fecaca;">تعذر تحميل التقارير.</div>';
+      return;
+    }
+    var items = payload.items || [];
+    if (!items.length) {
+      wrap.innerHTML = '<div style="color:#bde4dd;">لا توجد تقارير متاحة.</div>';
+      return;
+    }
+    wrap.innerHTML = items.map(function (r) {
+      var date = r.createdAt ? new Date(r.createdAt).toLocaleDateString('ar-SA') : '-';
+      var encodedTitle = encodeURIComponent(r.title || 'report');
+      return '<div class="item"><span>' + r.title + ' • ' + date + '</span><button onclick="exportReport(\'' + r.id + '\', decodeURIComponent(\'' + encodedTitle + '\'))">تنزيل</button></div>';
+    }).join('');
+  } catch (err) {
+    wrap.innerHTML = '<div style="color:#fecaca;">تعذر الاتصال بالخادم.</div>';
+  }
+}
+
+window.addEventListener("DOMContentLoaded", function(){
+  SmartClinicSecurity.requireAccess(["parent", "admin"], "تقارير ولي الأمر");
+  loadReports();
+});
+</script>
+</body>
+</html>
