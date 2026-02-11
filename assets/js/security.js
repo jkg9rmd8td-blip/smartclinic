@@ -92,7 +92,6 @@
   };
 
   var ROUTE_ACCESS = {
-    '  index.html': ['student', 'doctor', 'parent', 'admin'],
     'index.html': ['student', 'doctor', 'parent', 'admin'],
     'src/pages/doctor.html': ['doctor', 'admin'],
     'src/pages/admin-dashboard.html': ['admin'],
@@ -140,7 +139,7 @@
 
   function getHomePath() {
     var route = currentRoute();
-    return route.indexOf('src/pages/') === 0 ? '../../  index.html' : '  index.html';
+    return route.indexOf('src/pages/') === 0 ? '../../index.html' : 'index.html';
   }
 
   function setFlash(message) {

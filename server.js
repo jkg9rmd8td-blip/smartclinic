@@ -764,7 +764,7 @@ setInterval(cleanupRateBuckets, 60000);
 
 function serveStatic(req, res, urlObj) {
   let pathname = decodeURIComponent(urlObj.pathname);
-  if (pathname === '/') pathname = '/  index.html';
+  if (pathname === '/') pathname = '/index.html';
 
   const requested = pathname.replace(/^\/+/, '');
   const resolved = path.resolve(ROOT_DIR, requested);
