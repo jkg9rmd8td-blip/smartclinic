@@ -85,6 +85,13 @@
       "reason": "[urgent] pain",
       "status": "pending",
       "createdAt": "2026-02-11T01:08:58.433Z"
+    },
+    {
+      "id": "vr_12002b50",
+      "studentId": "u_student_1",
+      "reason": "طلب زيارة سريع من صفحة الملف الصحي",
+      "status": "pending",
+      "createdAt": "2026-02-11T02:01:58.895Z"
     }
   ],
   "messages": [],
@@ -296,6 +303,16 @@
       ],
       "text": "تحديث حالة ع. م. الحارثي: تم تفعيل بروتوكول الطوارئ الكامل",
       "createdAt": "2026-02-11T01:10:25.233Z"
+    },
+    {
+      "id": "al_cd1060ce",
+      "roles": [
+        "doctor",
+        "admin",
+        "parent"
+      ],
+      "text": "طلب زيارة جديد: طلب زيارة سريع من صفحة الملف الصحي",
+      "createdAt": "2026-02-11T02:01:58.895Z"
     }
   ],
   "auditLogs": [
@@ -730,6 +747,63 @@
         "role": "admin"
       },
       "createdAt": "2026-02-11T01:33:02.072Z"
+    },
+    {
+      "id": "log_5724df0d",
+      "action": "auth.login",
+      "actorId": "u_student_1",
+      "actorRole": "student",
+      "target": "session",
+      "details": {
+        "role": "student"
+      },
+      "createdAt": "2026-02-11T01:38:04.491Z"
+    },
+    {
+      "id": "log_86eb39a6",
+      "action": "auth.login",
+      "actorId": "u_doctor_1",
+      "actorRole": "doctor",
+      "target": "session",
+      "details": {
+        "role": "doctor"
+      },
+      "createdAt": "2026-02-11T02:01:46.913Z"
+    },
+    {
+      "id": "log_42fd2be0",
+      "action": "auth.login",
+      "actorId": "u_student_1",
+      "actorRole": "student",
+      "target": "session",
+      "details": {
+        "role": "student"
+      },
+      "createdAt": "2026-02-11T02:01:55.779Z"
+    },
+    {
+      "id": "log_a76b0218",
+      "action": "visit.request.create",
+      "actorId": "u_student_1",
+      "actorRole": "student",
+      "target": "vr_12002b50",
+      "details": {
+        "id": "vr_12002b50",
+        "studentId": "u_student_1",
+        "reason": "طلب زيارة سريع من صفحة الملف الصحي",
+        "status": "pending",
+        "createdAt": "2026-02-11T02:01:58.895Z"
+      },
+      "createdAt": "2026-02-11T02:01:58.895Z"
+    },
+    {
+      "id": "log_4c60114c",
+      "action": "auth.logout",
+      "actorId": "u_student_1",
+      "actorRole": "student",
+      "target": "session",
+      "details": {},
+      "createdAt": "2026-02-11T02:02:06.235Z"
     }
   ],
   "settings": {
