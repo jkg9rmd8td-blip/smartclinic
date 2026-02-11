@@ -182,6 +182,31 @@ textarea, select {
   font-size: 12px;
   color: var(--soft);
 }
+.section-nav {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.section-btn {
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.section-title {
+  margin: 14px 0 8px;
+  font-size: 18px;
+  color: #d8ecfb;
+}
+.card.highlight {
+  border-color: rgba(56, 189, 248, 0.52);
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.16);
+}
 </style>
 </head>
 <body>
@@ -189,8 +214,6 @@ textarea, select {
   <div class="top">
     <div class="chip">الدور الحالي: <strong data-session-role>الطالب</strong></div>
     <div style="display:flex;gap:8px;">
-      <button class="btn" onclick="window.location.href='../../index.html'">الرئيسية</button>
-      <button class="btn" data-permission="view.notifications" onclick="window.location.href='notifications-center.html'">الإشعارات</button>
       <button class="btn" data-action="logout">تسجيل الخروج</button>
     </div>
   </div>
@@ -204,10 +227,16 @@ textarea, select {
       <div class="status-pill">مستوى الخطر: <strong id="status-risk">-</strong></div>
     </div>
     <div id="stats" class="stats"></div>
+    <div class="section-nav">
+      <button class="section-btn" onclick="scrollStudentSection('student-care')">المتابعة الصحية</button>
+      <button class="section-btn" onclick="scrollStudentSection('student-comm')">التواصل والتنبيهات</button>
+      <button class="section-btn" onclick="scrollStudentSection('student-tools')">الأدوات الذكية</button>
+    </div>
   </section>
 
+  <h2 id="student-care" class="section-title">المتابعة الصحية والزيارات</h2>
   <section class="grid">
-    <article class="card" data-permission="view.student">
+    <article class="card highlight" data-permission="view.student">
       <h3>حالة اليوم</h3>
       <p id="latest-case-text">جاري تحميل أحدث حالة...</p>
       <span id="latest-case-badge" class="badge b-ok">مستقرة</span>
@@ -234,17 +263,7 @@ textarea, select {
       <button class="cta" onclick="requestVisit()">إرسال الطلب</button>
     </article>
 
-    <article class="card" data-permission="send.message">
-      <h3>مراسلة العيادة</h3>
-      <p>تواصل مع الفريق الصحي لأي استفسار أو متابعة.</p>
-      <textarea id="message-text" rows="3" placeholder="اكتب رسالتك..." data-permission="send.message"></textarea>
-      <div class="inline-row">
-        <button class="cta" data-permission="send.message" onclick="sendClinicMessage()">إرسال الرسالة</button>
-        <button class="muted-btn" data-permission="view.alerts" onclick="loadOverview()">تحديث البيانات</button>
-      </div>
-    </article>
-
-    <article class="card" data-permission="view.student">
+    <article class="card highlight" data-permission="view.student">
       <h3>العيادة الافتراضية (صوت وصورة)</h3>
       <p id="telemed-student-status">جارٍ التحقق من وجود جلسة مباشرة...</p>
       <span id="telemed-student-badge" class="badge b-ok">غير نشطة</span>
@@ -258,6 +277,19 @@ textarea, select {
       <h3>مركز التنسيق العلاجي</h3>
       <p>الموافقات الرقمية، بطاقة الطوارئ QR، المتابعة المنزلية، المواعيد، والتذاكر في صفحة واحدة.</p>
       <button class="cta" onclick="window.location.href='care-center.html'">فتح المركز</button>
+    </article>
+  </section>
+
+  <h2 id="student-comm" class="section-title">التواصل والتنبيهات</h2>
+  <section class="grid">
+    <article class="card" data-permission="send.message">
+      <h3>مراسلة العيادة</h3>
+      <p>تواصل مع الفريق الصحي لأي استفسار أو متابعة.</p>
+      <textarea id="message-text" rows="3" placeholder="اكتب رسالتك..." data-permission="send.message"></textarea>
+      <div class="inline-row">
+        <button class="cta" data-permission="send.message" onclick="sendClinicMessage()">إرسال الرسالة</button>
+        <button class="muted-btn" data-permission="view.alerts" onclick="loadOverview()">تحديث البيانات</button>
+      </div>
     </article>
 
     <article class="card" data-permission="view.alerts">
@@ -277,7 +309,10 @@ textarea, select {
       <p>استعرض إشعاراتك مع الفلاتر حسب النوع.</p>
       <button class="cta" onclick="window.location.href='notifications-center.html'">فتح المركز</button>
     </article>
+  </section>
 
+  <h2 id="student-tools" class="section-title">الأدوات الذكية</h2>
+  <section class="grid">
     <article class="card" data-permission="use.ai.assistant">
       <h3>مستشار الطالب AI</h3>
       <p>تحليل فوري للأعراض الحالية وتوصيات عملية حسب ملفك الصحي.</p>
@@ -333,6 +368,13 @@ function notify(text) {
 function nextTip() {
   tipIndex = (tipIndex + 1) % tips.length;
   document.getElementById('tip-text').textContent = tips[tipIndex];
+}
+
+function scrollStudentSection(id) {
+  var target = document.getElementById(id);
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 function statusBadgeClass(severity) {

@@ -37,6 +37,37 @@
   .stat { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.12); border-radius: 12px; padding: 8px; }
   .stat .l { color: var(--soft); font-size: 11px; }
   .stat .v { font-size: 24px; font-weight: 800; margin-top: 3px; }
+  .toolbar {
+    margin-top: 12px;
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 14px;
+    padding: 10px;
+    display: grid;
+    gap: 8px;
+  }
+  .toolbar input {
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,.03);
+    color: var(--text);
+    font: inherit;
+    padding: 8px;
+  }
+  .filter-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+  .filter-tab {
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--soft);
+    border-radius: 999px;
+    padding: 6px 10px;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .filter-tab.active { background: var(--accent); color: #1f2937; border-color: var(--accent); font-weight: 700; }
+  .mini-hint { color: var(--soft); font-size: 12px; }
   .grid { margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
   .card { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px; padding: 12px; }
   .card h3 { margin: 0; font-size: 17px; }
@@ -49,7 +80,6 @@
   <div class="top">
     <div class="chip">الدور الحالي: <strong data-session-role>الإدارة</strong></div>
     <div style="display:flex;gap:8px;">
-      <button class="btn" onclick="window.location.href='../../index.html'">الرئيسية</button>
       <button class="btn" data-action="logout">تسجيل الخروج</button>
     </div>
   </div>
@@ -58,28 +88,41 @@
     <h1>لوحة الإدارة</h1>
     <p>إدارة الوصول، متابعة الأداء، والتنقل السريع للوحات التشغيل.</p>
     <div id="stats" class="stats"></div>
+    <div class="toolbar">
+      <input id="admin-search" type="search" placeholder="بحث سريع في البطاقات..." oninput="applyAdminFilters()">
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="setAdminGroup('all', this)">الكل</button>
+        <button class="filter-tab" onclick="setAdminGroup('roles', this)">البوابات</button>
+        <button class="filter-tab" onclick="setAdminGroup('ops', this)">التشغيل</button>
+        <button class="filter-tab" onclick="setAdminGroup('gov', this)">الحوكمة</button>
+        <button class="filter-tab" onclick="setAdminGroup('insight', this)">التحليلات</button>
+      </div>
+      <div class="mini-hint">البطاقات المعروضة: <strong id="admin-cards-count">0</strong></div>
+    </div>
   </section>
 
   <section class="grid">
-    <article class="card" data-permission="view.student"><h3>بوابة الطالب</h3><p>مراجعة خدمات الطالب وتجربة الاستخدام.</p><button class="cta" onclick="window.location.href='student-portal.html'">فتح</button></article>
-    <article class="card" data-permission="view.doctor"><h3>لوحة الطبيب</h3><p>الوصول إلى القرارات الطبية والحالات المفتوحة.</p><button class="cta" onclick="window.location.href='doctor.html'">فتح</button></article>
-    <article class="card" data-permission="view.parent"><h3>بوابة ولي الأمر</h3><p>مراجعة تجربة ولي الأمر والتنبيهات الصادرة.</p><button class="cta" onclick="window.location.href='parent-portal.html'">فتح</button></article>
-    <article class="card" data-permission="view.case"><h3>تفاصيل الحالة</h3><p>متابعة التدخلات الطبية لكل حالة.</p><button class="cta" onclick="window.location.href='case-details.html?id=1'">فتح</button></article>
-    <article class="card" data-permission="view.emergency"><h3>مسار الطوارئ</h3><p>التحقق من مسارات الاستجابة للحالات الحرجة.</p><button class="cta" onclick="window.location.href='emergency-flow.html?id=case_1'">فتح</button></article>
-    <article class="card" data-permission="view.admin"><h3>لوحة التشغيل الداخلية</h3><p>متابعة لوحة العمليات اليومية وإحصاءات التنفيذ.</p><button class="cta" onclick="window.location.href='nurse-dashboard.html'">فتح</button></article>
-    <article class="card" data-permission="manage.users"><h3>إدارة الصلاحيات</h3><p>التحكم في أدوار المستخدمين وسياسات الوصول.</p><button class="cta" onclick="window.location.href='admin-users.html'">إدارة</button></article>
-    <article class="card" data-permission="view.analytics"><h3>Dashboard التحليلات</h3><p>مؤشرات حية مباشرة من API مع تحديث تلقائي.</p><button class="cta" onclick="window.location.href='admin-analytics.html'">فتح التحليلات</button></article>
-    <article class="card" data-permission="view.admin"><h3>سجل التدقيق</h3><p>مراجعة جميع عمليات النظام وسلوك المستخدمين.</p><button class="cta" onclick="window.location.href='admin-audit.html'">عرض السجل</button></article>
-    <article class="card" data-permission="manage.settings"><h3>إعدادات المنصة</h3><p>سياسات الجلسة، مستوى التنبيه، وSLA.</p><button class="cta" onclick="window.location.href='admin-settings.html'">فتح الإعدادات</button></article>
-    <article class="card" data-permission="export.executive"><h3>التقرير التنفيذي PDF</h3><p>تقرير تنفيذي مباشر من system/overview وanalytics.</p><button class="cta" onclick="window.location.href='admin-executive-report.html'">فتح التقرير</button></article>
-    <article class="card" data-permission="view.admin"><h3>مركز التنسيق العلاجي</h3><p>إدارة الموافقات، المواعيد، التذاكر، الإحالات، والتقارير الشهرية من مكان واحد.</p><button class="cta" onclick="window.location.href='care-center.html'">فتح المركز</button></article>
-    <article class="card" data-permission="view.notifications"><h3>مركز الإشعارات</h3><p>إشعارات موحدة مع فلاتر حرج/إجرائي/معلومة.</p><button class="cta" onclick="window.location.href='notifications-center.html'">فتح المركز</button></article>
+    <article class="card" data-group="roles" data-permission="view.student"><h3>بوابة الطالب</h3><p>مراجعة خدمات الطالب وتجربة الاستخدام.</p><button class="cta" onclick="window.location.href='student-portal.html'">فتح</button></article>
+    <article class="card" data-group="roles" data-permission="view.doctor"><h3>لوحة الطبيب</h3><p>الوصول إلى القرارات الطبية والحالات المفتوحة.</p><button class="cta" onclick="window.location.href='doctor.html'">فتح</button></article>
+    <article class="card" data-group="roles" data-permission="view.parent"><h3>بوابة ولي الأمر</h3><p>مراجعة تجربة ولي الأمر والتنبيهات الصادرة.</p><button class="cta" onclick="window.location.href='parent-portal.html'">فتح</button></article>
+    <article class="card" data-group="ops" data-permission="view.case"><h3>تفاصيل الحالة</h3><p>متابعة التدخلات الطبية لكل حالة.</p><button class="cta" onclick="window.location.href='case-details.html?id=1'">فتح</button></article>
+    <article class="card" data-group="ops" data-permission="view.emergency"><h3>مسار الطوارئ</h3><p>التحقق من مسارات الاستجابة للحالات الحرجة.</p><button class="cta" onclick="window.location.href='emergency-flow.html?id=case_1'">فتح</button></article>
+    <article class="card" data-group="ops" data-permission="view.admin"><h3>لوحة التشغيل الداخلية</h3><p>متابعة لوحة العمليات اليومية وإحصاءات التنفيذ.</p><button class="cta" onclick="window.location.href='nurse-dashboard.html'">فتح</button></article>
+    <article class="card" data-group="gov" data-permission="manage.users"><h3>إدارة الصلاحيات</h3><p>التحكم في أدوار المستخدمين وسياسات الوصول.</p><button class="cta" onclick="window.location.href='admin-users.html'">إدارة</button></article>
+    <article class="card" data-group="insight" data-permission="view.analytics"><h3>Dashboard التحليلات</h3><p>مؤشرات حية مباشرة من API مع تحديث تلقائي.</p><button class="cta" onclick="window.location.href='admin-analytics.html'">فتح التحليلات</button></article>
+    <article class="card" data-group="gov" data-permission="view.admin"><h3>سجل التدقيق</h3><p>مراجعة جميع عمليات النظام وسلوك المستخدمين.</p><button class="cta" onclick="window.location.href='admin-audit.html'">عرض السجل</button></article>
+    <article class="card" data-group="gov" data-permission="manage.settings"><h3>إعدادات المنصة</h3><p>سياسات الجلسة، مستوى التنبيه، وSLA.</p><button class="cta" onclick="window.location.href='admin-settings.html'">فتح الإعدادات</button></article>
+    <article class="card" data-group="insight" data-permission="export.executive"><h3>التقرير التنفيذي PDF</h3><p>تقرير تنفيذي مباشر من system/overview وanalytics.</p><button class="cta" onclick="window.location.href='admin-executive-report.html'">فتح التقرير</button></article>
+    <article class="card" data-group="ops" data-permission="view.admin"><h3>مركز التنسيق العلاجي</h3><p>إدارة الموافقات، المواعيد، التذاكر، الإحالات، والتقارير الشهرية من مكان واحد.</p><button class="cta" onclick="window.location.href='care-center.html'">فتح المركز</button></article>
+    <article class="card" data-group="insight" data-permission="view.notifications"><h3>مركز الإشعارات</h3><p>إشعارات موحدة مع فلاتر حرج/إجرائي/معلومة.</p><button class="cta" onclick="window.location.href='notifications-center.html'">فتح المركز</button></article>
   </section>
 </div>
 
 <script src="../../assets/js/security.js"></script>
 <script src="../../assets/js/ui-shell.js"></script>
 <script>
+var adminGroup = 'all';
+
 function renderStats(payload) {
   var health = payload.health || {};
   var snapshot = payload.snapshot || {};
@@ -98,10 +141,36 @@ function renderStats(payload) {
   }).join('');
 }
 
+function setAdminGroup(group, btn) {
+  adminGroup = group || 'all';
+  document.querySelectorAll('.filter-tab').forEach(function (item) { item.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  applyAdminFilters();
+}
+
+function applyAdminFilters() {
+  var query = String((document.getElementById('admin-search') || {}).value || '').trim().toLowerCase();
+  var cards = document.querySelectorAll('.grid .card[data-group]');
+  var visible = 0;
+  cards.forEach(function (card) {
+    var group = card.getAttribute('data-group') || '';
+    var blocked = card.hasAttribute('hidden');
+    var text = String(card.textContent || '').toLowerCase();
+    var byGroup = adminGroup === 'all' || group === adminGroup;
+    var byQuery = !query || text.indexOf(query) !== -1;
+    var show = !blocked && byGroup && byQuery;
+    card.style.display = show ? '' : 'none';
+    if (show) visible += 1;
+  });
+  var count = document.getElementById('admin-cards-count');
+  if (count) count.textContent = String(visible);
+}
+
 async function loadSystem() {
   var result = await SmartClinicSecurity.apiJson('/system/overview');
   if (!result.ok || !result.data) return;
   renderStats(result.data);
+  applyAdminFilters();
 }
 
 window.addEventListener("DOMContentLoaded", function () {
@@ -120,6 +189,7 @@ window.addEventListener("DOMContentLoaded", function () {
       ]
     });
   }
+  applyAdminFilters();
   SmartClinicSecurity.createAutoRefresh(loadSystem, 20000, { immediate: true });
 });
 </script>

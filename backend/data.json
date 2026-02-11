@@ -806,6 +806,7 @@
       "createdAt": "2026-02-11T02:02:06.235Z"
     }
   ],
+  "telemedSessions": [],
   "settings": {
     "sessionPolicy": {
       "ttlHours": 8,

@@ -94,6 +94,31 @@
     display: none;
     z-index: 30;
   }
+  .section-nav {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .section-btn {
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.03);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 6px 10px;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .section-title {
+    margin: 14px 0 8px;
+    font-size: 18px;
+    color: #dff6ef;
+  }
+  .mini.highlight {
+    border-color: rgba(52, 211, 153, 0.52);
+    box-shadow: inset 0 0 0 1px rgba(52, 211, 153, 0.16);
+  }
 </style>
 </head>
 <body>
@@ -101,8 +126,6 @@
   <div class="top">
     <div class="chip">الدور الحالي: <strong data-session-role>ولي الأمر</strong></div>
     <div style="display:flex;gap:8px;">
-      <button class="btn" onclick="window.location.href='../../index.html'">الرئيسية</button>
-      <button class="btn" data-permission="view.notifications" onclick="window.location.href='notifications-center.html'">الإشعارات</button>
       <button class="btn" data-action="logout">تسجيل الخروج</button>
     </div>
   </div>
@@ -116,10 +139,16 @@
       <div class="status-pill">مستوى الخطر: <strong id="status-risk">-</strong></div>
     </div>
     <div id="stats" class="stats"></div>
+    <div class="section-nav">
+      <button class="section-btn" onclick="scrollParentSection('parent-care')">متابعة الطالب</button>
+      <button class="section-btn" onclick="scrollParentSection('parent-comm')">التواصل والتنبيهات</button>
+      <button class="section-btn" onclick="scrollParentSection('parent-reports')">التقارير</button>
+    </div>
   </section>
 
+  <h2 id="parent-care" class="section-title">متابعة الطالب</h2>
   <section class="grid">
-    <article class="mini" data-permission="view.student">
+    <article class="mini highlight" data-permission="view.student">
       <h3>الملف الصحي للطالب</h3>
       <p id="latest-case">جاري تحميل أحدث حالة...</p>
       <span id="latest-case-badge" class="badge b-ok">مستقرة</span>
@@ -129,15 +158,25 @@
       </div>
     </article>
 
-    <article class="mini" data-permission="export.report">
-      <h3>التقارير الطبية</h3>
-      <p>تحميل ومراجعة جميع التقارير المتاحة.</p>
+    <article class="mini highlight" data-permission="view.parent">
+      <h3>جلسة مباشرة مع الطبيب</h3>
+      <p id="telemed-parent-status">جارٍ التحقق من دعوة ولي الأمر...</p>
+      <span id="telemed-parent-badge" class="badge b-warn">غير نشطة</span>
       <div class="inline-row">
-        <button class="cta" onclick="window.location.href='parent-reports.html'">فتح التقارير</button>
-        <button class="muted-btn" data-permission="view.student" onclick="window.location.href='student-profile.html#reports'">تقارير سريعة</button>
+        <button class="cta" id="telemed-parent-join" onclick="joinParentTelemed()" disabled>الانضمام للجلسة</button>
+        <button class="muted-btn" onclick="refreshParentTelemed()">تحديث الجلسة</button>
       </div>
     </article>
 
+    <article class="mini" data-permission="view.parent">
+      <h3>مركز التنسيق العلاجي</h3>
+      <p>الموافقات الرقمية، خطة المتابعة المنزلية، المواعيد، والتذاكر في واجهة موحدة.</p>
+      <button class="cta" onclick="window.location.href='care-center.html'">فتح المركز</button>
+    </article>
+  </section>
+
+  <h2 id="parent-comm" class="section-title">التواصل والتنبيهات</h2>
+  <section class="grid">
     <article class="mini" data-permission="view.alerts">
       <h3>تنبيهات اليوم</h3>
       <p>آخر التنبيهات المتعلقة بصحة الطالب.</p>
@@ -160,26 +199,22 @@
       <button class="cta" onclick="window.location.href='parent-messages.html'">إرسال استفسار</button>
     </article>
 
-    <article class="mini" data-permission="view.parent">
-      <h3>جلسة مباشرة مع الطبيب</h3>
-      <p id="telemed-parent-status">جارٍ التحقق من دعوة ولي الأمر...</p>
-      <span id="telemed-parent-badge" class="badge b-warn">غير نشطة</span>
-      <div class="inline-row">
-        <button class="cta" id="telemed-parent-join" onclick="joinParentTelemed()" disabled>الانضمام للجلسة</button>
-        <button class="muted-btn" onclick="refreshParentTelemed()">تحديث الجلسة</button>
-      </div>
-    </article>
-
-    <article class="mini" data-permission="view.parent">
-      <h3>مركز التنسيق العلاجي</h3>
-      <p>الموافقات الرقمية، خطة المتابعة المنزلية، المواعيد، والتذاكر في واجهة موحدة.</p>
-      <button class="cta" onclick="window.location.href='care-center.html'">فتح المركز</button>
-    </article>
-
     <article class="mini" data-permission="view.notifications">
       <h3>مركز الإشعارات الموحد</h3>
       <p>فلترة الإشعارات حسب النوع: حرج، إجرائي، معلومة.</p>
       <button class="cta" onclick="window.location.href='notifications-center.html'">فتح المركز</button>
+    </article>
+  </section>
+
+  <h2 id="parent-reports" class="section-title">التقارير والتوثيق</h2>
+  <section class="grid">
+    <article class="mini" data-permission="export.report">
+      <h3>التقارير الطبية</h3>
+      <p>تحميل ومراجعة جميع التقارير المتاحة.</p>
+      <div class="inline-row">
+        <button class="cta" onclick="window.location.href='parent-reports.html'">فتح التقارير</button>
+        <button class="muted-btn" data-permission="view.student" onclick="window.location.href='student-profile.html#reports'">تقارير سريعة</button>
+      </div>
     </article>
   </section>
 </div>
@@ -190,6 +225,13 @@
 <script>
 var parentTelemedSessionId = null;
 var alertsCache = [];
+
+function scrollParentSection(id) {
+  var target = document.getElementById(id);
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
 
 function renderStats(snapshot) {
   var s = snapshot || {};

@@ -94,6 +94,7 @@ iframe{width:100%;height:560px;border:none;display:block}
 var currentSession = null;
 var currentRole = null;
 var sessionId = null;
+var inviteToken = null;
 
 function qs(name) {
   return new URLSearchParams(window.location.search).get(name);
@@ -169,12 +170,12 @@ function renderSession(session) {
   refreshButtons();
 }
 
-function refreshSession() {
+async function refreshSession() {
   if (!sessionId) {
     renderSession(null);
     return;
   }
-  var session = SmartClinicSecurity.getTelemedSessionById(sessionId);
+  var session = await SmartClinicSecurity.getTelemedSessionById(sessionId);
   renderSession(session);
 }
 
@@ -210,13 +211,18 @@ function safeCopy(text) {
   return Promise.resolve();
 }
 
-function copyLink(type) {
+async function copyLink(type) {
   if (!currentSession) return;
   if (type === 'parent' && !currentSession.allowGuardian) {
     notify('فعّل مشاركة ولي الأمر أولًا.');
     return;
   }
-  var link = SmartClinicSecurity.getTelemedRoomUrl(currentSession.id);
+  var invite = await SmartClinicSecurity.createTelemedInvite(currentSession.id, type, { ttlMinutes: 10 });
+  if (!invite.ok || !invite.item || !invite.item.token) {
+    notify('تعذر إنشاء رابط دعوة آمن.');
+    return;
+  }
+  var link = SmartClinicSecurity.getTelemedRoomUrl(currentSession.id, invite.item.token);
   var label = type === 'parent' ? 'ولي الأمر' : 'الطالب';
   safeCopy(link).then(function () {
     notify('تم نسخ رابط ' + label + '.');
@@ -225,9 +231,9 @@ function copyLink(type) {
   });
 }
 
-function toggleGuardian(checked) {
+async function toggleGuardian(checked) {
   if (!currentSession || !canControlSession(currentRole)) return;
-  var result = SmartClinicSecurity.updateTelemedSession(currentSession.id, {
+  var result = await SmartClinicSecurity.updateTelemedSession(currentSession.id, {
     allowGuardian: Boolean(checked)
   });
   if (!result.ok) {
@@ -239,10 +245,10 @@ function toggleGuardian(checked) {
   notify(checked ? 'تم السماح بمشاركة ولي الأمر.' : 'تم إيقاف مشاركة ولي الأمر.');
 }
 
-function endSession() {
+async function endSession() {
   if (!currentSession || !canControlSession(currentRole)) return;
   if (!window.confirm('تأكيد إنهاء الجلسة الحالية؟')) return;
-  var result = SmartClinicSecurity.endTelemedSession(currentSession.id, 'تم إنهاء الجلسة بواسطة الطبيب');
+  var result = await SmartClinicSecurity.endTelemedSession(currentSession.id, 'تم إنهاء الجلسة بواسطة الطبيب');
   if (!result.ok) {
     notify('تعذر إنهاء الجلسة.');
     return;
@@ -257,7 +263,20 @@ window.addEventListener('DOMContentLoaded', function () {
   var auth = SmartClinicSecurity.requireAccess(['student', 'doctor', 'parent', 'admin'], 'العيادة الافتراضية');
   currentRole = auth ? auth.role : null;
   sessionId = qs('sid');
-  refreshSession();
+  inviteToken = qs('invite');
+  if (inviteToken) {
+    SmartClinicSecurity.redeemTelemedInvite(inviteToken).then(function (res) {
+      if (res && res.ok && res.item) {
+        sessionId = res.item.id || sessionId;
+        renderSession(res.item);
+      } else {
+        notify('رابط الدعوة غير صالح أو منتهي.');
+      }
+      refreshSession();
+    });
+  } else {
+    refreshSession();
+  }
   SmartClinicSecurity.createAutoRefresh(refreshSession, 10000, { immediate: false });
 });
 </script>

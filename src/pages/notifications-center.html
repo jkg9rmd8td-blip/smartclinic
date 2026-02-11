@@ -165,11 +165,7 @@ input[type="search"] {
 <body>
 <div class="shell">
   <div class="top">
-    <button class="btn" onclick="goHome()">العودة</button>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <button class="btn" onclick="loadNotifications()">تحديث</button>
-      <button class="btn" data-action="logout">تسجيل الخروج</button>
-    </div>
+    <button class="btn" data-action="logout">تسجيل الخروج</button>
   </div>
 
   <section class="panel">
@@ -206,10 +202,6 @@ input[type="search"] {
 var currentType = 'all';
 var stream = null;
 var notificationsCache = [];
-
-function goHome() {
-  SmartClinicSecurity.goToRoleHome();
-}
 
 function badgeClass(type) {
   if (type === 'critical') return 'b-critical';

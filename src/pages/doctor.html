@@ -94,6 +94,22 @@ body {
   gap: 12px;
   flex-wrap: wrap;
 }
+.section-nav {
+  margin: 0 0 12px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.section-btn {
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+  color: var(--text-main);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
 .critical-title { margin: 0; font-size: 18px; font-weight: 700; }
 .critical-sub { margin: 2px 0 0; color: #fecaca; font-size: 14px; }
 .btn-danger,
@@ -241,7 +257,6 @@ body {
   <div class="topbar">
     <div class="chip">الدور الحالي: <strong data-session-role>الطبيب</strong></div>
     <div class="topbar-actions">
-      <button class="ghost-btn" onclick="window.location.href='../../index.html'">الرجوع للرئيسية</button>
       <button class="ghost-btn" data-action="logout">تسجيل الخروج</button>
     </div>
   </div>
@@ -258,7 +273,15 @@ body {
     <div class="stat"><div class="stat-label">نشاط اليوم</div><div class="stat-value" id="stat-actions">0</div></div>
   </div>
 
-  <section class="critical-zone">
+  <div class="section-nav">
+    <button class="section-btn" onclick="scrollDoctorSection('doctor-emergency')">تنبيه الطوارئ</button>
+    <button class="section-btn" onclick="scrollDoctorSection('doctor-active')">الحالة النشطة</button>
+    <button class="section-btn" onclick="scrollDoctorSection('doctor-services')">الخدمات الطبية</button>
+    <button class="section-btn" onclick="scrollDoctorSection('doctor-queue')">قائمة الانتظار</button>
+    <button class="section-btn" onclick="scrollDoctorSection('doctor-ai')">مساعد AI</button>
+  </div>
+
+  <section id="doctor-emergency" class="critical-zone">
     <div>
       <p class="critical-title">تنبيه طبي عالي الخطورة</p>
       <p class="critical-sub" id="critical-sub">جاري تحليل الحالات الحرجة...</p>
@@ -266,7 +289,7 @@ body {
     <button class="btn-danger" id="critical-open" onclick="openCriticalCase()">فتح مسار الطوارئ</button>
   </section>
 
-  <section class="panel active-case-panel">
+  <section id="doctor-active" class="panel active-case-panel">
     <h2 class="queue-title" style="margin-bottom:0;">الحالة النشطة</h2>
     <p style="margin:6px 0 0;color:var(--text-soft);">الإجراءات السريعة سيتم تطبيقها على الحالة المختارة أدناه.</p>
     <div class="active-case-grid">
@@ -283,7 +306,7 @@ body {
     </div>
   </section>
 
-  <h2 class="services-title">الخدمات والميزات الطبية</h2>
+  <h2 id="doctor-services" class="services-title">الخدمات والميزات الطبية</h2>
   <section class="services-grid">
     <article class="service-card" data-permission="view.student">
       <h3>ملف الطالب الموحد</h3>
@@ -328,7 +351,7 @@ body {
     </article>
   </section>
 
-  <section class="layout">
+  <section id="doctor-queue" class="layout">
     <div class="panel">
       <h2 class="queue-title">قائمة الانتظار</h2>
       <div class="case-toolbar">
@@ -357,7 +380,7 @@ body {
     </div>
   </section>
 
-  <section class="panel ai-panel" data-permission="use.ai.assistant">
+  <section id="doctor-ai" class="panel ai-panel" data-permission="use.ai.assistant">
     <h2 class="queue-title">مساعد القرار الطبي AI</h2>
     <p style="margin:0;color:var(--text-soft);">تحليل الحالة النشطة وتقديم أولويات التدخل وخطة الرعاية التشغيلية.</p>
     <textarea id="ai-doctor-note" rows="3" placeholder="ملاحظات سريرية إضافية (اختياري)" style="width:100%;margin-top:10px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,0.03);color:var(--text-main);font:inherit;padding:9px;"></textarea>
@@ -400,6 +423,13 @@ function notify(text) {
   window.setTimeout(function () {
     toast.style.display = 'none';
   }, 2200);
+}
+
+function scrollDoctorSection(id) {
+  var target = document.getElementById(id);
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 function formatCaseLine(item) {
