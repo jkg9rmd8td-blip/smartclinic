@@ -61,6 +61,9 @@ function setType(type, btn) {
 
 function connectStream() {
   try {
+    if (SmartClinicSecurity.isDemoMode && SmartClinicSecurity.isDemoMode()) {
+      return;
+    }
     var token = SmartClinicSecurity.getToken && SmartClinicSecurity.getToken();
     if (!token) return;
     if (stream) {

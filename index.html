@@ -201,11 +201,13 @@ function updateRoleBadge() {
 
 async function updateApiStatus() {
   try {
-    var response = await fetch('/api/health', { cache: 'no-store' });
-    if (!response.ok) {
-      throw new Error('health_error');
-    }
+    var result = await SmartClinicSecurity.apiJson('/health', { skipAuthRedirect: true });
+    if (!result.ok) throw new Error('health_error');
+    var mode = result.data && result.data.mode === 'demo' ? ' (Demo)' : '';
     document.getElementById('api-status').textContent = 'النظام يعمل الآن';
+    if (mode) {
+      document.getElementById('api-status').textContent += mode;
+    }
     document.getElementById('api-dot').className = 'status';
   } catch (err) {
     document.getElementById('api-status').textContent = 'الخادم غير متصل';
