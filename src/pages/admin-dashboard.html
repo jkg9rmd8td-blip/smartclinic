@@ -68,6 +68,14 @@
   }
   .filter-tab.active { background: var(--accent); color: #1f2937; border-color: var(--accent); font-weight: 700; }
   .mini-hint { color: var(--soft); font-size: 12px; }
+  .toolbar-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+    color: var(--soft);
+    font-size: 12px;
+  }
   .grid { margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
   .card { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px; padding: 12px; }
   .card h3 { margin: 0; font-size: 17px; }
@@ -97,7 +105,10 @@
         <button class="filter-tab" onclick="setAdminGroup('gov', this)">الحوكمة</button>
         <button class="filter-tab" onclick="setAdminGroup('insight', this)">التحليلات</button>
       </div>
-      <div class="mini-hint">البطاقات المعروضة: <strong id="admin-cards-count">0</strong></div>
+      <div class="toolbar-meta">
+        <div class="mini-hint">البطاقات المعروضة: <strong id="admin-cards-count">0</strong></div>
+        <div class="mini-hint">آخر تحديث: <strong id="admin-last-sync">-</strong></div>
+      </div>
     </div>
   </section>
 
@@ -122,6 +133,32 @@
 <script src="../../assets/js/ui-shell.js"></script>
 <script>
 var adminGroup = 'all';
+var ADMIN_UI_STATE_KEY = 'smartclinic.admin.dashboard.ui.v1';
+
+function saveAdminUiState() {
+  var search = String((document.getElementById('admin-search') || {}).value || '');
+  var payload = {
+    group: adminGroup || 'all',
+    search: search
+  };
+  try {
+    localStorage.setItem(ADMIN_UI_STATE_KEY, JSON.stringify(payload));
+  } catch (err) {
+    // Ignore storage errors.
+  }
+}
+
+function loadAdminUiState() {
+  try {
+    var raw = localStorage.getItem(ADMIN_UI_STATE_KEY);
+    if (!raw) return null;
+    var parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+    return parsed;
+  } catch (err) {
+    return null;
+  }
+}
 
 function renderStats(payload) {
   var health = payload.health || {};
@@ -145,6 +182,7 @@ function setAdminGroup(group, btn) {
   adminGroup = group || 'all';
   document.querySelectorAll('.filter-tab').forEach(function (item) { item.classList.remove('active'); });
   if (btn) btn.classList.add('active');
+  saveAdminUiState();
   applyAdminFilters();
 }
 
@@ -164,13 +202,54 @@ function applyAdminFilters() {
   });
   var count = document.getElementById('admin-cards-count');
   if (count) count.textContent = String(visible);
+  saveAdminUiState();
 }
 
 async function loadSystem() {
   var result = await SmartClinicSecurity.apiJson('/system/overview');
   if (!result.ok || !result.data) return;
   renderStats(result.data);
+  var sync = document.getElementById('admin-last-sync');
+  if (sync) sync.textContent = new Date().toLocaleTimeString('ar-SA');
   applyAdminFilters();
+}
+
+function activateAdminGroup(group) {
+  var next = group || 'all';
+  var btn = null;
+  document.querySelectorAll('.filter-tab').forEach(function (item) {
+    item.classList.remove('active');
+    var text = String(item.textContent || '').trim();
+    var match = (
+      (next === 'all' && text === 'الكل') ||
+      (next === 'roles' && text === 'البوابات') ||
+      (next === 'ops' && text === 'التشغيل') ||
+      (next === 'gov' && text === 'الحوكمة') ||
+      (next === 'insight' && text === 'التحليلات')
+    );
+    if (match) btn = item;
+  });
+  adminGroup = next;
+  if (btn) btn.classList.add('active');
+  applyAdminFilters();
+}
+
+function bindAdminShortcuts() {
+  window.addEventListener('keydown', function (ev) {
+    if (ev.defaultPrevented) return;
+    var tag = ev.target && ev.target.tagName ? ev.target.tagName.toLowerCase() : '';
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+    if (ev.key === '/') {
+      ev.preventDefault();
+      var input = document.getElementById('admin-search');
+      if (input) input.focus();
+      return;
+    }
+    var groups = { '1': 'all', '2': 'roles', '3': 'ops', '4': 'gov', '5': 'insight' };
+    if (groups[ev.key]) {
+      activateAdminGroup(groups[ev.key]);
+    }
+  });
 }
 
 window.addEventListener("DOMContentLoaded", function () {
@@ -189,7 +268,16 @@ window.addEventListener("DOMContentLoaded", function () {
       ]
     });
   }
-  applyAdminFilters();
+  var saved = loadAdminUiState();
+  if (saved) {
+    if (saved.search && document.getElementById('admin-search')) {
+      document.getElementById('admin-search').value = String(saved.search);
+    }
+    activateAdminGroup(saved.group || 'all');
+  } else {
+    applyAdminFilters();
+  }
+  bindAdminShortcuts();
   SmartClinicSecurity.createAutoRefresh(loadSystem, 20000, { immediate: true });
 });
 </script>

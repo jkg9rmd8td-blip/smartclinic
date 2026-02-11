@@ -62,7 +62,7 @@ body {
 }
 .filters {
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr auto;
+  grid-template-columns: 1.4fr 1fr 1fr auto auto;
   gap: 8px;
   align-items: center;
 }
@@ -149,6 +149,11 @@ input, select {
   color: var(--soft);
   font-size: 12px;
 }
+.meta-line {
+  margin-top: 8px;
+  color: var(--soft);
+  font-size: 12px;
+}
 .empty {
   border: 1px dashed rgba(148,163,184,.35);
   border-radius: 10px;
@@ -170,7 +175,7 @@ input, select {
 }
 @media (max-width: 980px) {
   .filters { grid-template-columns: 1fr 1fr; }
-  .filters .btn { grid-column: span 2; }
+  .filters .btn { grid-column: span 1; }
   .row { grid-template-columns: 1fr; gap: 6px; }
   .row.head { display: none; }
 }
@@ -200,10 +205,12 @@ input, select {
         <option value="active">نشط</option>
         <option value="inactive">معطل</option>
       </select>
+      <button class="btn" type="button" onclick="clearFilters()">مسح الفلاتر</button>
       <button class="btn" type="button" onclick="loadUsers()">تحديث البيانات</button>
     </div>
 
     <div id="stats" class="stats"></div>
+    <div class="meta-line">عدد النتائج الحالية: <strong id="users-filtered-count">0</strong> • آخر تحديث: <strong id="users-last-sync">-</strong></div>
 
     <div class="table">
       <div class="row head">
@@ -227,6 +234,7 @@ input, select {
 var roleOrder = ['student', 'parent', 'doctor', 'admin'];
 var roleLabel = { student: 'طالب', parent: 'ولي أمر', doctor: 'طبيب', admin: 'إدارة' };
 var usersCache = [];
+var USERS_UI_STATE_KEY = 'smartclinic.admin.users.ui.v1';
 
 function notify(text) {
   var toast = document.getElementById('toast');
@@ -247,6 +255,39 @@ function safe(text) {
 function nextRole(current) {
   var idx = roleOrder.indexOf(current);
   return roleOrder[(idx + 1) % roleOrder.length];
+}
+
+function saveUsersUiState() {
+  var payload = {
+    search: String((document.getElementById('searchInput') || {}).value || ''),
+    role: String((document.getElementById('roleFilter') || {}).value || 'all'),
+    status: String((document.getElementById('statusFilter') || {}).value || 'all')
+  };
+  try {
+    localStorage.setItem(USERS_UI_STATE_KEY, JSON.stringify(payload));
+  } catch (err) {
+    // Ignore storage errors.
+  }
+}
+
+function loadUsersUiState() {
+  try {
+    var raw = localStorage.getItem(USERS_UI_STATE_KEY);
+    if (!raw) return null;
+    var parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+    return parsed;
+  } catch (err) {
+    return null;
+  }
+}
+
+function restoreUsersUiState() {
+  var saved = loadUsersUiState();
+  if (!saved) return;
+  if (document.getElementById('searchInput')) document.getElementById('searchInput').value = String(saved.search || '');
+  if (document.getElementById('roleFilter')) document.getElementById('roleFilter').value = String(saved.role || 'all');
+  if (document.getElementById('statusFilter')) document.getElementById('statusFilter').value = String(saved.status || 'all');
 }
 
 function renderStats(items) {
@@ -270,6 +311,8 @@ function renderStats(items) {
 
 function renderUsers(items) {
   var table = document.getElementById('usersTable');
+  var count = document.getElementById('users-filtered-count');
+  if (count) count.textContent = String(items.length);
   if (!items.length) {
     table.innerHTML = '<div class="empty">لا توجد نتائج مطابقة للفلاتر الحالية.</div>';
     return;
@@ -283,6 +326,7 @@ function renderUsers(items) {
       '<div><span class="pill role-pill">' + safe(roleLabel[u.role] || u.role) + '</span></div>' +
       '<div><span class="pill ' + activeClass + '">' + activeLabel + '</span></div>' +
       '<div class="action-row">' +
+        '<button class="act toggle" onclick="copyUserId(\'' + u.id + '\')">نسخ المعرّف</button>' +
         '<button class="act role" onclick="changeRole(\'' + u.id + '\',\'' + u.role + '\')">تبديل الدور</button>' +
         '<button class="act toggle" onclick="toggleUser(\'' + u.id + '\',' + (!!u.active) + ')">' + (u.active ? 'تعطيل' : 'تفعيل') + '</button>' +
       '</div>' +
@@ -300,8 +344,30 @@ function applyFilters() {
     var byStatus = status === 'all' || (status === 'active' ? !!u.active : !u.active);
     return byQuery && byRole && byStatus;
   });
-  renderStats(filtered.length ? filtered : usersCache);
+  renderStats(filtered);
   renderUsers(filtered);
+  saveUsersUiState();
+}
+
+function clearFilters() {
+  if (document.getElementById('searchInput')) document.getElementById('searchInput').value = '';
+  if (document.getElementById('roleFilter')) document.getElementById('roleFilter').value = 'all';
+  if (document.getElementById('statusFilter')) document.getElementById('statusFilter').value = 'all';
+  applyFilters();
+}
+
+function copyUserId(id) {
+  var text = String(id || '').trim();
+  if (!text) return;
+  if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') {
+    notify('المتصفح لا يدعم النسخ المباشر.');
+    return;
+  }
+  navigator.clipboard.writeText(text).then(function () {
+    notify('تم نسخ المعرّف: ' + text);
+  }).catch(function () {
+    notify('تعذر نسخ المعرّف.');
+  });
 }
 
 async function loadUsers() {
@@ -313,6 +379,8 @@ async function loadUsers() {
     return;
   }
   usersCache = result.data.items || [];
+  var sync = document.getElementById('users-last-sync');
+  if (sync) sync.textContent = new Date().toLocaleTimeString('ar-SA');
   applyFilters();
 }
 
@@ -343,6 +411,25 @@ async function toggleUser(id, active) {
   loadUsers();
 }
 
+function bindUsersShortcuts() {
+  window.addEventListener('keydown', function (ev) {
+    if (ev.defaultPrevented) return;
+    var tag = ev.target && ev.target.tagName ? ev.target.tagName.toLowerCase() : '';
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+    if (ev.key === '/') {
+      ev.preventDefault();
+      var input = document.getElementById('searchInput');
+      if (input) input.focus();
+      return;
+    }
+    var roleMap = { '1': 'all', '2': 'student', '3': 'doctor', '4': 'parent', '5': 'admin' };
+    if (roleMap[ev.key]) {
+      document.getElementById('roleFilter').value = roleMap[ev.key];
+      applyFilters();
+    }
+  });
+}
+
 window.addEventListener('DOMContentLoaded', function () {
   SmartClinicSecurity.requireAccess(['admin'], 'إدارة المستخدمين');
   if (window.SmartClinicUI) {
@@ -359,6 +446,8 @@ window.addEventListener('DOMContentLoaded', function () {
       ]
     });
   }
+  restoreUsersUiState();
+  bindUsersShortcuts();
   loadUsers();
   SmartClinicSecurity.createAutoRefresh(loadUsers, 30000, { immediate: false });
 });
