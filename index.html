@@ -93,6 +93,37 @@
       animation: fadeIn 1.2s ease forwards;
       animation-delay: 0.15s;
     }
+    .resume-box {
+      max-width: 780px;
+      margin: 0 auto 18px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      display: none;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .resume-meta {
+      color: var(--text-soft);
+      font-size: 14px;
+    }
+    .resume-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .resume-btn {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+      color: var(--text-main);
+      border-radius: 10px;
+      font: inherit;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
     .roles {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -176,6 +207,13 @@
 
   <div class="title">منصة العيادة المدرسية الذكية</div>
   <p class="subtitle">بوابة موحدة لأدوار المنصة الأساسية: الطالب، الطبيب، ولي الأمر، والإدارة مع دخول حسب الصلاحيات.</p>
+  <div id="resume-box" class="resume-box">
+    <div id="resume-meta" class="resume-meta">جلسة سابقة متاحة.</div>
+    <div class="resume-actions">
+      <button class="resume-btn" onclick="continueSession()">متابعة الجلسة</button>
+      <button class="resume-btn" onclick="openCareCenter()">فتح مركز التنسيق</button>
+    </div>
+  </div>
 
   <div class="roles">
     <div class="role-card" onclick="openSecureRoute('src/pages/student-portal.html', 'student')" onkeydown="cardKey(event, 'src/pages/student-portal.html', 'student')" tabindex="0" style="animation-delay:0.2s;"><div class="icon">🎓</div><div class="role-title">الطالب</div><div class="role-desc">بوابة الطالب للخدمات الذاتية: الملف الصحي، الطلبات، والتنبيهات المدرسية.</div><button class="btn student-btn">دخول الطالب</button></div>
@@ -197,6 +235,38 @@ function updateRoleBadge() {
   var session = SmartClinicSecurity.getSession();
   var label = session ? SmartClinicSecurity.roles[session.role] : 'زائر';
   document.querySelectorAll('[data-session-role]').forEach(function (el) { el.textContent = label; });
+  refreshResumeActions();
+}
+
+function refreshResumeActions() {
+  var box = document.getElementById('resume-box');
+  var meta = document.getElementById('resume-meta');
+  var session = SmartClinicSecurity.getSession();
+  if (!session) {
+    box.style.display = 'none';
+    return;
+  }
+  var roleLabel = SmartClinicSecurity.roles[session.role] || session.role;
+  meta.textContent = 'جلسة محفوظة للدور: ' + roleLabel + ' • يمكنك المتابعة مباشرة.';
+  box.style.display = 'flex';
+}
+
+function continueSession() {
+  var session = SmartClinicSecurity.getSession();
+  if (!session) {
+    window.alert('لا توجد جلسة محفوظة.');
+    return;
+  }
+  window.location.href = SmartClinicSecurity.getRoleHomePath(session.role);
+}
+
+function openCareCenter() {
+  var session = SmartClinicSecurity.getSession();
+  if (!session) {
+    window.alert('سجّل دخولك أولًا ثم افتح مركز التنسيق.');
+    return;
+  }
+  window.location.href = 'src/pages/care-center.html';
 }
 
 async function updateApiStatus() {

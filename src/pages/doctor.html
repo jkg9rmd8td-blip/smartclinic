@@ -372,6 +372,7 @@ body {
 <div id="toast" class="toast"></div>
 
 <script src="../../assets/js/security.js"></script>
+<script src="../../assets/js/ui-shell.js"></script>
 <script>
 var allCasesCache = [];
 var casesCache = [];
@@ -773,6 +774,19 @@ async function applyDoctorAiPlan() {
 
 window.addEventListener('DOMContentLoaded', function () {
   SmartClinicSecurity.requireAccess(['doctor', 'admin'], 'لوحة الطبيب');
+  if (window.SmartClinicUI) {
+    SmartClinicUI.mountQuickNav({
+      afterSelector: '.topbar',
+      onRefresh: loadDoctorData,
+      links: [
+        { label: 'لوحة الطبيب', href: 'doctor.html' },
+        { label: 'مركز التنسيق', href: 'care-center.html' },
+        { label: 'الحالة', href: 'case-details.html?id=case_1' },
+        { label: 'الطوارئ', href: 'emergency-flow.html?id=case_1' },
+        { label: 'الإشعارات', href: 'notifications-center.html' }
+      ]
+    });
+  }
   SmartClinicSecurity.createAutoRefresh(loadDoctorData, 15000, { immediate: true });
 });
 </script>

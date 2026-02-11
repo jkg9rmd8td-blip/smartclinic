@@ -186,6 +186,7 @@
 <div id="toast" class="toast"></div>
 
 <script src="../../assets/js/security.js"></script>
+<script src="../../assets/js/ui-shell.js"></script>
 <script>
 var parentTelemedSessionId = null;
 var alertsCache = [];
@@ -329,6 +330,19 @@ function notifyParent(text) {
 
 window.addEventListener("DOMContentLoaded", function () {
   SmartClinicSecurity.requireAccess(["parent", "admin"], "بوابة ولي الأمر");
+  if (window.SmartClinicUI) {
+    SmartClinicUI.mountQuickNav({
+      afterSelector: '.top',
+      onRefresh: loadOverview,
+      links: [
+        { label: 'بوابة ولي الأمر', href: 'parent-portal.html' },
+        { label: 'التقارير', href: 'parent-reports.html' },
+        { label: 'الرسائل', href: 'parent-messages.html' },
+        { label: 'مركز التنسيق', href: 'care-center.html' },
+        { label: 'الإشعارات', href: 'notifications-center.html' }
+      ]
+    });
+  }
   refreshParentTelemed();
   SmartClinicSecurity.createAutoRefresh(loadOverview, 20000, { immediate: true });
 });

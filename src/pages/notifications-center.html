@@ -4,37 +4,208 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>مركز الإشعارات – Smart Clinic</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
-body{margin:0;font-family:"Tajawal",sans-serif;background:#0b1e34;color:#eef8ff;padding:18px 14px}.shell{max-width:1040px;margin:0 auto}.panel{background:rgba(9,34,56,.85);border:1px solid rgba(125,211,252,.35);border-radius:16px;padding:16px}.top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px}.btn{border:1px solid rgba(125,211,252,.35);background:transparent;color:#eef8ff;padding:8px 12px;border-radius:8px;font:inherit;cursor:pointer}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.tab{padding:7px 10px;border-radius:999px;border:1px solid rgba(125,211,252,.35);background:transparent;color:#cde6f7;cursor:pointer}.tab.active{background:#38bdf8;color:#06263d;border-color:#38bdf8}.item{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px;margin-top:8px}.meta{font-size:12px;color:#bcd9ec;margin-top:4px}.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px}.b-critical{background:rgba(239,68,68,.2);color:#fecaca}.b-operational{background:rgba(245,158,11,.2);color:#fde68a}.b-info{background:rgba(56,189,248,.2);color:#bae6fd}
+:root {
+  --bg-a: #0b1e34;
+  --bg-b: #102b44;
+  --card: rgba(9, 34, 56, 0.85);
+  --line: rgba(125, 211, 252, 0.35);
+  --text: #eef8ff;
+  --soft: #bcd9ec;
+  --accent: #38bdf8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Tajawal", sans-serif;
+  color: var(--text);
+  background: radial-gradient(900px 480px at 12% 0%, rgba(56,189,248,.2), transparent 60%), linear-gradient(130deg, var(--bg-a), var(--bg-b));
+  min-height: 100vh;
+  padding: 18px 14px;
+}
+.shell { max-width: 1100px; margin: 0 auto; }
+.top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.btn {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 10px;
+  font: inherit;
+  cursor: pointer;
+}
+.panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.header h1 {
+  margin: 0;
+  font-size: 30px;
+}
+.header .meta {
+  color: var(--soft);
+  font-size: 12px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.chip {
+  border: 1px solid rgba(148,163,184,.32);
+  border-radius: 999px;
+  padding: 4px 9px;
+  background: rgba(255,255,255,.03);
+}
+.stats {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+}
+.stat {
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px;
+  background: rgba(255,255,255,.03);
+  padding: 8px;
+}
+.stat .l { color: var(--soft); font-size: 12px; }
+.stat .v { margin-top: 3px; font-size: 20px; font-weight: 800; }
+.controls {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1.3fr auto;
+  gap: 8px;
+}
+input[type="search"] {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.03);
+  color: var(--text);
+  padding: 8px;
+  font: inherit;
+}
+.tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+.tab {
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: #cde6f7;
+  cursor: pointer;
+  font: inherit;
+}
+.tab.active {
+  background: var(--accent);
+  color: #06263d;
+  border-color: var(--accent);
+  font-weight: 700;
+}
+.list { margin-top: 8px; display: grid; gap: 8px; }
+.item {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 12px;
+  padding: 10px;
+}
+.item-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.meta-line {
+  font-size: 12px;
+  color: var(--soft);
+  margin-top: 4px;
+}
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+}
+.b-critical { background: rgba(239,68,68,.2); color: #fecaca; }
+.b-operational { background: rgba(245,158,11,.2); color: #fde68a; }
+.b-info { background: rgba(56,189,248,.2); color: #bae6fd; }
+.empty {
+  border: 1px dashed rgba(148,163,184,.36);
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+  color: var(--soft);
+}
+@media (max-width: 780px) {
+  .controls { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
 <div class="shell">
   <div class="top">
     <button class="btn" onclick="goHome()">العودة</button>
-    <div style="display:flex;gap:8px;">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn" onclick="loadNotifications()">تحديث</button>
       <button class="btn" data-action="logout">تسجيل الخروج</button>
     </div>
   </div>
+
   <section class="panel">
-    <h1 style="margin:0;font-size:30px">مركز الإشعارات الموحد</h1>
-    <p style="color:#bcd9ec">فلترة الإشعارات حسب النوع: حرج، إجرائي، أو معلوماتي.</p>
+    <div class="header">
+      <h1>مركز الإشعارات الموحد</h1>
+      <div class="meta">
+        <span class="chip">الاتصال: <strong id="stream-state">-</strong></span>
+        <span class="chip">الوضع: <strong id="mode-state">-</strong></span>
+        <span class="chip">آخر مزامنة: <strong id="sync-state">-</strong></span>
+      </div>
+    </div>
+
+    <div id="stats" class="stats"></div>
+
+    <div class="controls">
+      <input id="searchInput" type="search" placeholder="ابحث داخل نص الإشعار أو المصدر..." oninput="renderCurrentList()">
+      <button class="btn" onclick="clearSearch()">مسح البحث</button>
+    </div>
+
     <div class="tabs">
       <button class="tab active" data-type="all" onclick="setType('all', this)">الكل</button>
       <button class="tab" data-type="critical" onclick="setType('critical', this)">حرج</button>
       <button class="tab" data-type="operational" onclick="setType('operational', this)">إجرائي</button>
       <button class="tab" data-type="info" onclick="setType('info', this)">معلومة</button>
     </div>
-    <div id="list"></div>
+
+    <div id="list" class="list"></div>
   </section>
 </div>
+
 <script src="../../assets/js/security.js"></script>
+<script src="../../assets/js/ui-shell.js"></script>
 <script>
 var currentType = 'all';
 var stream = null;
+var notificationsCache = [];
 
 function goHome() {
   SmartClinicSecurity.goToRoleHome();
@@ -52,59 +223,131 @@ function typeLabel(type) {
   return 'معلومة';
 }
 
+function updateMeta() {
+  document.getElementById('mode-state').textContent = SmartClinicSecurity.isDemoMode() ? 'Demo' : 'Live';
+  document.getElementById('sync-state').textContent = new Date().toLocaleTimeString('ar-SA');
+}
+
 function setType(type, btn) {
   currentType = type;
   document.querySelectorAll('.tab').forEach(function (t) { t.classList.remove('active'); });
   btn.classList.add('active');
-  loadNotifications();
+  renderCurrentList();
+}
+
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  renderCurrentList();
+}
+
+function renderStats(items) {
+  var all = items || [];
+  var critical = all.filter(function (n) { return n.type === 'critical'; }).length;
+  var operational = all.filter(function (n) { return n.type === 'operational'; }).length;
+  var info = all.filter(function (n) { return (n.type || 'info') === 'info'; }).length;
+  var bySource = {};
+  all.forEach(function (n) {
+    var src = n.source || 'unknown';
+    bySource[src] = (bySource[src] || 0) + 1;
+  });
+  var topSource = Object.keys(bySource).sort(function (a, b) { return bySource[b] - bySource[a]; })[0] || '-';
+  var stats = [
+    ['الإجمالي', all.length],
+    ['حرجة', critical],
+    ['إجرائية', operational],
+    ['معلوماتية', info],
+    ['الأكثر تكرارًا', topSource]
+  ];
+  document.getElementById('stats').innerHTML = stats.map(function (s) {
+    return '<div class="stat"><div class="l">' + s[0] + '</div><div class="v">' + s[1] + '</div></div>';
+  }).join('');
+}
+
+function renderCurrentList() {
+  var list = document.getElementById('list');
+  var query = String(document.getElementById('searchInput').value || '').trim().toLowerCase();
+
+  var filtered = notificationsCache.slice();
+  if (currentType !== 'all') {
+    filtered = filtered.filter(function (n) { return (n.type || 'info') === currentType; });
+  }
+  if (query) {
+    filtered = filtered.filter(function (n) {
+      var text = String(n.text || '').toLowerCase();
+      var src = String(n.source || '').toLowerCase();
+      return text.indexOf(query) !== -1 || src.indexOf(query) !== -1;
+    });
+  }
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty">لا توجد إشعارات مطابقة للفلاتر الحالية.</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(function (n) {
+    var createdAt = n.createdAt ? new Date(n.createdAt).toLocaleString('ar-SA') : '-';
+    return '<div class="item">' +
+      '<div class="item-title">' +
+        '<span class="badge ' + badgeClass(n.type) + '">' + typeLabel(n.type || 'info') + '</span>' +
+        '<strong>' + (n.source || '-') + '</strong>' +
+      '</div>' +
+      '<div style="margin-top:6px;">' + (n.text || '-') + '</div>' +
+      '<div class="meta-line">' + createdAt + '</div>' +
+    '</div>';
+  }).join('');
 }
 
 function connectStream() {
+  var state = document.getElementById('stream-state');
+  state.textContent = 'Polling';
   try {
     if (SmartClinicSecurity.isDemoMode && SmartClinicSecurity.isDemoMode()) {
+      state.textContent = 'Demo (No SSE)';
       return;
     }
     var token = SmartClinicSecurity.getToken && SmartClinicSecurity.getToken();
     if (!token) return;
-    if (stream) {
-      stream.close();
-    }
+    if (stream) stream.close();
     stream = new EventSource('/api/stream?token=' + encodeURIComponent(token));
+    stream.addEventListener('connected', function () {
+      state.textContent = 'SSE Connected';
+    });
     stream.addEventListener('notifications', function () {
       loadNotifications();
     });
-    stream.addEventListener('connected', function () {
-      // Connection established.
-    });
     stream.onerror = function () {
-      // Keep fallback polling active.
+      state.textContent = 'Polling';
     };
   } catch (err) {
-    // SSE not supported or failed.
+    state.textContent = 'Polling';
   }
 }
 
 async function loadNotifications() {
   var list = document.getElementById('list');
-  list.innerHTML = '<div class="item">جاري التحميل...</div>';
-  var q = currentType === 'all' ? '' : ('?type=' + encodeURIComponent(currentType));
-  var result = await SmartClinicSecurity.apiJson('/notifications' + q);
+  list.innerHTML = '<div class="empty">جاري تحميل الإشعارات...</div>';
+  var result = await SmartClinicSecurity.apiJson('/notifications');
+  updateMeta();
   if (!result.ok || !result.data) {
-    list.innerHTML = '<div class="item">تعذر الاتصال بالخادم.</div>';
+    list.innerHTML = '<div class="empty">تعذر الاتصال بالخادم.</div>';
     return;
   }
-  var items = result.data.items || [];
-  if (!items.length) {
-    list.innerHTML = '<div class="item">لا توجد إشعارات في هذا التصنيف.</div>';
-    return;
-  }
-  list.innerHTML = items.map(function (n) {
-    return '<div class="item"><span class="badge ' + badgeClass(n.type) + '">' + typeLabel(n.type) + '</span> ' + (n.text || '-') + '<div class="meta">' + new Date(n.createdAt).toLocaleString('ar-SA') + ' • المصدر: ' + (n.source || '-') + '</div></div>';
-  }).join('');
+  notificationsCache = (result.data.items || []).slice().sort(function (a, b) {
+    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+  });
+  renderStats(notificationsCache);
+  renderCurrentList();
 }
 
 window.addEventListener('DOMContentLoaded', function () {
   SmartClinicSecurity.requireAccess(['student', 'parent', 'doctor', 'admin'], 'مركز الإشعارات');
+  if (window.SmartClinicUI) {
+    SmartClinicUI.mountQuickNav({
+      afterSelector: '.top',
+      onRefresh: loadNotifications
+    });
+  }
+  updateMeta();
   loadNotifications();
   connectStream();
   SmartClinicSecurity.createAutoRefresh(loadNotifications, 15000, { immediate: false });

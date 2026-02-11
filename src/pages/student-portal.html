@@ -310,6 +310,7 @@ textarea, select {
 <div id="toast" class="toast"></div>
 
 <script src="../../assets/js/security.js"></script>
+<script src="../../assets/js/ui-shell.js"></script>
 <script>
 var lastOverview = null;
 var alertsCache = [];
@@ -558,6 +559,18 @@ async function sendClinicMessage() {
 
 window.addEventListener('DOMContentLoaded', function () {
   SmartClinicSecurity.requireAccess(['student', 'admin'], 'بوابة الطالب');
+  if (window.SmartClinicUI) {
+    SmartClinicUI.mountQuickNav({
+      afterSelector: '.top',
+      onRefresh: loadOverview,
+      links: [
+        { label: 'بوابة الطالب', href: 'student-portal.html' },
+        { label: 'الملف الصحي', href: 'student-profile.html' },
+        { label: 'مركز التنسيق', href: 'care-center.html' },
+        { label: 'الإشعارات', href: 'notifications-center.html' }
+      ]
+    });
+  }
   document.getElementById('tip-text').textContent = tips[tipIndex];
   updateVisitReasonMeta();
   refreshStudentTelemed();

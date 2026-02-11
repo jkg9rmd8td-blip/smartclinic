@@ -380,6 +380,7 @@ textarea { resize: vertical; min-height: 64px; }
 <div id="toast" class="toast"></div>
 
 <script src="../../assets/js/security.js"></script>
+<script src="../../assets/js/ui-shell.js"></script>
 <script>
 var currentSession = null;
 var selectedTicketId = '';
@@ -1011,6 +1012,17 @@ async function refreshAll() {
 
 window.addEventListener('DOMContentLoaded', function () {
   currentSession = SmartClinicSecurity.requireAccess(['student', 'doctor', 'parent', 'admin'], 'مركز التنسيق العلاجي');
+  if (window.SmartClinicUI) {
+    SmartClinicUI.mountQuickNav({
+      afterSelector: '.top',
+      onRefresh: refreshAll,
+      links: [
+        { label: 'مركز التنسيق', href: 'care-center.html' },
+        { label: 'بوابة الدور', href: SmartClinicSecurity.getRoleHomePath() },
+        { label: 'الإشعارات', href: 'notifications-center.html' }
+      ]
+    });
+  }
   initMonthField();
   refreshAll();
   SmartClinicSecurity.createAutoRefresh(refreshAll, 25000, { immediate: false });

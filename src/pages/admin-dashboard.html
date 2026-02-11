@@ -78,6 +78,7 @@
 </div>
 
 <script src="../../assets/js/security.js"></script>
+<script src="../../assets/js/ui-shell.js"></script>
 <script>
 function renderStats(payload) {
   var health = payload.health || {};
@@ -105,6 +106,20 @@ async function loadSystem() {
 
 window.addEventListener("DOMContentLoaded", function () {
   SmartClinicSecurity.requireAccess(["admin"], "لوحة الإدارة");
+  if (window.SmartClinicUI) {
+    SmartClinicUI.mountQuickNav({
+      afterSelector: '.top',
+      onRefresh: loadSystem,
+      links: [
+        { label: 'لوحة الإدارة', href: 'admin-dashboard.html' },
+        { label: 'المستخدمون', href: 'admin-users.html' },
+        { label: 'الإعدادات', href: 'admin-settings.html' },
+        { label: 'التحليلات', href: 'admin-analytics.html' },
+        { label: 'مركز التنسيق', href: 'care-center.html' },
+        { label: 'الإشعارات', href: 'notifications-center.html' }
+      ]
+    });
+  }
   SmartClinicSecurity.createAutoRefresh(loadSystem, 20000, { immediate: true });
 });
 </script>
