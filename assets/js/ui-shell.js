@@ -124,7 +124,7 @@
 
   function sanitizeLinks(links, role) {
     var seen = {};
-    return (links || [])
+    var cleaned = (links || [])
       .filter(function (item) {
         if (!item || !item.href || !item.label) return false;
         if (!canAccessLink(item, role)) return false;
@@ -134,6 +134,52 @@
         return true;
       })
       .slice(0, 10);
+
+    if (cleaned.length > 1) {
+      cleaned = cleaned.filter(function (item) {
+        return !isSameRoute(item.href);
+      });
+    }
+
+    return cleaned;
+  }
+
+  function normalizeLabel(text) {
+    return String(text || '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/[^\u0600-\u06FF\w ]/g, '')
+      .toLowerCase();
+  }
+
+  function collectSectionNavLabels() {
+    var seen = {};
+    var labels = [];
+    document.querySelectorAll('.section-nav .section-btn').forEach(function (btn) {
+      var key = normalizeLabel(btn && btn.textContent);
+      if (!key || seen[key]) return;
+      seen[key] = true;
+      labels.push(key);
+    });
+    return labels;
+  }
+
+  function overlapsWithSectionLabel(linkLabel, sectionLabels) {
+    var key = normalizeLabel(linkLabel);
+    if (!key || !sectionLabels.length) return false;
+    return sectionLabels.some(function (label) {
+      if (!label) return false;
+      return key === label || key.indexOf(label) !== -1 || label.indexOf(key) !== -1;
+    });
+  }
+
+  function dedupeLinksAgainstSectionNav(links) {
+    var sectionLabels = collectSectionNavLabels();
+    if (!sectionLabels.length) return links;
+    var filtered = (links || []).filter(function (item) {
+      return !overlapsWithSectionLabel(item.label, sectionLabels);
+    });
+    return filtered.length ? filtered : links;
   }
 
   function compactLegacyTopActions(options) {
@@ -151,6 +197,14 @@
       btn.setAttribute('data-scq-compact', '1');
       btn.style.display = 'none';
     });
+    if (!(options && options.keepLegacyRoleChip)) {
+      document.querySelectorAll('.top .chip, .topbar .chip').forEach(function (chip) {
+        if (!chip || chip.getAttribute('data-scq-compact') === '1') return;
+        if (!chip.querySelector('[data-session-role]')) return;
+        chip.setAttribute('data-scq-compact', '1');
+        chip.style.display = 'none';
+      });
+    }
   }
 
   function bindActionButtons(options) {
@@ -213,6 +267,9 @@
     var session = SmartClinicSecurity.getSession();
     var role = session ? session.role : '';
     var links = sanitizeLinks((options && options.links) || defaultLinks(role), role);
+    if (!(options && options.keepSectionDuplicates)) {
+      links = dedupeLinksAgainstSectionNav(links);
+    }
     var mode = SmartClinicSecurity.isDemoMode && SmartClinicSecurity.isDemoMode() ? 'Demo' : 'Live';
 
     var nav = document.createElement('section');

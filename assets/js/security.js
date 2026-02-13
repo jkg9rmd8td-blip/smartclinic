@@ -4,15 +4,18 @@
   var STORAGE_KEY = 'smartclinic.auth.session.v1';
   var TOKEN_KEY = 'smartclinic.auth.token.v1';
   var FLASH_KEY = 'smartclinic.auth.flash.v1';
+  var API_BASE_STORAGE_KEY = 'smartclinic.api.base.v1';
   var SESSION_TTL_MS = 8 * 60 * 60 * 1000;
-  var API_BASE = '/api';
+  var API_BASE = resolveApiBase();
   var API_TIMEOUT_MS = 12000;
   var DEMO_STORE_KEY = 'smartclinic.demo.data.v1';
   var TELEMED_STORE_KEY = 'smartclinic.telemed.sessions.v1';
+  var DEMO_BANNER_ID = 'smartclinic-demo-banner';
   var DEMO_FALLBACK_HOST = /(^|\.)github\.io$/i.test(window.location.hostname) || window.location.protocol === 'file:';
   var DEMO_START_AT = Date.now();
   var DEMO_QUERY_ENABLED = /(?:^|[?&])demo=1(?:&|$)/.test(window.location.search || '');
   var demoFallbackActive = DEMO_FALLBACK_HOST || DEMO_QUERY_ENABLED;
+  var demoFallbackReason = demoFallbackActive ? (DEMO_FALLBACK_HOST ? 'host' : 'query') : '';
 
   var ROLE_LABELS = {
     student: 'الطالب',
@@ -126,6 +129,100 @@
     parent: 'src/pages/parent-portal.html',
     admin: 'src/pages/admin-dashboard.html'
   };
+
+  function sanitizeApiBase(value) {
+    var raw = String(value || '').trim();
+    if (!raw) return '';
+    if (raw === 'default' || raw === 'auto') {
+      return '/api';
+    }
+    if (raw.charAt(0) === '/') {
+      var relative = raw.replace(/\/+$/, '');
+      return relative || '/api';
+    }
+    if (/^https?:\/\//i.test(raw)) {
+      return raw.replace(/\/+$/, '');
+    }
+    return '';
+  }
+
+  function readStoredApiBase() {
+    try {
+      return sanitizeApiBase(localStorage.getItem(API_BASE_STORAGE_KEY));
+    } catch (err) {
+      return '';
+    }
+  }
+
+  function writeStoredApiBase(apiBase) {
+    try {
+      var safe = sanitizeApiBase(apiBase);
+      if (!safe || safe === '/api') {
+        localStorage.removeItem(API_BASE_STORAGE_KEY);
+        return;
+      }
+      localStorage.setItem(API_BASE_STORAGE_KEY, safe);
+    } catch (err) {
+      // Ignore storage errors in restricted environments.
+    }
+  }
+
+  function readMetaApiBase() {
+    try {
+      var meta = document.querySelector('meta[name="smartclinic-api-base"]');
+      if (!meta) return '';
+      return sanitizeApiBase(meta.getAttribute('content'));
+    } catch (err) {
+      return '';
+    }
+  }
+
+  function readGlobalApiBase() {
+    try {
+      if (window.SMARTCLINIC_CONFIG && typeof window.SMARTCLINIC_CONFIG.apiBase === 'string') {
+        return sanitizeApiBase(window.SMARTCLINIC_CONFIG.apiBase);
+      }
+      if (typeof window.SMARTCLINIC_API_BASE === 'string') {
+        return sanitizeApiBase(window.SMARTCLINIC_API_BASE);
+      }
+    } catch (err) {
+      return '';
+    }
+    return '';
+  }
+
+  function readQueryApiBase() {
+    try {
+      var params = new URLSearchParams(window.location.search || '');
+      return params.get('apiBase') || params.get('api_base') || '';
+    } catch (err) {
+      return '';
+    }
+  }
+
+  function resolveApiBase() {
+    var queryValue = readQueryApiBase();
+    if (queryValue) {
+      var fromQuery = sanitizeApiBase(queryValue);
+      if (fromQuery) {
+        writeStoredApiBase(fromQuery);
+        return fromQuery;
+      }
+      writeStoredApiBase('/api');
+      return '/api';
+    }
+
+    var fromGlobal = readGlobalApiBase();
+    if (fromGlobal) return fromGlobal;
+
+    var fromMeta = readMetaApiBase();
+    if (fromMeta) return fromMeta;
+
+    var fromStorage = readStoredApiBase();
+    if (fromStorage) return fromStorage;
+
+    return '/api';
+  }
 
   function normalizePath(pathname) {
     var decoded = decodeURIComponent(pathname || '');
@@ -2996,6 +3093,63 @@
     return demoJsonResponse(404, { error: 'API route not found' });
   }
 
+  function demoBannerMessage() {
+    var reasonText = 'تعذر الوصول إلى خدمة API.';
+    if (demoFallbackReason === 'host') {
+      reasonText = 'البيئة الحالية ثابتة (GitHub Pages / ملف محلي).';
+    } else if (demoFallbackReason === 'query') {
+      reasonText = 'تم تفعيل وضع العرض من رابط الصفحة.';
+    } else if (demoFallbackReason === 'api_404') {
+      reasonText = 'الخدمة الخلفية غير متاحة على المسار الحالي.';
+    } else if (demoFallbackReason === 'network') {
+      reasonText = 'فشل الاتصال بالخدمة الخلفية.';
+    }
+    return 'وضع العرض التجريبي مفعل. ' + reasonText + ' API Base: ' + API_BASE;
+  }
+
+  function renderDemoBanner() {
+    var body = document.body;
+    if (!body) return;
+    var banner = document.getElementById(DEMO_BANNER_ID);
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = DEMO_BANNER_ID;
+      banner.style.position = 'fixed';
+      banner.style.left = '12px';
+      banner.style.right = '12px';
+      banner.style.bottom = '12px';
+      banner.style.padding = '10px 12px';
+      banner.style.background = 'rgba(15, 23, 42, 0.94)';
+      banner.style.border = '1px solid rgba(251, 191, 36, 0.7)';
+      banner.style.borderRadius = '10px';
+      banner.style.color = '#f8fafc';
+      banner.style.fontFamily = '"Tajawal", system-ui, sans-serif';
+      banner.style.fontSize = '13px';
+      banner.style.lineHeight = '1.5';
+      banner.style.zIndex = '9999';
+      banner.style.boxShadow = '0 12px 28px rgba(2, 6, 23, 0.45)';
+      body.appendChild(banner);
+    }
+    banner.textContent = demoBannerMessage();
+  }
+
+  function showDemoBanner() {
+    if (typeof document === 'undefined') return;
+    if (document.body) {
+      renderDemoBanner();
+      return;
+    }
+    document.addEventListener('DOMContentLoaded', renderDemoBanner, { once: true });
+  }
+
+  function activateDemoFallback(reason) {
+    demoFallbackActive = true;
+    if (reason) {
+      demoFallbackReason = reason;
+    }
+    showDemoBanner();
+  }
+
   function shouldActivateDemoFallback(response) {
     if (!response || response.status !== 404) {
       return false;
@@ -3025,6 +3179,7 @@
     delete fetchOpts.timeoutMs;
 
     if (demoFallbackActive) {
+      showDemoBanner();
       return demoApiRequest(path, fetchOpts);
     }
 
@@ -3044,7 +3199,7 @@
       try {
         var timedResponse = await fetch(API_BASE + path, fetchOpts);
         if (shouldActivateDemoFallback(timedResponse)) {
-          demoFallbackActive = true;
+          activateDemoFallback('api_404');
           return demoApiRequest(path, fetchOpts);
         }
         return timedResponse;
@@ -3052,7 +3207,7 @@
         if (err && err.name === 'AbortError') {
           throw err;
         }
-        demoFallbackActive = true;
+        activateDemoFallback('network');
         return demoApiRequest(path, fetchOpts);
       } finally {
         window.clearTimeout(timer);
@@ -3062,12 +3217,12 @@
     try {
       var response = await fetch(API_BASE + path, fetchOpts);
       if (shouldActivateDemoFallback(response)) {
-        demoFallbackActive = true;
+        activateDemoFallback('api_404');
         return demoApiRequest(path, fetchOpts);
       }
       return response;
     } catch (err) {
-      demoFallbackActive = true;
+      activateDemoFallback('network');
       return demoApiRequest(path, fetchOpts);
     }
   }
@@ -3276,10 +3431,15 @@
     }, 50);
   }
 
+  if (demoFallbackActive) {
+    activateDemoFallback(demoFallbackReason);
+  }
+
   window.SmartClinicSecurity = {
     roles: ROLE_LABELS,
     entryRoutes: ENTRY_ROUTES,
     apiBase: API_BASE,
+    getApiBase: function () { return API_BASE; },
     apiRequest: apiRequest,
     apiJson: apiJson,
     login: login,

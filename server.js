@@ -7,7 +7,10 @@ const { URL } = require('url');
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 const HOST = process.env.HOST || '127.0.0.1';
 const ROOT_DIR = process.cwd();
-const DATA_FILE = path.join(ROOT_DIR, 'backend', 'data.json');
+const DATA_SEED_FILE = path.join(ROOT_DIR, 'backend', 'data.json');
+const DATA_FILE = process.env.DATA_FILE
+  ? (path.isAbsolute(process.env.DATA_FILE) ? process.env.DATA_FILE : path.join(ROOT_DIR, process.env.DATA_FILE))
+  : path.join(ROOT_DIR, 'backend', 'data.runtime.json');
 const TELEMED_INVITE_TTL_MS = 10 * 60 * 1000;
 
 const ROLE_PERMISSIONS = {
@@ -129,11 +132,23 @@ function ensureString(value, minLen, maxLen, fallback = '') {
   return raw.slice(0, maxLen);
 }
 
+function ensureDataFile() {
+  if (fs.existsSync(DATA_FILE)) return;
+  fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
+  if (DATA_FILE !== DATA_SEED_FILE && fs.existsSync(DATA_SEED_FILE)) {
+    fs.copyFileSync(DATA_SEED_FILE, DATA_FILE);
+    return;
+  }
+  fs.writeFileSync(DATA_FILE, '{}');
+}
+
 function readData() {
+  ensureDataFile();
   return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
 }
 
 function writeData(data) {
+  ensureDataFile();
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
@@ -1324,7 +1339,7 @@ function monthlyExecutiveSummary(data, monthKey) {
       ticketsOpened: tickets.length,
       ticketsClosed: closedTickets.length,
       ticketClosureRate: closureRate,
-      avgTicketResolutionHours,
+      avgTicketResolutionHours: avgResolutionHours,
       referrals: referrals.length,
       consentsRequested: consents.length,
       consentsApproved: approvedConsents.length
@@ -3133,6 +3148,9 @@ const server = http.createServer(async (req, res) => {
   serveStatic(req, res, urlObj);
 });
 
+ensureDataFile();
+
 server.listen(PORT, HOST, () => {
   console.log(`Smart Clinic server running on http://${HOST}:${PORT}`);
+  console.log(`Smart Clinic data file: ${DATA_FILE}`);
 });
