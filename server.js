@@ -168,6 +168,12 @@ function ensureString(value, minLen, maxLen, fallback = '') {
   return raw.slice(0, maxLen);
 }
 
+function clampNumber(value, min, max) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return min;
+  return Math.max(min, Math.min(max, numeric));
+}
+
 function ensureDataFile() {
   if (fs.existsSync(DATA_FILE)) return;
   fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
@@ -580,6 +586,250 @@ function operationsOverview(data) {
       })),
     alerts: alerts.slice(-12).reverse(),
     recentActions: auditLogs.slice(-20).reverse()
+  };
+}
+
+function schoolStatusFromIndex(index) {
+  const score = clampNumber(index, 0, 100);
+  if (score >= 85) return 'ممتاز';
+  if (score >= 70) return 'جيد';
+  if (score >= 55) return 'يحتاج متابعة';
+  return 'يحتاج دعم عاجل';
+}
+
+function schoolSupportLevel(index) {
+  const score = clampNumber(index, 0, 100);
+  if (score < 55) return 'critical';
+  if (score < 70) return 'warning';
+  return 'stable';
+}
+
+function schoolHealthCatalog(data) {
+  const safeSchools = [];
+  const existing = Array.isArray(data.schools) ? data.schools : [];
+
+  existing.forEach((item, idx) => {
+    const schoolId = ensureString(item && item.id, 0, 80, `school_${idx + 1}`);
+    if (!schoolId) return;
+    if (safeSchools.some((s) => s.id === schoolId)) return;
+    safeSchools.push({
+      id: schoolId,
+      name: ensureString(item && item.name, 0, 140, `مدرسة ${idx + 1}`),
+      city: ensureString(item && item.city, 0, 80, '-'),
+      ministryCode: ensureString(item && item.ministryCode, 0, 40, '-')
+    });
+  });
+
+  const fallbackId = safeSchools.length ? safeSchools[0].id : 'school_1';
+  if (!safeSchools.length) {
+    safeSchools.push({
+      id: fallbackId,
+      name: 'مدرسة SmartClinic النموذجية',
+      city: '-',
+      ministryCode: 'SC-001'
+    });
+  }
+
+  const students = (data.users || []).filter((user) => user.role === 'student');
+  students.forEach((student) => {
+    const schoolId = ensureString(student.schoolId, 0, 80, fallbackId) || fallbackId;
+    const schoolName = ensureString(student.schoolName, 0, 140, '');
+    if (safeSchools.some((item) => item.id === schoolId)) return;
+    safeSchools.push({
+      id: schoolId,
+      name: schoolName || `مدرسة ${schoolId}`,
+      city: '-',
+      ministryCode: '-'
+    });
+  });
+
+  return {
+    schools: safeSchools,
+    defaultSchoolId: fallbackId
+  };
+}
+
+function schoolHealthIndexOverview(data, options = {}) {
+  ensureAdvancedStores(data);
+  const now = Date.now();
+  const windowDays = Math.max(7, Math.min(90, Number(options.windowDays || 30)));
+  const windowMs = windowDays * 24 * 60 * 60 * 1000;
+  const fromTime = now - windowMs;
+  const inWindow = (iso) => {
+    const ts = new Date(iso || 0).getTime();
+    return Number.isFinite(ts) && ts >= fromTime;
+  };
+
+  const catalog = schoolHealthCatalog(data);
+  const schools = catalog.schools;
+  const defaultSchoolId = catalog.defaultSchoolId;
+  const students = (data.users || []).filter((user) => user.role === 'student');
+  const studentSchoolMap = new Map();
+  students.forEach((student) => {
+    const schoolId = ensureString(student.schoolId, 0, 80, defaultSchoolId) || defaultSchoolId;
+    studentSchoolMap.set(student.id, schoolId);
+  });
+
+  const studentsBySchool = new Map();
+  schools.forEach((school) => {
+    studentsBySchool.set(school.id, []);
+  });
+  students.forEach((student) => {
+    const schoolId = studentSchoolMap.get(student.id) || defaultSchoolId;
+    if (!studentsBySchool.has(schoolId)) {
+      studentsBySchool.set(schoolId, []);
+    }
+    studentsBySchool.get(schoolId).push(student);
+  });
+
+  const severityWeight = { low: 1, medium: 1.6, high: 2.4, critical: 3.2 };
+  const absenceStatuses = new Set(['absent', 'excused_absent', 'sick_leave']);
+  const seasonalKeywords = ['انفلونزا', 'إنفلونزا', 'influenza', 'flu', 'نزلة', 'فيروس', 'عدوى', 'كورونا', 'covid'];
+  const caseById = new Map((data.cases || []).map((item) => [item.id, item]));
+
+  const derivedIncidentCounts = new Map();
+  (data.auditLogs || []).forEach((log) => {
+    if (!inWindow(log.createdAt)) return;
+    const action = ensureString(log.action, 0, 120, '').toLowerCase();
+    if (!action.includes('case.action.external_referral') && !action.includes('case.action.emergency_protocol')) {
+      return;
+    }
+    const targetCase = caseById.get(log.target);
+    if (!targetCase) return;
+    const schoolId = studentSchoolMap.get(targetCase.studentId) || defaultSchoolId;
+    const current = Number(derivedIncidentCounts.get(schoolId) || 0);
+    derivedIncidentCounts.set(schoolId, current + 1);
+  });
+
+  const schoolsResult = schools.map((school) => {
+    const schoolStudents = studentsBySchool.get(school.id) || [];
+    const studentIds = new Set(schoolStudents.map((item) => item.id));
+    const studentCount = schoolStudents.length;
+    const denominator = Math.max(studentCount, 20);
+
+    const allCases = (data.cases || []).filter((item) => studentIds.has(item.studentId));
+    const openCases = allCases.filter((item) => item.status !== 'closed').length;
+    const criticalCases = allCases.filter((item) => item.status !== 'closed' && item.severity === 'critical').length;
+    const weightedCaseBurden = allCases.reduce((sum, item) => {
+      if (item.status === 'closed') return sum;
+      return sum + (severityWeight[item.severity] || severityWeight.low);
+    }, 0);
+    const caseBurdenPer100 = (weightedCaseBurden / denominator) * 100;
+    const casesScore = Math.round(clampNumber(100 - (caseBurdenPer100 * 1.1), 0, 100));
+
+    const attendanceRecords = (data.attendanceRecords || []).filter((item) => {
+      const schoolId = ensureString(item.schoolId, 0, 80, studentSchoolMap.get(item.studentId) || defaultSchoolId) || defaultSchoolId;
+      return schoolId === school.id && inWindow(item.date || item.createdAt);
+    });
+    const attendanceTotal = attendanceRecords.length;
+    const attendanceAbsent = attendanceRecords.filter((item) => absenceStatuses.has(ensureString(item.status, 0, 40, 'present').toLowerCase())).length;
+    let absenceRate = attendanceTotal ? (attendanceAbsent / attendanceTotal) * 100 : null;
+    if (!Number.isFinite(absenceRate)) {
+      const fallbackRate = (openCases * 1.5) + (criticalCases * 3);
+      absenceRate = clampNumber(fallbackRate, 0, 18);
+    }
+    const absenceScore = Math.round(clampNumber(100 - (absenceRate * 2.2), 0, 100));
+
+    const medStats = schoolStudents.map((student) => medicationAdherenceSummary(data, student.id));
+    const medExpected = medStats.reduce((sum, item) => sum + Number(item.expectedDoses || 0), 0);
+    const medTaken = medStats.reduce((sum, item) => sum + Number(item.takenDoses || 0), 0);
+    const medLogs = medStats.reduce((sum, item) => sum + Number((item.recentLogs || []).length), 0);
+    const adherencePercent = medExpected > 0 ? clampNumber(Math.round((medTaken / medExpected) * 100), 0, 100) : (medLogs > 0 ? 90 : 100);
+    const medicationScore = Math.round(clampNumber(adherencePercent, 0, 100));
+
+    const incidents = (data.incidentReports || []).filter((item) => {
+      const schoolId = ensureString(item.schoolId, 0, 80, studentSchoolMap.get(item.studentId) || defaultSchoolId) || defaultSchoolId;
+      return schoolId === school.id && inWindow(item.createdAt || item.date);
+    });
+    const incidentCount = incidents.length || Number(derivedIncidentCounts.get(school.id) || 0);
+    const incidentsPer100 = (incidentCount / denominator) * 100;
+    const incidentsScore = Math.round(clampNumber(100 - (incidentsPer100 * 3.2), 0, 100));
+
+    const seasonalReports = (data.seasonalDiseaseReports || []).filter((item) => {
+      const schoolId = ensureString(item.schoolId, 0, 80, studentSchoolMap.get(item.studentId) || defaultSchoolId) || defaultSchoolId;
+      return schoolId === school.id && inWindow(item.createdAt || item.date);
+    });
+    const derivedSeasonal = allCases.filter((item) => {
+      if (!inWindow(item.updatedAt)) return false;
+      const text = `${item.title || ''} ${item.notes || ''}`.toLowerCase();
+      return seasonalKeywords.some((word) => text.includes(word.toLowerCase()));
+    }).length;
+    const seasonalCount = seasonalReports.length || derivedSeasonal;
+    const seasonalPer100 = (seasonalCount / denominator) * 100;
+    const seasonalScore = Math.round(clampNumber(100 - (seasonalPer100 * 2.4), 0, 100));
+
+    const index = Math.round(
+      clampNumber(
+        (casesScore * 0.30) +
+        (absenceScore * 0.20) +
+        (medicationScore * 0.20) +
+        (incidentsScore * 0.15) +
+        (seasonalScore * 0.15),
+        0,
+        100
+      )
+    );
+
+    const recommendations = [];
+    if (casesScore < 70) recommendations.push('تعزيز فرق الفرز والمتابعة للحالات المفتوحة والحرجة.');
+    if (absenceScore < 75) recommendations.push('إطلاق متابعة غياب يومية وربطها ببلاغات ولي الأمر.');
+    if (medicationScore < 80) recommendations.push('رفع برامج الالتزام الدوائي والتذكير الذكي.');
+    if (incidentsScore < 80) recommendations.push('مراجعة إجراءات السلامة المدرسية وتقليل الحوادث.');
+    if (seasonalScore < 80) recommendations.push('تكثيف حملات الوقاية من الأمراض الموسمية داخل المدرسة.');
+    if (!recommendations.length) recommendations.push('الحفاظ على الأداء الحالي مع مراقبة شهرية دورية.');
+
+    return {
+      id: school.id,
+      name: school.name,
+      city: school.city,
+      ministryCode: school.ministryCode,
+      students: studentCount,
+      index,
+      status: schoolStatusFromIndex(index),
+      supportLevel: schoolSupportLevel(index),
+      scores: {
+        cases: casesScore,
+        absence: absenceScore,
+        medication: medicationScore,
+        incidents: incidentsScore,
+        seasonal: seasonalScore
+      },
+      metrics: {
+        totalCases: allCases.length,
+        openCases,
+        criticalCases,
+        absenceRate: Math.round(absenceRate * 10) / 10,
+        medicationAdherence: medicationScore,
+        incidents: incidentCount,
+        seasonalCases: seasonalCount
+      },
+      recommendations
+    };
+  }).sort((a, b) => a.index - b.index);
+
+  const averageIndex = schoolsResult.length
+    ? Math.round(schoolsResult.reduce((sum, item) => sum + item.index, 0) / schoolsResult.length)
+    : 0;
+  schoolsResult.forEach((school, idx) => {
+    school.rank = idx + 1;
+    school.deltaFromAverage = school.index - averageIndex;
+  });
+
+  const supportNeeded = schoolsResult.filter((item) => item.index < 70).length;
+  const criticalSupport = schoolsResult.filter((item) => item.index < 55).length;
+  const totalStudents = schoolsResult.reduce((sum, item) => sum + Number(item.students || 0), 0);
+
+  return {
+    generatedAt: nowIso(),
+    windowDays,
+    summary: {
+      schools: schoolsResult.length,
+      students: totalStudents,
+      averageIndex,
+      supportNeeded,
+      criticalSupport
+    },
+    schools: schoolsResult
   };
 }
 
@@ -1373,6 +1623,10 @@ function slaMonitor(data) {
 
 function ensureAdvancedStores(data) {
   const stores = [
+    'schools',
+    'attendanceRecords',
+    'incidentReports',
+    'seasonalDiseaseReports',
     'consents',
     'emergencyCards',
     'homeCarePlans',
@@ -3370,6 +3624,13 @@ const server = http.createServer(async (req, res) => {
       if (pathname === '/api/analytics/overview' && req.method === 'GET') {
         if (!requireRole(res, auth, ['doctor', 'admin'])) return;
         json(res, 200, analyticsOverview(data));
+        return;
+      }
+
+      if (pathname === '/api/school-health-index' && req.method === 'GET') {
+        if (!requireRole(res, auth, ['doctor', 'admin'])) return;
+        const windowDays = Number(urlObj.searchParams.get('windowDays') || 30);
+        json(res, 200, schoolHealthIndexOverview(data, { windowDays }));
         return;
       }
 

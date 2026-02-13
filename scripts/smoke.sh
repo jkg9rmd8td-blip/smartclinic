@@ -111,6 +111,7 @@ auth_endpoints=(
   /api/settings
   /api/alerts
   /api/analytics/overview
+  /api/school-health-index
   /api/operations/overview
   /api/users
   /api/audit-logs

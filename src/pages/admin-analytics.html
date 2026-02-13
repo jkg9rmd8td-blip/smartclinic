@@ -16,6 +16,10 @@
 .analytics-panel .sc-table-wrap + .sc-panel-title {
   margin-top: 18px;
 }
+
+.school-health-overview .sc-kpi-value {
+  font-size: 30px;
+}
 </style>
 </head>
 <body class="sc-page">
@@ -41,6 +45,31 @@
   </section>
 
   <section id="snapshot" class="sc-grid-3 sc-kpi-grid sc-mb-24"></section>
+
+  <section class="sc-panel sc-mb-24">
+    <h2 class="sc-panel-title">مؤشر صحة المدرسة (School Health Index)</h2>
+    <p class="sc-panel-subtitle">مؤشر موحّد لكل مدرسة يشمل: الحالات، الغياب، الالتزام الدوائي، الحوادث، والأمراض الموسمية.</p>
+    <section id="schoolHealthSummary" class="sc-grid-3 sc-kpi-grid school-health-overview sc-mb-24"></section>
+    <div class="sc-table-wrap">
+      <table class="sc-table">
+        <thead>
+          <tr>
+            <th>الترتيب</th>
+            <th>المدرسة</th>
+            <th>المؤشر</th>
+            <th>الحالة</th>
+            <th>الحالات</th>
+            <th>الغياب</th>
+            <th>الالتزام الدوائي</th>
+            <th>الحوادث</th>
+            <th>الموسمية</th>
+            <th>توصية أولية</th>
+          </tr>
+        </thead>
+        <tbody id="schoolHealthRows"></tbody>
+      </table>
+    </div>
+  </section>
 
   <section class="sc-grid-3">
     <section class="sc-panel analytics-panel">
@@ -123,6 +152,14 @@
 <script src="../../assets/js/security.js"></script>
 <script>
 function safeNum(v) { return typeof v === 'number' ? v : 0; }
+function escapeHtml(v) {
+  return String(v || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
 function severityBadgeClass(key) {
   var normalized = String(key || '').toLowerCase();
@@ -136,6 +173,13 @@ function valueBadgeClass(value) {
   if (value >= 3) return 'b-danger';
   if (value >= 1) return 'b-warn';
   return 'b-ok';
+}
+
+function schoolIndexClass(score) {
+  var n = Number(score || 0);
+  if (n < 55) return 'sc-severity-critical';
+  if (n < 70) return 'sc-severity-medium';
+  return 'sc-severity-low';
 }
 
 function renderSnapshot(s) {
@@ -183,8 +227,60 @@ function renderRecent(logs) {
   }).join('');
 }
 
+function renderSchoolHealth(payload) {
+  var summaryWrap = document.getElementById('schoolHealthSummary');
+  var rowsWrap = document.getElementById('schoolHealthRows');
+  if (!payload || !payload.summary) {
+    summaryWrap.innerHTML = '<article class="sc-kpi-card"><div class="sc-kpi-label">المؤشر</div><div class="sc-kpi-value">غير متاح</div></article>';
+    rowsWrap.innerHTML = '<tr><td colspan="10" class="sc-table-empty">لا توجد بيانات مؤشر المدارس.</td></tr>';
+    return;
+  }
+
+  var summary = payload.summary || {};
+  var cards = [
+    ['متوسط المؤشر العام', safeNum(summary.averageIndex)],
+    ['إجمالي المدارس', safeNum(summary.schools)],
+    ['مدارس تحتاج دعم', safeNum(summary.supportNeeded)],
+    ['مدارس دعم عاجل', safeNum(summary.criticalSupport)],
+    ['إجمالي الطلاب', safeNum(summary.students)],
+    ['نافذة القياس (يوم)', safeNum(payload.windowDays)]
+  ];
+  summaryWrap.innerHTML = cards.map(function (item) {
+    return '<article class="sc-kpi-card"><div class="sc-kpi-label">' + item[0] + '</div><div class="sc-kpi-value">' + item[1] + '</div></article>';
+  }).join('');
+
+  var schools = Array.isArray(payload.schools) ? payload.schools : [];
+  if (!schools.length) {
+    rowsWrap.innerHTML = '<tr><td colspan="10" class="sc-table-empty">لا توجد مدارس مسجلة.</td></tr>';
+    return;
+  }
+
+  rowsWrap.innerHTML = schools.map(function (school) {
+    var metrics = school.metrics || {};
+    var rec = Array.isArray(school.recommendations) && school.recommendations.length ? school.recommendations[0] : '-';
+    return '<tr>' +
+      '<td>' + safeNum(school.rank) + '</td>' +
+      '<td><strong>' + escapeHtml(school.name || school.id || '-') + '</strong></td>' +
+      '<td><span class="sc-badge ' + schoolIndexClass(school.index) + '">' + safeNum(school.index) + '</span></td>' +
+      '<td>' + escapeHtml(school.status || '-') + '</td>' +
+      '<td>' + safeNum(metrics.openCases) + ' / ' + safeNum(metrics.criticalCases) + '</td>' +
+      '<td>' + safeNum(metrics.absenceRate) + '%</td>' +
+      '<td>' + safeNum(metrics.medicationAdherence) + '%</td>' +
+      '<td>' + safeNum(metrics.incidents) + '</td>' +
+      '<td>' + safeNum(metrics.seasonalCases) + '</td>' +
+      '<td>' + escapeHtml(rec) + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
 async function loadAnalytics() {
-  var result = await SmartClinicSecurity.apiJson('/analytics/overview');
+  var responses = await Promise.all([
+    SmartClinicSecurity.apiJson('/analytics/overview'),
+    SmartClinicSecurity.apiJson('/school-health-index')
+  ]);
+  var result = responses[0];
+  var schoolResult = responses[1];
+
   if (!result.ok || !result.data) {
     document.getElementById('snapshot').innerHTML = '<article class="sc-kpi-card"><div class="sc-kpi-label">خطأ</div><div class="sc-kpi-value">الخادم غير متاح</div></article>';
     renderDist('statusDist', {});
@@ -192,6 +288,7 @@ async function loadAnalytics() {
     renderDist('rolesDist', {});
     renderDist('todayDist', {});
     renderRecent([]);
+    renderSchoolHealth(null);
     return;
   }
   var payload = result.data;
@@ -201,6 +298,7 @@ async function loadAnalytics() {
   renderDist('rolesDist', payload.distributions && payload.distributions.roleCounts);
   renderDist('todayDist', payload.today || {});
   renderRecent(payload.recentLogs || []);
+  renderSchoolHealth(schoolResult && schoolResult.ok ? schoolResult.data : null);
 }
 
 window.addEventListener('DOMContentLoaded', function () {
