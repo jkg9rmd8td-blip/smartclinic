@@ -56,14 +56,16 @@ body.sc-page {
 
 .sc-page-title {
   margin: 0 0 var(--sc-space-1);
-  font-size: 34px;
-  line-height: 1.2;
+  font-size: var(--sc-h1-size);
+  line-height: var(--sc-title-line-height);
+  font-weight: var(--sc-h1-weight);
 }
 
 .sc-page-subtitle {
   margin: 0;
   color: var(--sc-text-soft);
   font-size: 14px;
+  line-height: 1.5;
 }
 
 .sc-header-actions {
@@ -104,6 +106,13 @@ body.sc-page {
   display: flex;
   gap: var(--sc-space-1);
   flex-wrap: wrap;
+}
+
+.sc-section-title {
+  margin: 0 0 var(--sc-title-mb);
+  font-size: var(--sc-h2-size);
+  line-height: var(--sc-title-line-height);
+  font-weight: var(--sc-h2-weight);
 }
 
 .sc-grid-3 {

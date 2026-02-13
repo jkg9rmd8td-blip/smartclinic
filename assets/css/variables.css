@@ -23,6 +23,11 @@
   --sc-title-mb: 14px;
   --sc-card-padding: 20px;
   --sc-control-height: 40px;
+  --sc-h1-size: 34px;
+  --sc-h2-size: 22px;
+  --sc-title-line-height: 1.25;
+  --sc-h1-weight: 800;
+  --sc-h2-weight: 700;
   --sc-critical: #FF4D4F;
   --sc-medium: #FA8C16;
   --sc-low: #52C41A;

@@ -68,6 +68,49 @@
   font-size: 12px;
 }
 
+.vitals-trend-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.spark-card {
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px;
+}
+
+.spark-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.spark-title {
+  font-size: 12px;
+  color: var(--sc-text-soft);
+}
+
+.spark-value {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.spark-svg {
+  width: 100%;
+  height: 78px;
+  display: block;
+}
+
+.spark-meta {
+  margin-top: 6px;
+  color: var(--sc-text-soft);
+  font-size: 11px;
+}
+
 #med-adherence-stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -96,6 +139,7 @@
 @media (max-width: 780px) {
   .profile-overview-grid,
   .vitals-grid,
+  .vitals-trend-grid,
   #med-adherence-stats {
     grid-template-columns: 1fr;
   }
@@ -187,6 +231,9 @@
 
       <h3 class="sc-panel-title">الحساسات المرتبطة</h3>
       <div id="sensors-list" class="list sc-mb-16"></div>
+
+      <h3 class="sc-panel-title">المقارنة الزمنية للعلامات الحيوية</h3>
+      <div id="vitals-trend-grid" class="vitals-trend-grid sc-mb-16"></div>
 
       <h3 class="sc-panel-title">آخر القراءات</h3>
       <div id="vitals-history-list" class="list"></div>
@@ -407,6 +454,81 @@ function scrollProfileSection(id) {
   }
 }
 
+function asPoints(history, key) {
+  if (!Array.isArray(history)) return [];
+  return history.map(function (item) {
+    return {
+      at: item && item.measuredAt ? String(item.measuredAt) : '',
+      value: Number(item && item[key])
+    };
+  }).filter(function (item) {
+    return Number.isFinite(item.value);
+  }).sort(function (a, b) {
+    return new Date(a.at).getTime() - new Date(b.at).getTime();
+  });
+}
+
+function trendCardHtml(label, color, points, suffix, decimals) {
+  if (!points.length) {
+    return '<div class="spark-card"><div class="spark-head"><div class="spark-title">' + label + '</div><div class="spark-value">-</div></div><div class="spark-meta">لا توجد بيانات كافية للرسم.</div></div>';
+  }
+
+  var recent = points.slice(-12);
+  var values = recent.map(function (p) { return p.value; });
+  var minVal = Math.min.apply(Math, values);
+  var maxVal = Math.max.apply(Math, values);
+  var range = (maxVal - minVal) || 1;
+  var width = 280;
+  var height = 78;
+  var padX = 8;
+  var padY = 8;
+  var xSpan = width - (padX * 2);
+  var ySpan = height - (padY * 2);
+
+  var polyline = recent.map(function (point, index) {
+    var x = recent.length === 1 ? (width / 2) : (padX + ((index / (recent.length - 1)) * xSpan));
+    var y = padY + (1 - ((point.value - minVal) / range)) * ySpan;
+    return x.toFixed(2) + ',' + y.toFixed(2);
+  }).join(' ');
+
+  var latestPoint = recent[recent.length - 1];
+  var latestValue = typeof decimals === 'number' ? latestPoint.value.toFixed(decimals) : String(Math.round(latestPoint.value));
+  var from = fmtDate(recent[0].at);
+  var to = fmtDate(latestPoint.at);
+  var viewBox = '0 0 ' + width + ' ' + height;
+
+  return '<div class="spark-card">' +
+    '<div class="spark-head"><div class="spark-title">' + label + '</div><div class="spark-value">' + latestValue + suffix + '</div></div>' +
+    '<svg class="spark-svg" viewBox="' + viewBox + '" preserveAspectRatio="none">' +
+      '<polyline points="' + polyline + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></polyline>' +
+    '</svg>' +
+    '<div class="spark-meta">من ' + from + ' إلى ' + to + '</div>' +
+  '</div>';
+}
+
+function renderVitalsTrend(history, latest) {
+  var wrap = document.getElementById('vitals-trend-grid');
+  var source = Array.isArray(history) ? history.slice() : [];
+  if (latest && latest.measuredAt) {
+    source.push({
+      measuredAt: latest.measuredAt,
+      temp: latest.temp,
+      spo2: latest.spo2,
+      hr: latest.hr
+    });
+  }
+
+  var tempPoints = asPoints(source, 'temp');
+  var spo2Points = asPoints(source, 'spo2');
+  var hrPoints = asPoints(source, 'hr');
+
+  wrap.innerHTML = [
+    trendCardHtml('درجة الحرارة', '#ff7875', tempPoints, '°C', 1),
+    trendCardHtml('الأكسجين SpO2', '#69c0ff', spo2Points, '%', 0),
+    trendCardHtml('نبض القلب', '#95de64', hrPoints, ' bpm', 0)
+  ].join('');
+}
+
 function renderVitals(data) {
   var latest = data && data.latestVitals ? data.latestVitals : null;
   var risk = latest ? (latest.risk || 'unknown') : 'unknown';
@@ -428,6 +550,8 @@ function renderVitals(data) {
     var line = fmtNum(v.temp, 1, '°C') + ' • ' + fmtNum(v.spo2, 0, '%') + ' • ' + fmtNum(v.hr, 0, ' bpm') + ' • ' + fmtNum(v.bpSys, 0) + '/' + fmtNum(v.bpDia, 0);
     return '<div class="item"><div class="item-title">' + line + '</div><div class="item-meta">' + fmtDate(v.measuredAt) + ' • المصدر: ' + (v.source || 'manual') + ' • الحالة: ' + riskLabel(v.risk || 'unknown') + '</div></div>';
   });
+
+  renderVitalsTrend((data && data.vitalsHistory) || [], latest);
 }
 
 function renderProfile(data) {

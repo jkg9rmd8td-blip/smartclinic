@@ -4,237 +4,175 @@
 <meta charset="UTF-8">
 <title>لوحة الطبيب – Smart Clinic</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/css/variables.css">
+<link rel="stylesheet" href="../../assets/css/layout.css">
+<link rel="stylesheet" href="../../assets/css/cards.css">
+<link rel="stylesheet" href="../../assets/css/tables.css">
 <style>
-:root {
-  --bg-1: #061122;
-  --bg-2: #0d2338;
-  --card: rgba(8, 24, 41, 0.78);
-  --line: rgba(170, 220, 255, 0.25);
-  --text-main: #eef8ff;
-  --text-soft: #abc4d7;
-  --danger: #ef4444;
-  --primary: #0ea5e9;
-  --success: #22c55e;
-  --warning: #f59e0b;
-}
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  font-family: "Tajawal", sans-serif;
-  color: var(--text-main);
-  background:
-    radial-gradient(850px 460px at 18% 0%, rgba(56, 189, 248, 0.22), transparent 60%),
-    radial-gradient(800px 500px at 90% 95%, rgba(34, 197, 94, 0.18), transparent 65%),
-    linear-gradient(130deg, var(--bg-1), var(--bg-2));
-  min-height: 100vh;
-  padding: 20px 14px 24px;
-}
-.shell { width: min(1240px, 100%); margin: 0 auto; }
-.topbar {
+.doctor-meta {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
+  gap: var(--sc-space-2);
   flex-wrap: wrap;
+  margin-bottom: var(--sc-space-3);
 }
-.chip {
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 8px 14px;
-  font-size: 13px;
-  color: var(--text-soft);
-  background: rgba(255, 255, 255, 0.04);
-}
-.topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.ghost-btn {
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: transparent;
-  color: var(--text-main);
-  font: inherit;
-  padding: 8px 12px;
-  cursor: pointer;
-}
-.header {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  padding: 20px;
-  margin-bottom: 14px;
-}
-.header h1 { margin: 0; font-size: clamp(28px, 4vw, 42px); font-weight: 800; }
-.header p { margin: 6px 0 0; color: var(--text-soft); font-size: 16px; }
-.stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
-  margin: 14px 0;
-}
-.stat {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 14px;
-}
-.stat-label { color: var(--text-soft); font-size: 13px; }
-.stat-value { margin-top: 4px; font-size: 30px; font-weight: 800; }
+
 .critical-zone {
-  background: linear-gradient(125deg, rgba(239, 68, 68, 0.22), rgba(0, 0, 0, 0.22));
-  border: 1px solid rgba(248, 113, 113, 0.55);
-  border-radius: 18px;
-  padding: 16px;
-  margin-bottom: 14px;
+  border: 1px solid rgba(255, 77, 79, 0.55);
+  background: linear-gradient(125deg, rgba(255, 77, 79, 0.18), rgba(5, 20, 34, 0.75));
+}
+
+.critical-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  gap: var(--sc-space-3);
   flex-wrap: wrap;
 }
-.section-nav {
-  margin: 0 0 12px;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+
+.critical-title {
+  margin: 0 0 6px;
+  font-size: var(--sc-h2-size);
+  line-height: var(--sc-title-line-height);
+  font-weight: var(--sc-h2-weight);
 }
-.section-btn {
-  border: 1px solid var(--line);
-  background: rgba(255,255,255,0.03);
-  color: var(--text-main);
-  border-radius: 999px;
-  padding: 6px 10px;
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
+
+.critical-sub {
+  margin: 0;
+  color: #fecaca;
+  font-size: 14px;
 }
-.critical-title { margin: 0; font-size: 18px; font-weight: 700; }
-.critical-sub { margin: 2px 0 0; color: #fecaca; font-size: 14px; }
-.btn-danger,
-.btn-primary,
-.btn-success,
-.btn-warning {
-  border: none;
-  border-radius: 12px;
-  padding: 10px 14px;
-  font: inherit;
-  font-weight: 700;
-  color: #fff;
-  cursor: pointer;
-}
-.btn-danger { background: var(--danger); }
-.btn-primary { background: var(--primary); }
-.btn-success { background: var(--success); }
-.btn-warning { background: var(--warning); color: #111827; }
-.services-title, .queue-title, .cases-title { margin: 0 0 10px; font-size: 22px; font-weight: 700; }
-.services-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 10px;
-  margin-bottom: 16px;
-}
-.service-card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.service-card h3 { margin: 0; font-size: 17px; }
-.service-card p { margin: 0; color: var(--text-soft); font-size: 14px; line-height: 1.5; }
-.layout { display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; }
-.panel {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 14px;
-}
-.queue-list, .cases-grid, .mini-log { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-.queue-item, .case-card, .mini-log-item {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 14px;
-  padding: 10px;
-}
-.active-case-panel { margin-bottom: 14px; }
+
 .active-case-grid {
-  margin-top: 8px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
 }
+
 .meta-tile {
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(255,255,255,0.03);
-  border-radius: 10px;
-  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--sc-radius-md);
+  padding: 10px 12px;
 }
-.meta-tile-label { color: var(--text-soft); font-size: 12px; }
-.meta-tile-value { margin-top: 3px; font-size: 14px; font-weight: 700; }
+
+.meta-tile-label {
+  color: var(--sc-text-soft);
+  font-size: 12px;
+}
+
+.meta-tile-value {
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.action-cluster {
+  display: flex;
+  gap: var(--sc-space-2);
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
 .service-feedback {
   margin-top: 10px;
-  border: 1px solid rgba(255,255,255,0.16);
-  background: rgba(255,255,255,0.04);
-  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--sc-radius-md);
   padding: 8px 10px;
-  color: var(--text-soft);
+  color: var(--sc-text-soft);
   font-size: 13px;
 }
-.service-feedback.ok { border-color: rgba(34,197,94,.48); color: #86efac; }
-.service-feedback.warn { border-color: rgba(245,158,11,.48); color: #fde68a; }
-.service-feedback.danger { border-color: rgba(239,68,68,.58); color: #fca5a5; }
+
+.service-feedback.ok {
+  border-color: rgba(82, 196, 26, 0.52);
+  color: #bef2a1;
+}
+
+.service-feedback.warn {
+  border-color: rgba(250, 140, 22, 0.5);
+  color: #ffd8aa;
+}
+
+.service-feedback.danger {
+  border-color: rgba(255, 77, 79, 0.58);
+  color: #ffb3b3;
+}
+
+.services-grid .sc-panel {
+  min-height: 190px;
+}
+
 .case-toolbar {
-  margin-top: 8px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.cases-inline-actions {
+  display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
-.input {
-  width: 100%;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: rgba(255,255,255,0.03);
-  color: var(--text-main);
+
+.ghost-btn {
+  border: 1px solid var(--sc-border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--sc-text);
+  border-radius: 999px;
+  padding: 8px 14px;
   font: inherit;
-  padding: 8px;
+  font-size: 13px;
+  cursor: pointer;
 }
-.ai-panel {
-  margin-top: 12px;
+
+.ghost-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
+
+.sc-table tbody tr.is-active-row {
+  background: rgba(56, 189, 248, 0.14);
+}
+
+.ai-panel textarea {
+  margin-top: 10px;
+}
+
 .ai-result {
   margin-top: 10px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
+  border-radius: var(--sc-radius-md);
   padding: 10px;
   font-size: 14px;
 }
+
 .ai-actions {
   margin-top: 10px;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
+
 .ai-action-item {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px;
-  border-radius: 10px;
+  border-radius: var(--sc-radius-sm);
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
 .triage-summary {
   margin-top: 10px;
   border: 1px solid rgba(255,255,255,0.14);
-  border-radius: 12px;
+  border-radius: var(--sc-radius-md);
   padding: 10px;
   background: rgba(255,255,255,0.02);
 }
+
 .triage-chip {
   display: inline-flex;
   align-items: center;
@@ -244,97 +182,105 @@ body {
   font-size: 12px;
   border: 1px solid rgba(255,255,255,0.2);
 }
+
 .triage-chip.immediate {
   border-color: rgba(255,77,79,0.7);
   color: #ff9ea0;
   background: rgba(255,77,79,0.16);
 }
+
 .triage-chip.follow_up {
   border-color: rgba(250,140,22,0.7);
   color: #fdc47e;
   background: rgba(250,140,22,0.16);
 }
+
 .triage-chip.simple {
   border-color: rgba(82,196,26,0.7);
   color: #b4ef91;
   background: rgba(82,196,26,0.16);
 }
-.queue-item { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.queue-name, .case-name { font-weight: 700; }
-.queue-type, .case-type, .mini-log-item { color: var(--text-soft); font-size: 13px; }
-.case-type { margin: 4px 0 8px; }
-.case-card.active {
-  border-color: rgba(56, 189, 248, 0.72);
-  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.18);
-}
-.pill {
-  display: inline-block;
-  margin-top: 4px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 12px;
-}
-.pill-critical { background: rgba(239,68,68,.2); color: #fca5a5; }
-.pill-high { background: rgba(251,146,60,.2); color: #fdba74; }
-.pill-medium { background: rgba(245,158,11,.2); color: #fde68a; }
-.pill-low { background: rgba(34,197,94,.2); color: #86efac; }
+
 .toast {
   position: fixed;
   left: 16px;
   bottom: 16px;
-  background: rgba(6, 18, 35, 0.94);
-  color: var(--text-main);
-  border: 1px solid var(--line);
-  border-radius: 10px;
+  background: var(--sc-surface-strong);
+  color: var(--sc-text);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-md);
   padding: 10px 12px;
   display: none;
-  z-index: 30;
+  z-index: 40;
 }
+
 @media (max-width: 980px) {
-  .layout { grid-template-columns: 1fr; }
+  .active-case-grid,
+  .case-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 780px) {
+  .active-case-grid,
+  .case-toolbar {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
 </head>
-<body>
-<div class="shell">
-  <div class="topbar">
-    <div class="chip">الدور الحالي: <strong data-session-role>الطبيب</strong></div>
-    <div class="topbar-actions">
-      <button class="ghost-btn" data-action="logout">تسجيل الخروج</button>
+<body class="sc-page">
+<div class="sc-shell">
+  <header class="sc-page-header">
+    <div class="sc-page-header-main">
+      <div class="sc-page-icon">🩺</div>
+      <div>
+        <h1 class="sc-page-title">لوحة الطبيب المتقدمة</h1>
+        <p class="sc-page-subtitle">إدارة الحالات، الفرز الطبي الذكي، والقرارات السريرية من واجهة طبية موحّدة.</p>
+      </div>
     </div>
-  </div>
-
-  <div class="header">
-    <h1>لوحة الطبيب المتقدمة</h1>
-    <p>إدارة الحالات، القرارات الطبية، والطوارئ بشكل حي من API.</p>
-  </div>
-
-  <div class="stats">
-    <div class="stat"><div class="stat-label">حالات حرجة</div><div class="stat-value" id="stat-critical">0</div></div>
-    <div class="stat"><div class="stat-label">حالات قيد المعالجة</div><div class="stat-value" id="stat-progress">0</div></div>
-    <div class="stat"><div class="stat-label">طلبات زيارة معلقة</div><div class="stat-value" id="stat-pending">0</div></div>
-    <div class="stat"><div class="stat-label">نشاط اليوم</div><div class="stat-value" id="stat-actions">0</div></div>
-  </div>
-
-  <div class="section-nav">
-    <button class="section-btn" onclick="scrollDoctorSection('doctor-emergency')">تنبيه الطوارئ</button>
-    <button class="section-btn" onclick="scrollDoctorSection('doctor-active')">الحالة النشطة</button>
-    <button class="section-btn" onclick="scrollDoctorSection('doctor-services')">الخدمات الطبية</button>
-    <button class="section-btn" onclick="scrollDoctorSection('doctor-queue')">قائمة الانتظار</button>
-    <button class="section-btn" onclick="scrollDoctorSection('doctor-ai')">مساعد AI</button>
-  </div>
-
-  <section id="doctor-emergency" class="critical-zone">
-    <div>
-      <p class="critical-title">تنبيه طبي عالي الخطورة</p>
-      <p class="critical-sub" id="critical-sub">جاري تحليل الحالات الحرجة...</p>
+    <div class="sc-header-actions">
+      <span class="sc-role-chip">الدور الحالي: <strong data-session-role>الطبيب</strong></span>
+      <button class="sc-action-btn" data-action="logout">تسجيل الخروج</button>
     </div>
-    <button class="btn-danger" id="critical-open" onclick="openCriticalCase()">فتح مسار الطوارئ</button>
+  </header>
+
+  <section class="sc-panel sc-mb-24">
+    <h2 class="sc-panel-title">ملخص التشغيل الطبي</h2>
+    <div class="doctor-meta">
+      <div class="meta-item">الوضع: <strong>Live/API</strong></div>
+      <div class="meta-item">آخر تحديث: <strong id="doctor-last-sync">-</strong></div>
+      <div class="meta-item">الحالة النشطة: <strong id="doctor-active-id">-</strong></div>
+    </div>
+    <div class="sc-section-nav">
+      <button class="sc-action-btn" onclick="scrollDoctorSection('doctor-emergency')">تنبيه الطوارئ</button>
+      <button class="sc-action-btn" onclick="scrollDoctorSection('doctor-active')">الحالة النشطة</button>
+      <button class="sc-action-btn" onclick="scrollDoctorSection('doctor-services')">الخدمات الطبية</button>
+      <button class="sc-action-btn" onclick="scrollDoctorSection('doctor-queue')">قائمة الانتظار</button>
+      <button class="sc-action-btn" onclick="scrollDoctorSection('doctor-ai')">مساعد AI</button>
+    </div>
   </section>
 
-  <section id="doctor-active" class="panel active-case-panel">
-    <h2 class="queue-title" style="margin-bottom:0;">الحالة النشطة</h2>
-    <p style="margin:6px 0 0;color:var(--text-soft);">الإجراءات السريعة سيتم تطبيقها على الحالة المختارة أدناه.</p>
+  <section class="sc-grid-3 sc-kpi-grid sc-mb-24">
+    <article class="sc-kpi-card"><div class="sc-kpi-label">حالات حرجة</div><div class="sc-kpi-value" id="stat-critical">0</div></article>
+    <article class="sc-kpi-card"><div class="sc-kpi-label">حالات قيد المعالجة</div><div class="sc-kpi-value" id="stat-progress">0</div></article>
+    <article class="sc-kpi-card"><div class="sc-kpi-label">طلبات زيارة معلقة</div><div class="sc-kpi-value" id="stat-pending">0</div></article>
+    <article class="sc-kpi-card"><div class="sc-kpi-label">نشاط اليوم</div><div class="sc-kpi-value" id="stat-actions">0</div></article>
+  </section>
+
+  <section id="doctor-emergency" class="sc-panel critical-zone sc-mb-24">
+    <div class="critical-row">
+      <div>
+        <p class="critical-title">تنبيه طبي عالي الخطورة</p>
+        <p class="critical-sub" id="critical-sub">جاري تحليل الحالات الحرجة...</p>
+      </div>
+      <button class="btn-danger" id="critical-open" onclick="openCriticalCase()">فتح مسار الطوارئ</button>
+    </div>
+  </section>
+
+  <section id="doctor-active" class="sc-panel sc-mb-24">
+    <h2 class="sc-panel-title">الحالة النشطة</h2>
+    <p class="sc-panel-subtitle">الإجراءات السريعة سيتم تطبيقها على الحالة المختارة.</p>
     <div class="active-case-grid">
       <div class="meta-tile"><div class="meta-tile-label">الطالب</div><div class="meta-tile-value" id="active-student">-</div></div>
       <div class="meta-tile"><div class="meta-tile-label">معرف الطالب</div><div class="meta-tile-value" id="active-student-id">-</div></div>
@@ -343,7 +289,7 @@ body {
       <div class="meta-tile"><div class="meta-tile-label">الخطورة</div><div class="meta-tile-value" id="active-severity">-</div></div>
       <div class="meta-tile"><div class="meta-tile-label">آخر تحديث</div><div class="meta-tile-value" id="active-updated">-</div></div>
     </div>
-    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+    <div class="action-cluster">
       <button class="btn-primary" onclick="openCase(activeCaseId)">فتح تفاصيل الحالة</button>
       <button class="btn-danger" onclick="openCriticalCase()">فتح الطوارئ</button>
       <button class="btn-warning" data-permission="update.vitals" onclick="generateActiveCaseVitals()">توليد قراءة حيوية</button>
@@ -352,54 +298,53 @@ body {
     <div id="service-feedback" class="service-feedback">آخر إجراء: اختر حالة ثم نفّذ خدمة طبية.</div>
   </section>
 
-  <h2 id="doctor-services" class="services-title">الخدمات والميزات الطبية</h2>
-  <section class="services-grid">
-    <article class="service-card" data-permission="view.student">
-      <h3>ملف الطالب الموحد</h3>
-      <p>الوصول إلى التاريخ المرضي والحساسية والزيارات السابقة بشكل فوري.</p>
+  <h2 id="doctor-services" class="sc-section-title">الخدمات والميزات الطبية</h2>
+  <section class="sc-grid-3 services-grid sc-mb-24">
+    <article class="sc-panel" data-permission="view.student">
+      <h3 class="sc-panel-title">ملف الطالب الموحد</h3>
+      <p class="sc-panel-subtitle">الوصول إلى التاريخ المرضي والحساسية والزيارات السابقة بشكل فوري.</p>
       <button class="btn-primary" onclick="openActiveStudentProfile()">فتح الملف</button>
     </article>
-    <article class="service-card" data-permission="prescribe.medication">
-      <h3>الوصفة الدوائية</h3>
-      <p>إصدار وصفة مع تسجيل الحدث مباشرة في سجل الحالة.</p>
+    <article class="sc-panel" data-permission="prescribe.medication">
+      <h3 class="sc-panel-title">الوصفة الدوائية</h3>
+      <p class="sc-panel-subtitle">إصدار وصفة مع تسجيل الحدث مباشرة في سجل الحالة.</p>
       <button class="btn-success" onclick="issuePrescription()">إصدار وصفة</button>
     </article>
-    <article class="service-card" data-permission="order.labs">
-      <h3>طلبات المختبر</h3>
-      <p>طلب فحوصات مخبرية عاجلة أو دورية مع توثيق القرار.</p>
+    <article class="sc-panel" data-permission="order.labs">
+      <h3 class="sc-panel-title">طلبات المختبر</h3>
+      <p class="sc-panel-subtitle">طلب فحوصات مخبرية عاجلة أو دورية مع توثيق القرار.</p>
       <button class="btn-primary" onclick="createLabOrderTicket()">طلب فحص</button>
     </article>
-    <article class="service-card" data-permission="approve.referral">
-      <h3>التحويل للمستشفى</h3>
-      <p>اعتماد تحويل رسمي للحالات التي تتطلب رعاية أعلى.</p>
+    <article class="sc-panel" data-permission="approve.referral">
+      <h3 class="sc-panel-title">التحويل للمستشفى</h3>
+      <p class="sc-panel-subtitle">اعتماد تحويل رسمي للحالات التي تتطلب رعاية أعلى.</p>
       <button class="btn-warning" onclick="issueReferralWorkflow()">اعتماد التحويل</button>
     </article>
-    <article class="service-card" data-permission="start.telemed">
-      <h3>استشارة طبية عن بعد</h3>
-      <p>تفعيل جلسة استشارية وربطها مباشرة بالحالة الحالية.</p>
+    <article class="sc-panel" data-permission="start.telemed">
+      <h3 class="sc-panel-title">استشارة طبية عن بعد</h3>
+      <p class="sc-panel-subtitle">تفعيل جلسة استشارية وربطها مباشرة بالحالة الحالية.</p>
       <button class="btn-primary" onclick="startTelemedSession()">بدء جلسة</button>
     </article>
-    <article class="service-card" data-permission="view.doctor">
-      <h3>مركز التنسيق العلاجي</h3>
-      <p>موافقات ولي الأمر، المواعيد، التذاكر، الإحالات، والالتزام الدوائي من لوحة موحدة.</p>
+    <article class="sc-panel" data-permission="view.doctor">
+      <h3 class="sc-panel-title">مركز التنسيق العلاجي</h3>
+      <p class="sc-panel-subtitle">موافقات ولي الأمر، المواعيد، التذاكر، الإحالات، والالتزام الدوائي.</p>
       <button class="btn-primary" onclick="go('care-center.html')">فتح المركز</button>
     </article>
-    <article class="service-card" data-permission="view.analytics">
-      <h3>تحليلات سريرية</h3>
-      <p>عرض مؤشرات حية للأداء الطبي والتشغيلي.</p>
+    <article class="sc-panel" data-permission="view.analytics">
+      <h3 class="sc-panel-title">تحليلات سريرية</h3>
+      <p class="sc-panel-subtitle">عرض مؤشرات حية للأداء الطبي والتشغيلي.</p>
       <button class="btn-primary" onclick="go('admin-analytics.html')">عرض التحليلات</button>
     </article>
-
-    <article class="service-card" data-permission="view.notifications">
-      <h3>مركز الإشعارات</h3>
-      <p>إشعارات موحدة للفريق الطبي مع فلترة سريعة حسب النوع.</p>
+    <article class="sc-panel" data-permission="view.notifications">
+      <h3 class="sc-panel-title">مركز الإشعارات</h3>
+      <p class="sc-panel-subtitle">إشعارات موحدة للفريق الطبي مع فلترة سريعة حسب النوع.</p>
       <button class="btn-primary" onclick="go('notifications-center.html')">فتح المركز</button>
     </article>
   </section>
 
-  <section id="doctor-queue" class="layout">
-    <div class="panel">
-      <h2 class="queue-title">قائمة الانتظار</h2>
+  <section id="doctor-queue" class="sc-grid-3 sc-mb-24">
+    <article class="sc-panel sc-col-span-2">
+      <h2 class="sc-panel-title">قائمة الانتظار</h2>
       <div class="case-toolbar">
         <input id="case-search" class="input" type="search" placeholder="بحث باسم الطالب أو عنوان الحالة..." oninput="applyCaseFilters()">
         <select id="case-severity-filter" class="input" onchange="applyCaseFilters()">
@@ -415,32 +360,74 @@ body {
           <option value="open">مفتوحة</option>
         </select>
       </div>
-      <div style="margin-top:8px;color:var(--text-soft);font-size:13px;">عدد الحالات المعروضة: <strong id="cases-count">0</strong></div>
-      <div class="queue-list" id="queue-list"></div>
-    </div>
+      <div class="sc-muted sc-mb-16">عدد الحالات المعروضة: <strong id="cases-count">0</strong></div>
+      <div class="sc-table-wrap">
+        <table class="sc-table">
+          <thead>
+            <tr>
+              <th>الطالب</th>
+              <th>الحالة</th>
+              <th>الخطورة</th>
+              <th>الوقت</th>
+              <th>إجراء</th>
+            </tr>
+          </thead>
+          <tbody id="queue-list">
+            <tr><td colspan="5" class="sc-table-empty">لا توجد حالات في الانتظار</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
 
-    <div class="panel">
-      <h2 class="cases-title">الحالات المفتوحة</h2>
-      <div class="cases-grid" id="cases-grid"></div>
-      <div class="mini-log" id="mini-log"></div>
-    </div>
+    <article class="sc-panel">
+      <h2 class="sc-panel-title">الحالات المفتوحة</h2>
+      <div class="sc-table-wrap sc-mb-16">
+        <table class="sc-table">
+          <thead>
+            <tr>
+              <th>الطالب</th>
+              <th>عنوان الحالة</th>
+              <th>الخطورة</th>
+              <th>إجراء</th>
+            </tr>
+          </thead>
+          <tbody id="cases-grid">
+            <tr><td colspan="4" class="sc-table-empty">لا توجد حالات مفتوحة</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="sc-panel-title">آخر العمليات</h3>
+      <div class="sc-table-wrap">
+        <table class="sc-table">
+          <thead>
+            <tr>
+              <th>الوقت</th>
+              <th>الإجراء</th>
+            </tr>
+          </thead>
+          <tbody id="mini-log">
+            <tr><td colspan="2" class="sc-table-empty">لا توجد عمليات حديثة.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
   </section>
 
-  <section id="doctor-ai" class="panel ai-panel" data-permission="use.ai.assistant">
-    <h2 class="queue-title">مساعد القرار الطبي AI</h2>
-    <p style="margin:0;color:var(--text-soft);">تحليل الحالة النشطة مع فرز طبي ذكي (العلامات الحيوية + الشكوى + التاريخ الصحي) وتوصية أولية بالبروتوكول.</p>
-    <textarea id="ai-doctor-complaint" rows="2" placeholder="الشكوى الحالية (مثال: ضيق تنفس + ألم صدر)" style="width:100%;margin-top:10px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,0.03);color:var(--text-main);font:inherit;padding:9px;"></textarea>
-    <textarea id="ai-doctor-note" rows="3" placeholder="ملاحظات سريرية إضافية (اختياري)" style="width:100%;margin-top:10px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,0.03);color:var(--text-main);font:inherit;padding:9px;"></textarea>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+  <section id="doctor-ai" class="sc-panel ai-panel" data-permission="use.ai.assistant">
+    <h2 class="sc-panel-title">مساعد القرار الطبي AI</h2>
+    <p class="sc-panel-subtitle">تحليل الحالة النشطة مع فرز طبي ذكي (العلامات الحيوية + الشكوى + التاريخ الصحي) وتوصية أولية بالبروتوكول.</p>
+    <textarea id="ai-doctor-complaint" rows="2" placeholder="الشكوى الحالية (مثال: ضيق تنفس + ألم صدر)"></textarea>
+    <textarea id="ai-doctor-note" rows="3" placeholder="ملاحظات سريرية إضافية (اختياري)"></textarea>
+    <div class="inline-row" style="margin-top:10px;">
       <button class="btn-primary" onclick="runDoctorAi()">تحليل الحالة الحالية</button>
-      <button class="ghost-btn" onclick="document.getElementById('ai-doctor-note').value='';document.getElementById('ai-doctor-complaint').value=''">مسح الإدخال</button>
+      <button class="btn-muted" onclick="document.getElementById('ai-doctor-note').value='';document.getElementById('ai-doctor-complaint').value=''">مسح الإدخال</button>
     </div>
     <div id="ai-doctor-result" class="ai-result">لم يتم تشغيل التحليل بعد.</div>
   </section>
 </div>
 
 <div id="toast" class="toast"></div>
-
 <script src="../../assets/js/security.js"></script>
 <script src="../../assets/js/ui-shell.js"></script>
 <script>
@@ -487,13 +474,9 @@ function formatCaseLine(item) {
 }
 
 function severityPillClass(severity) {
-  var map = {
-    critical: 'pill-critical',
-    high: 'pill-high',
-    medium: 'pill-medium',
-    low: 'pill-low'
-  };
-  return map[severity] || 'pill-low';
+  if (severity === 'critical' || severity === 'high') return 'sc-severity-critical';
+  if (severity === 'medium') return 'sc-severity-medium';
+  return 'sc-severity-low';
 }
 
 function formatWhen(iso) {
@@ -564,6 +547,7 @@ function renderActiveCaseSummary() {
   document.getElementById('active-case-id').textContent = item ? (item.id || '-') : '-';
   document.getElementById('active-severity').textContent = item ? (item.severity || '-') : '-';
   document.getElementById('active-updated').textContent = item ? formatWhen(item.updatedAt) : '-';
+  document.getElementById('doctor-active-id').textContent = item ? (item.id || '-') : '-';
   if (!item) {
     setServiceFeedback('اختر حالة من قائمة الانتظار لتفعيل الخدمات الطبية.', 'warn');
   }
@@ -573,8 +557,8 @@ function selectCase(caseId) {
   if (!caseId) return;
   activeCaseId = caseId;
   saveActiveCaseId(caseId);
-  renderCases(casesCache);
   renderCritical(casesCache);
+  renderCases(casesCache);
   renderActiveCaseSummary();
 }
 
@@ -583,26 +567,31 @@ function renderCases(items) {
   var grid = document.getElementById('cases-grid');
   document.getElementById('cases-count').textContent = String(items.length);
   if (!items.length) {
-    queue.innerHTML = '<div class="queue-item">لا توجد حالات في الانتظار</div>';
-    grid.innerHTML = '<article class="case-card">لا توجد حالات مفتوحة</article>';
+    queue.innerHTML = '<tr><td colspan="5" class="sc-table-empty">لا توجد حالات في الانتظار</td></tr>';
+    grid.innerHTML = '<tr><td colspan="4" class="sc-table-empty">لا توجد حالات مفتوحة</td></tr>';
     return;
   }
 
   queue.innerHTML = items.map(function (item) {
-    return '<div class="queue-item"><div><div class="queue-name">' + item.studentName + '</div><div class="queue-type">' + formatCaseLine(item) + '</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;"><button class="ghost-btn" onclick="selectCase(\'' + item.id + '\')">اختيار</button><button class="btn-primary" onclick="openCase(\'' + item.id + '\')">فتح</button></div></div>';
+    var active = item.id === activeCaseId ? ' class="is-active-row"' : '';
+    var when = formatWhen(item.updatedAt);
+    return '<tr' + active + '>' +
+      '<td>' + (item.studentName || '-') + '</td>' +
+      '<td>' + formatCaseLine(item) + '</td>' +
+      '<td><span class="sc-badge ' + severityPillClass(item.severity) + '">' + (item.severity || 'low') + '</span></td>' +
+      '<td>' + when + '</td>' +
+      '<td><div class="cases-inline-actions"><button class="btn-muted" type="button" onclick="selectCase(\'' + item.id + '\')">اختيار</button><button class="btn-primary" type="button" onclick="openCase(\'' + item.id + '\')">فتح</button></div></td>' +
+    '</tr>';
   }).join('');
 
   grid.innerHTML = items.map(function (item) {
-    var activeClass = item.id === activeCaseId ? ' active' : '';
-    return '<article class="case-card' + activeClass + '">' +
-      '<div class="case-name">' + item.studentName + '</div>' +
-      '<div class="case-type">' + formatCaseLine(item) + '</div>' +
-      '<span class="pill ' + severityPillClass(item.severity) + '">' + (item.severity || 'low') + '</span>' +
-      '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">' +
-        '<button class="ghost-btn" onclick="selectCase(\'' + item.id + '\')">تحديد</button>' +
-        '<button class="btn-success" onclick="openCase(\'' + item.id + '\')">استكمال الفحص</button>' +
-      '</div>' +
-    '</article>';
+    var active = item.id === activeCaseId ? ' class="is-active-row"' : '';
+    return '<tr' + active + '>' +
+      '<td>' + (item.studentName || '-') + '</td>' +
+      '<td>' + (item.title || '-') + '</td>' +
+      '<td><span class="sc-badge ' + severityPillClass(item.severity) + '">' + (item.severity || 'low') + '</span></td>' +
+      '<td><div class="cases-inline-actions"><button class="btn-muted" type="button" onclick="selectCase(\'' + item.id + '\')">تحديد</button><button class="btn-success" type="button" onclick="openCase(\'' + item.id + '\')">استكمال</button></div></td>' +
+    '</tr>';
   }).join('');
 }
 
@@ -627,8 +616,8 @@ function applyCaseFilters() {
   if (activeCaseId) {
     saveActiveCaseId(activeCaseId);
   }
-  renderCases(filtered);
   renderCritical(filtered);
+  renderCases(filtered);
   renderActiveCaseSummary();
 }
 
@@ -658,7 +647,9 @@ function renderCritical(items) {
     criticalBtn.disabled = false;
     return;
   }
-  activeCaseId = critical.id;
+  if (!activeCaseId || !items.some(function (item) { return item.id === activeCaseId; })) {
+    activeCaseId = critical.id;
+  }
   document.getElementById('critical-sub').textContent = 'الطالب: ' + critical.studentName + ' | ' + critical.title + ' | يلزم تدخل سريع';
   criticalBtn.disabled = false;
 }
@@ -666,12 +657,12 @@ function renderCritical(items) {
 function renderMiniLog(logs) {
   var wrap = document.getElementById('mini-log');
   if (!logs || !logs.length) {
-    wrap.innerHTML = '<div class="mini-log-item">لا توجد عمليات حديثة.</div>';
+    wrap.innerHTML = '<tr><td colspan="2" class="sc-table-empty">لا توجد عمليات حديثة.</td></tr>';
     return;
   }
-  wrap.innerHTML = logs.slice(0, 3).map(function (item) {
-    var when = new Date(item.createdAt).toLocaleTimeString('ar-SA');
-    return '<div class="mini-log-item">' + when + ' - ' + item.action + '</div>';
+  wrap.innerHTML = logs.slice(0, 5).map(function (item) {
+    var when = item.createdAt ? new Date(item.createdAt).toLocaleTimeString('ar-SA') : '-';
+    return '<tr><td>' + when + '</td><td>' + (item.action || '-') + '</td></tr>';
   }).join('');
 }
 
@@ -699,6 +690,7 @@ async function loadDoctorData() {
   renderStats(summary.data);
   renderMiniLog(summary.data.recentLogs || []);
   applyCaseFilters();
+  document.getElementById('doctor-last-sync').textContent = new Date().toLocaleTimeString('ar-SA');
 }
 
 function openCase(caseId) {
@@ -1123,7 +1115,7 @@ window.addEventListener('DOMContentLoaded', function () {
   SmartClinicSecurity.requireAccess(['doctor', 'admin'], 'لوحة الطبيب');
   if (window.SmartClinicUI) {
     SmartClinicUI.mountQuickNav({
-      afterSelector: '.topbar',
+      afterSelector: '.sc-page-header',
       onRefresh: loadDoctorData,
       links: [
         { label: 'لوحة الطبيب', href: 'doctor.html' },

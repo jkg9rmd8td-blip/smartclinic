@@ -4,297 +4,140 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>بوابة الطالب – Smart Clinic</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/css/variables.css">
+<link rel="stylesheet" href="../../assets/css/layout.css">
+<link rel="stylesheet" href="../../assets/css/cards.css">
+<link rel="stylesheet" href="../../assets/css/tables.css">
 <style>
-:root {
-  --bg1: #0b1e34;
-  --bg2: #113650;
-  --card: rgba(9, 34, 56, 0.84);
-  --line: rgba(125, 211, 252, 0.32);
-  --text: #eef8ff;
-  --soft: #bfd5e6;
-  --accent: #38bdf8;
-  --ok: #22c55e;
-  --warn: #f59e0b;
-  --danger: #ef4444;
-}
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  font-family: "Tajawal", sans-serif;
-  background: radial-gradient(900px 480px at 8% 0%, rgba(56, 189, 248, 0.24), transparent 60%), linear-gradient(140deg, var(--bg1), var(--bg2));
-  color: var(--text);
-  min-height: 100vh;
-  padding: 18px 14px;
-}
-.shell { max-width: 1180px; margin: 0 auto; }
-.top {
+.portal-meta {
   display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: center;
+  gap: var(--sc-space-2);
   flex-wrap: wrap;
-  margin-bottom: 12px;
+  margin-bottom: var(--sc-space-3);
 }
-.chip {
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgba(255,255,255,0.04);
-  color: var(--soft);
-  font-size: 13px;
-  padding: 8px 14px;
-}
-.btn {
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--text);
-  border-radius: 10px;
-  padding: 8px 12px;
-  font: inherit;
-  cursor: pointer;
-}
-.hero, .card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 16px;
-}
-.hero h1 { margin: 0; font-size: 32px; }
-.hero p { margin: 6px 0 0; color: var(--soft); }
-.hero-meta {
-  margin-top: 10px;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.status-pill {
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.04);
-  border-radius: 999px;
-  padding: 5px 10px;
+
+.inline-help {
+  margin-top: 6px;
   font-size: 12px;
-  color: var(--soft);
+  color: var(--sc-text-soft);
 }
-.status-pill strong { color: var(--text); }
-.stats {
+
+.ai-box {
   margin-top: 10px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 8px;
-}
-.stat {
-  background: rgba(255,255,255,0.03);
   border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 12px;
+  border-radius: var(--sc-radius-md);
+  background: rgba(255,255,255,0.03);
   padding: 10px;
 }
-.stat-label { color: var(--soft); font-size: 12px; }
-.stat-value { margin-top: 4px; font-size: 24px; font-weight: 800; }
-.grid {
-  margin-top: 12px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 10px;
-}
-.card h3 { margin: 0; font-size: 18px; }
-.card p { margin: 6px 0 10px; color: var(--soft); font-size: 14px; }
-.cta {
-  border: none;
-  background: var(--accent);
-  color: #0b2237;
-  font: inherit;
-  font-weight: 700;
-  padding: 8px 12px;
-  border-radius: 10px;
-  cursor: pointer;
-}
-.muted-btn {
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  padding: 8px 12px;
-  border-radius: 10px;
-  cursor: pointer;
-}
-.cta:disabled, .muted-btn:disabled { opacity: .45; cursor: not-allowed; }
-.inline-row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-textarea, select {
-  width: 100%;
-  margin-top: 8px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: rgba(255,255,255,0.03);
-  color: var(--text);
-  font: inherit;
-  padding: 8px;
-}
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 8px;
-}
-.item {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 10px;
-  padding: 8px;
-  font-size: 13px;
-}
-.badge {
-  display: inline-block;
-  margin-top: 6px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 12px;
-}
-.b-ok { background: rgba(34,197,94,.2); color: #86efac; }
-.b-warn { background: rgba(245,158,11,.2); color: #fde68a; }
-.b-danger { background: rgba(239,68,68,.2); color: #fca5a5; }
+
 .toast {
   position: fixed;
   left: 16px;
   bottom: 16px;
-  background: rgba(8,34,56,0.95);
-  color: var(--text);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 9px 12px;
+  background: var(--sc-surface-strong);
+  color: var(--sc-text);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-md);
+  padding: 10px 12px;
   font-size: 12px;
   display: none;
-}
-.ai-box {
-  margin-top: 8px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
-  padding: 10px;
-}
-.inline-help {
-  margin-top: 6px;
-  font-size: 12px;
-  color: var(--soft);
-}
-.section-nav {
-  margin-top: 10px;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.section-btn {
-  border: 1px solid var(--line);
-  background: rgba(255,255,255,0.03);
-  color: var(--text);
-  border-radius: 999px;
-  padding: 6px 10px;
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-.section-title {
-  margin: 14px 0 8px;
-  font-size: 18px;
-  color: #d8ecfb;
-}
-.card.highlight {
-  border-color: rgba(56, 189, 248, 0.52);
-  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.16);
+  z-index: 40;
 }
 </style>
 </head>
-<body>
-<div class="shell">
-  <div class="top">
-    <div class="chip">الدور الحالي: <strong data-session-role>الطالب</strong></div>
-    <div style="display:flex;gap:8px;">
-      <button class="btn" data-action="logout">تسجيل الخروج</button>
+<body class="sc-page">
+<div class="sc-shell">
+  <header class="sc-page-header">
+    <div class="sc-page-header-main">
+      <div class="sc-page-icon">🎓</div>
+      <div>
+        <h1 class="sc-page-title">بوابة الطالب</h1>
+        <p class="sc-page-subtitle">متابعة صحية مباشرة، طلبات زيارة، إشعارات، ومراسلة العيادة من واجهة موحدة.</p>
+      </div>
     </div>
-  </div>
+    <div class="sc-header-actions">
+      <span class="sc-role-chip">الدور الحالي: <strong data-session-role>الطالب</strong></span>
+      <button class="sc-action-btn" data-action="logout">تسجيل الخروج</button>
+    </div>
+  </header>
 
-  <section class="hero">
-    <h1>بوابة الطالب الصحية المتقدمة</h1>
-    <p>ملفك الصحي المباشر، طلبات الزيارة، التنبيهات، والمراسلة مع العيادة في مكان واحد.</p>
-    <div class="hero-meta">
-      <div class="status-pill">النمط: <strong id="status-mode">-</strong></div>
-      <div class="status-pill">آخر مزامنة: <strong id="status-sync">-</strong></div>
-      <div class="status-pill">مستوى الخطر: <strong id="status-risk">-</strong></div>
+  <section class="sc-panel sc-mb-24">
+    <h2 class="sc-panel-title">ملخص الحالة اللحظي</h2>
+    <div class="portal-meta">
+      <div class="meta-item">النمط: <strong id="status-mode">-</strong></div>
+      <div class="meta-item">آخر مزامنة: <strong id="status-sync">-</strong></div>
+      <div class="meta-item">مستوى الخطر: <strong id="status-risk">-</strong></div>
     </div>
-    <div id="stats" class="stats"></div>
-    <div class="section-nav">
-      <button class="section-btn" onclick="scrollStudentSection('student-care')">المتابعة الصحية</button>
-      <button class="section-btn" onclick="scrollStudentSection('student-comm')">التواصل والتنبيهات</button>
-      <button class="section-btn" onclick="scrollStudentSection('student-tools')">الأدوات الذكية</button>
+    <div class="section-nav sc-section-nav">
+      <button class="section-btn sc-action-btn" onclick="scrollStudentSection('student-care')">المتابعة الصحية</button>
+      <button class="section-btn sc-action-btn" onclick="scrollStudentSection('student-comm')">التواصل والتنبيهات</button>
+      <button class="section-btn sc-action-btn" onclick="scrollStudentSection('student-tools')">الأدوات الذكية</button>
     </div>
   </section>
 
-  <h2 id="student-care" class="section-title">المتابعة الصحية والزيارات</h2>
-  <section class="grid">
-    <article class="card highlight" data-permission="view.student">
-      <h3>حالة اليوم</h3>
-      <p id="latest-case-text">جاري تحميل أحدث حالة...</p>
+  <section id="stats" class="sc-grid-3 sc-kpi-grid sc-mb-24"></section>
+
+  <h2 id="student-care" class="sc-section-title">المتابعة الصحية والزيارات</h2>
+  <section class="sc-grid-3 sc-mb-24">
+    <article class="sc-panel" data-permission="view.student">
+      <h3 class="sc-panel-title">حالة اليوم</h3>
+      <p id="latest-case-text" class="sc-panel-subtitle">جاري تحميل أحدث حالة...</p>
       <span id="latest-case-badge" class="badge b-ok">مستقرة</span>
-      <div class="inline-row" style="margin-top:10px;">
-        <button class="cta" onclick="openStudentProfile()">فتح الملف الصحي الكامل</button>
-        <button class="muted-btn" data-permission="view.cases" onclick="jumpToCases()">عرض الحالات</button>
+      <div class="inline-row" style="margin-top:12px;">
+        <button class="btn-primary" onclick="openStudentProfile()">فتح الملف الصحي الكامل</button>
+        <button class="btn-muted" data-permission="view.cases" onclick="jumpToCases()">عرض الحالات</button>
       </div>
     </article>
 
-    <article class="card" data-permission="request.visit">
-      <h3>طلب زيارة للعيادة</h3>
-      <p>أرسل طلب فحص عادي أو مستعجل للفريق الصحي.</p>
+    <article class="sc-panel" data-permission="request.visit">
+      <h3 class="sc-panel-title">طلب زيارة للعيادة</h3>
+      <p class="sc-panel-subtitle">أرسل طلب فحص عادي أو مستعجل للفريق الصحي.</p>
       <select id="visit-priority">
         <option value="normal">عادي</option>
         <option value="urgent">مستعجل</option>
       </select>
       <div class="inline-row" style="margin-top:8px;">
-        <button class="muted-btn" type="button" onclick="useVisitTemplate('صداع شديد')">صداع شديد</button>
-        <button class="muted-btn" type="button" onclick="useVisitTemplate('ضيق تنفس متكرر')">ضيق تنفس</button>
-        <button class="muted-btn" type="button" onclick="useVisitTemplate('ألم في الصدر أثناء النشاط')">ألم صدر</button>
+        <button class="btn-muted" type="button" onclick="useVisitTemplate('صداع شديد')">صداع شديد</button>
+        <button class="btn-muted" type="button" onclick="useVisitTemplate('ضيق تنفس متكرر')">ضيق تنفس</button>
+        <button class="btn-muted" type="button" onclick="useVisitTemplate('ألم في الصدر أثناء النشاط')">ألم صدر</button>
       </div>
       <textarea id="visit-reason" rows="3" placeholder="اكتب سبب الطلب..." oninput="updateVisitReasonMeta()"></textarea>
       <div class="inline-help">تفاصيل السبب: <span id="visit-reason-count">0</span>/220</div>
-      <button class="cta" onclick="requestVisit()">إرسال الطلب</button>
+      <button class="btn-primary" onclick="requestVisit()">إرسال الطلب</button>
     </article>
 
-    <article class="card highlight" data-permission="view.student">
-      <h3>العيادة الافتراضية (صوت وصورة)</h3>
-      <p id="telemed-student-status">جارٍ التحقق من وجود جلسة مباشرة...</p>
+    <article class="sc-panel" data-permission="view.student">
+      <h3 class="sc-panel-title">العيادة الافتراضية (صوت وصورة)</h3>
+      <p id="telemed-student-status" class="sc-panel-subtitle">جارٍ التحقق من وجود جلسة مباشرة...</p>
       <span id="telemed-student-badge" class="badge b-ok">غير نشطة</span>
-      <div class="inline-row">
-        <button class="cta" id="telemed-student-join" onclick="joinStudentTelemed()" disabled>انضمام للجلسة</button>
-        <button class="muted-btn" onclick="refreshStudentTelemed()">تحديث حالة الجلسة</button>
+      <div class="inline-row" style="margin-top:12px;">
+        <button class="btn-primary" id="telemed-student-join" onclick="joinStudentTelemed()" disabled>انضمام للجلسة</button>
+        <button class="btn-muted" onclick="refreshStudentTelemed()">تحديث حالة الجلسة</button>
       </div>
     </article>
 
-    <article class="card" data-permission="view.student">
-      <h3>مركز التنسيق العلاجي</h3>
-      <p>الموافقات الرقمية، بطاقة الطوارئ QR، المتابعة المنزلية، المواعيد، والتذاكر في صفحة واحدة.</p>
-      <button class="cta" onclick="window.location.href='care-center.html'">فتح المركز</button>
+    <article class="sc-panel" data-permission="view.student">
+      <h3 class="sc-panel-title">مركز التنسيق العلاجي</h3>
+      <p class="sc-panel-subtitle">الموافقات الرقمية، بطاقة الطوارئ QR، المتابعة المنزلية، والمواعيد في صفحة واحدة.</p>
+      <button class="btn-primary" onclick="window.location.href='care-center.html'">فتح المركز</button>
     </article>
   </section>
 
-  <h2 id="student-comm" class="section-title">التواصل والتنبيهات</h2>
-  <section class="grid">
-    <article class="card" data-permission="send.message">
-      <h3>مراسلة العيادة</h3>
-      <p>تواصل مع الفريق الصحي لأي استفسار أو متابعة.</p>
+  <h2 id="student-comm" class="sc-section-title">التواصل والتنبيهات</h2>
+  <section class="sc-grid-3 sc-mb-24">
+    <article class="sc-panel" data-permission="send.message">
+      <h3 class="sc-panel-title">مراسلة العيادة</h3>
+      <p class="sc-panel-subtitle">تواصل مع الفريق الصحي لأي استفسار أو متابعة.</p>
       <textarea id="message-text" rows="3" placeholder="اكتب رسالتك..." data-permission="send.message"></textarea>
       <div class="inline-row">
-        <button class="cta" data-permission="send.message" onclick="sendClinicMessage()">إرسال الرسالة</button>
-        <button class="muted-btn" data-permission="view.alerts" onclick="loadOverview()">تحديث البيانات</button>
+        <button class="btn-primary" data-permission="send.message" onclick="sendClinicMessage()">إرسال الرسالة</button>
+        <button class="btn-muted" data-permission="view.alerts" onclick="loadOverview()">تحديث البيانات</button>
       </div>
     </article>
 
-    <article class="card" data-permission="view.alerts">
-      <h3>تنبيهات صحية لك</h3>
-      <p>آخر التنبيهات المرتبطة بمتابعتك الصحية.</p>
+    <article class="sc-panel" data-permission="view.alerts">
+      <h3 class="sc-panel-title">تنبيهات صحية لك</h3>
+      <p class="sc-panel-subtitle">آخر التنبيهات المرتبطة بمتابعتك الصحية.</p>
       <select id="alert-filter" onchange="applyAlertFilter()">
         <option value="all">كل التنبيهات</option>
         <option value="critical">حرج</option>
@@ -304,46 +147,45 @@ textarea, select {
       <div id="alerts-list" class="list"></div>
     </article>
 
-    <article class="card" data-permission="view.notifications">
-      <h3>مركز الإشعارات الموحد</h3>
-      <p>استعرض إشعاراتك مع الفلاتر حسب النوع.</p>
-      <button class="cta" onclick="window.location.href='notifications-center.html'">فتح المركز</button>
+    <article class="sc-panel" data-permission="view.notifications">
+      <h3 class="sc-panel-title">مركز الإشعارات الموحد</h3>
+      <p class="sc-panel-subtitle">استعرض إشعاراتك مع الفلاتر حسب النوع.</p>
+      <button class="btn-primary" onclick="window.location.href='notifications-center.html'">فتح المركز</button>
     </article>
   </section>
 
-  <h2 id="student-tools" class="section-title">الأدوات الذكية</h2>
-  <section class="grid">
-    <article class="card" data-permission="use.ai.assistant">
-      <h3>مستشار الطالب AI</h3>
-      <p>تحليل فوري للأعراض الحالية وتوصيات عملية حسب ملفك الصحي.</p>
+  <h2 id="student-tools" class="sc-section-title">الأدوات الذكية</h2>
+  <section class="sc-grid-3">
+    <article class="sc-panel" data-permission="use.ai.assistant">
+      <h3 class="sc-panel-title">مستشار الطالب AI</h3>
+      <p class="sc-panel-subtitle">تحليل فوري للأعراض الحالية وتوصيات عملية حسب ملفك الصحي.</p>
       <textarea id="ai-student-input" rows="3" placeholder="اكتب الأعراض أو حالتك الآن..."></textarea>
       <div class="inline-row">
-        <button class="cta" onclick="askStudentAi()">تحليل الحالة</button>
-        <button class="muted-btn" onclick="document.getElementById('ai-student-input').value=''">مسح</button>
+        <button class="btn-primary" onclick="askStudentAi()">تحليل الحالة</button>
+        <button class="btn-muted" onclick="document.getElementById('ai-student-input').value=''">مسح</button>
       </div>
       <div id="ai-student-output" class="ai-box">لم يتم تشغيل التحليل بعد.</div>
     </article>
 
-    <article class="card" data-permission="view.reports">
-      <h3>تقاريري الصحية</h3>
-      <p>أحدث التقارير الطبية المتاحة لك.</p>
+    <article class="sc-panel" data-permission="view.reports">
+      <h3 class="sc-panel-title">تقاريري الصحية</h3>
+      <p class="sc-panel-subtitle">أحدث التقارير الطبية المتاحة لك.</p>
       <div id="reports-list" class="list"></div>
       <div class="inline-row">
-        <button class="muted-btn" onclick="window.location.href='student-profile.html#reports'">عرض كل التقارير</button>
-        <button class="muted-btn" data-permission="export.report" onclick="exportStudentReport()">تصدير التقرير</button>
+        <button class="btn-muted" onclick="window.location.href='student-profile.html#reports'">عرض كل التقارير</button>
+        <button class="btn-muted" data-permission="export.report" onclick="exportStudentReport()">تصدير التقرير</button>
       </div>
     </article>
 
-    <article class="card" data-permission="view.tips">
-      <h3>نصيحة ذكية اليوم</h3>
-      <p id="tip-text">جاري اختيار نصيحة مناسبة...</p>
-      <button class="cta" onclick="nextTip()">نصيحة جديدة</button>
+    <article class="sc-panel" data-permission="view.tips">
+      <h3 class="sc-panel-title">نصيحة ذكية اليوم</h3>
+      <p id="tip-text" class="sc-panel-subtitle">جاري اختيار نصيحة مناسبة...</p>
+      <button class="btn-primary" onclick="nextTip()">نصيحة جديدة</button>
     </article>
   </section>
 </div>
 
 <div id="toast" class="toast"></div>
-
 <script src="../../assets/js/security.js"></script>
 <script src="../../assets/js/ui-shell.js"></script>
 <script>
@@ -405,14 +247,12 @@ function refreshHeroMeta(overview) {
 function renderStats(snapshot) {
   var s = snapshot || {};
   var items = [
-    ['الحالات المفتوحة', Number(s.openCases || 0)],
-    ['حالات حرجة', Number(s.criticalCases || 0)],
-    ['تقارير متاحة', Number(s.reports || 0)],
-    ['طلبات معلقة', Number(s.pendingVisits || 0)],
-    ['تنبيهات', Number(s.alerts || 0)]
+    ['الحالات', Number(s.openCases || 0)],
+    ['المواعيد/الطلبات', Number(s.pendingVisits || 0)],
+    ['التنبيهات', Number(s.alerts || 0)]
   ];
   document.getElementById('stats').innerHTML = items.map(function (it) {
-    return '<div class="stat"><div class="stat-label">' + it[0] + '</div><div class="stat-value">' + it[1] + '</div></div>';
+    return '<article class="sc-kpi-card"><div class="sc-kpi-label">' + it[0] + '</div><div class="sc-kpi-value">' + it[1] + '</div></article>';
   }).join('');
 }
 
@@ -653,7 +493,7 @@ window.addEventListener('DOMContentLoaded', function () {
   SmartClinicSecurity.requireAccess(['student', 'admin'], 'بوابة الطالب');
   if (window.SmartClinicUI) {
     SmartClinicUI.mountQuickNav({
-      afterSelector: '.top',
+      afterSelector: '.sc-page-header',
       onRefresh: loadOverview,
       links: [
         { label: 'بوابة الطالب', href: 'student-portal.html' },
