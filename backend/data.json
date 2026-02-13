@@ -804,6 +804,294 @@
       "target": "session",
       "details": {},
       "createdAt": "2026-02-11T02:02:06.235Z"
+    },
+    {
+      "id": "log_5dbc3372",
+      "action": "auth.login",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "session",
+      "details": {
+        "role": "admin"
+      },
+      "createdAt": "2026-02-13T18:59:50.272Z",
+      "hash": "5dde487ef43238eaca31f1e4991724be0a61ba0d12e6e3e59e8dcecf3fb2f5fb"
+    },
+    {
+      "id": "log_34be0482",
+      "action": "auth.logout",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "session",
+      "details": {},
+      "createdAt": "2026-02-13T18:59:50.318Z",
+      "hash": "26152fc948e576d4cdaf7f47596c6ab5786840ab956ea19f71cb64cec60d41eb"
+    },
+    {
+      "id": "log_46d06ea8",
+      "action": "auth.login",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "session",
+      "details": {
+        "role": "admin"
+      },
+      "createdAt": "2026-02-13T19:05:07.528Z",
+      "hash": "681f81591a1e0806907ce5924cea36e78d01890bd1e6eb6e3d8593bb026bbc9f"
+    },
+    {
+      "id": "log_33a72e5c",
+      "action": "student.emergency.card.view",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "u_student_1",
+      "details": {
+        "studentId": "u_student_1"
+      },
+      "createdAt": "2026-02-13T19:05:07.614Z",
+      "hash": "9bab509981740daa2264d08cf948fd812f004ce23bddc5b350dd47e4ecc4088e"
+    },
+    {
+      "id": "log_7c244400",
+      "action": "report.executive.pdf",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "executive_report",
+      "details": {},
+      "createdAt": "2026-02-13T19:05:07.831Z",
+      "hash": "3ac2e277f3c2388d78ef1130a03be0492827301238a066acea4a2a31a11055fd"
+    },
+    {
+      "id": "log_b9133cea",
+      "action": "auth.logout",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "session",
+      "details": {},
+      "createdAt": "2026-02-13T19:05:08.049Z",
+      "hash": "ecd304196031d72e68e9044bd3164039f16de182f4bf94b6eef76c9c717caf4c"
+    },
+    {
+      "id": "log_0c08af06",
+      "action": "auth.login",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "session",
+      "details": {
+        "role": "admin"
+      },
+      "createdAt": "2026-02-13T19:07:18.614Z",
+      "hash": "b39f5cec91733069727afecdd9876ae5cc90338e6126bfc00e7e287ce4ce2553"
+    },
+    {
+      "id": "log_1bf8f75b",
+      "action": "auth.login",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "session",
+      "details": {
+        "role": "admin"
+      },
+      "createdAt": "2026-02-13T19:08:15.966Z",
+      "hash": "d7d8d343e2712db3523e1b653ffaf0f63f30a3f8582b8bd4e6262d4281718ba1"
+    },
+    {
+      "id": "log_18ea3f91",
+      "action": "report.monthly.view",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "2026-02",
+      "details": {
+        "criticalCases": 1,
+        "visitRequests": 6,
+        "appointmentsTotal": 0,
+        "appointmentsCompleted": 0,
+        "ticketsOpened": 0,
+        "ticketsClosed": 0,
+        "ticketClosureRate": 0,
+        "avgTicketResolutionHours": 0,
+        "referrals": 0,
+        "consentsRequested": 0,
+        "consentsApproved": 0
+      },
+      "createdAt": "2026-02-13T19:08:15.988Z",
+      "hash": "cea3e361dbfd25f8fc46cdf7c77746635963afec4a0f487f600023fe61348468"
+    },
+    {
+      "id": "log_08711c13",
+      "action": "report.monthly.pdf",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "2026-02",
+      "details": {
+        "criticalCases": 1,
+        "visitRequests": 6,
+        "appointmentsTotal": 0,
+        "appointmentsCompleted": 0,
+        "ticketsOpened": 0,
+        "ticketsClosed": 0,
+        "ticketClosureRate": 0,
+        "avgTicketResolutionHours": 0,
+        "referrals": 0,
+        "consentsRequested": 0,
+        "consentsApproved": 0
+      },
+      "createdAt": "2026-02-13T19:08:16.005Z",
+      "hash": "88f31ef76b3c170c9461dba9ac933045a111c7a0db1f526aafa51588980338da"
+    },
+    {
+      "id": "log_0a54cd68",
+      "action": "student.emergency.card.view",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "u_student_1",
+      "details": {
+        "studentId": "u_student_1"
+      },
+      "createdAt": "2026-02-13T19:08:16.114Z",
+      "hash": "0832532850d9e284c788cd8bb7e5db3d5fed5e85365ce36cb3d0113675141eb6"
+    },
+    {
+      "id": "log_ef63cb43",
+      "action": "report.monthly.view",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "2026-02",
+      "details": {
+        "criticalCases": 1,
+        "visitRequests": 6,
+        "appointmentsTotal": 0,
+        "appointmentsCompleted": 0,
+        "ticketsOpened": 0,
+        "ticketsClosed": 0,
+        "ticketClosureRate": 0,
+        "avgTicketResolutionHours": 0,
+        "referrals": 0,
+        "consentsRequested": 0,
+        "consentsApproved": 0
+      },
+      "createdAt": "2026-02-13T19:08:16.219Z",
+      "hash": "ff30471ed20ce002d67b6088bd66e2fa2e5f2b5f914ebbe60ed633894b94804c"
+    },
+    {
+      "id": "log_edf00654",
+      "action": "report.monthly.pdf",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "2026-02",
+      "details": {
+        "criticalCases": 1,
+        "visitRequests": 6,
+        "appointmentsTotal": 0,
+        "appointmentsCompleted": 0,
+        "ticketsOpened": 0,
+        "ticketsClosed": 0,
+        "ticketClosureRate": 0,
+        "avgTicketResolutionHours": 0,
+        "referrals": 0,
+        "consentsRequested": 0,
+        "consentsApproved": 0
+      },
+      "createdAt": "2026-02-13T19:08:16.238Z",
+      "hash": "be25a6d7450527a2dc1694eb7988a219e87bcc80a53f212387213a3d2bd3c734"
+    },
+    {
+      "id": "log_741f66ca",
+      "action": "report.executive.pdf",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "executive_report",
+      "details": {},
+      "createdAt": "2026-02-13T19:08:16.311Z",
+      "hash": "95979ee8fbca2310f9b9d768ee493e01edd8ee8cefef09fe1a339d087748248e"
+    },
+    {
+      "id": "log_24a25ec3",
+      "action": "auth.login",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "session",
+      "details": {
+        "role": "admin"
+      },
+      "createdAt": "2026-02-13T19:12:17.318Z",
+      "hash": "eac429c4d8c04e8d40c00920d7427e248128ad1c9919f011ed5334e569556761"
+    },
+    {
+      "id": "log_9860a8af",
+      "action": "student.emergency.card.view",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "u_student_1",
+      "details": {
+        "studentId": "u_student_1"
+      },
+      "createdAt": "2026-02-13T19:12:17.389Z",
+      "hash": "d92ce4e75a4e6024ad6aa661bd011d5bbb6057b65f388167c840e0aac50c84e6"
+    },
+    {
+      "id": "log_4599a01e",
+      "action": "report.monthly.view",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "2026-02",
+      "details": {
+        "criticalCases": 1,
+        "visitRequests": 6,
+        "appointmentsTotal": 0,
+        "appointmentsCompleted": 0,
+        "ticketsOpened": 0,
+        "ticketsClosed": 0,
+        "ticketClosureRate": 0,
+        "avgTicketResolutionHours": 0,
+        "referrals": 0,
+        "consentsRequested": 0,
+        "consentsApproved": 0
+      },
+      "createdAt": "2026-02-13T19:12:17.500Z",
+      "hash": "7f52bd045636329ff886164d977be2098c2eee8f712353f0430069c739cb5527"
+    },
+    {
+      "id": "log_f77f0aae",
+      "action": "report.monthly.pdf",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "2026-02",
+      "details": {
+        "criticalCases": 1,
+        "visitRequests": 6,
+        "appointmentsTotal": 0,
+        "appointmentsCompleted": 0,
+        "ticketsOpened": 0,
+        "ticketsClosed": 0,
+        "ticketClosureRate": 0,
+        "avgTicketResolutionHours": 0,
+        "referrals": 0,
+        "consentsRequested": 0,
+        "consentsApproved": 0
+      },
+      "createdAt": "2026-02-13T19:12:17.527Z",
+      "hash": "dc2fd0517b9ad30fa8e781f3cd70070d97f6a980e92e10267fcd1f586021aa22"
+    },
+    {
+      "id": "log_4d93272c",
+      "action": "report.executive.pdf",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "executive_report",
+      "details": {},
+      "createdAt": "2026-02-13T19:12:17.594Z",
+      "hash": "f5775c71e3d3cd2dcf1673e3d17b5ada487564c138166bb39ae824f611593f1e"
+    },
+    {
+      "id": "log_a788e47a",
+      "action": "auth.logout",
+      "actorId": "u_admin_1",
+      "actorRole": "admin",
+      "target": "session",
+      "details": {},
+      "createdAt": "2026-02-13T19:12:17.820Z",
+      "hash": "bae0bbf3019e2eae783112a4beb116f94d8403e9fe129bc7383ba8fcd894eac4"
     }
   ],
   "telemedSessions": [],
@@ -820,5 +1108,40 @@
       "highResponseMinutes": 15,
       "normalResponseMinutes": 30
     }
-  }
+  },
+  "consents": [],
+  "emergencyCards": [
+    {
+      "id": "emg_7700ebc0",
+      "studentId": "u_student_1",
+      "token": "8f4a2c0dcd1b99397c2153e5",
+      "createdAt": "2026-02-13T19:05:07.613Z",
+      "updatedAt": "2026-02-13T19:05:07.613Z"
+    }
+  ],
+  "homeCarePlans": [],
+  "appointments": [],
+  "tickets": [],
+  "medicationPlans": [],
+  "medicationLogs": [],
+  "referrals": [],
+  "monthlyReports": [
+    {
+      "month": "2026-02",
+      "generatedAt": "2026-02-13T19:12:17.500Z",
+      "metrics": {
+        "criticalCases": 1,
+        "visitRequests": 6,
+        "appointmentsTotal": 0,
+        "appointmentsCompleted": 0,
+        "ticketsOpened": 0,
+        "ticketsClosed": 0,
+        "ticketClosureRate": 0,
+        "avgTicketResolutionHours": 0,
+        "referrals": 0,
+        "consentsRequested": 0,
+        "consentsApproved": 0
+      }
+    }
+  ]
 }
