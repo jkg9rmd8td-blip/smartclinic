@@ -228,6 +228,37 @@ body {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
+.triage-summary {
+  margin-top: 10px;
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(255,255,255,0.02);
+}
+.triage-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+.triage-chip.immediate {
+  border-color: rgba(255,77,79,0.7);
+  color: #ff9ea0;
+  background: rgba(255,77,79,0.16);
+}
+.triage-chip.follow_up {
+  border-color: rgba(250,140,22,0.7);
+  color: #fdc47e;
+  background: rgba(250,140,22,0.16);
+}
+.triage-chip.simple {
+  border-color: rgba(82,196,26,0.7);
+  color: #b4ef91;
+  background: rgba(82,196,26,0.16);
+}
 .queue-item { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .queue-name, .case-name { font-weight: 700; }
 .queue-type, .case-type, .mini-log-item { color: var(--text-soft); font-size: 13px; }
@@ -397,11 +428,12 @@ body {
 
   <section id="doctor-ai" class="panel ai-panel" data-permission="use.ai.assistant">
     <h2 class="queue-title">مساعد القرار الطبي AI</h2>
-    <p style="margin:0;color:var(--text-soft);">تحليل الحالة النشطة وتقديم أولويات التدخل وخطة الرعاية التشغيلية.</p>
+    <p style="margin:0;color:var(--text-soft);">تحليل الحالة النشطة مع فرز طبي ذكي (العلامات الحيوية + الشكوى + التاريخ الصحي) وتوصية أولية بالبروتوكول.</p>
+    <textarea id="ai-doctor-complaint" rows="2" placeholder="الشكوى الحالية (مثال: ضيق تنفس + ألم صدر)" style="width:100%;margin-top:10px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,0.03);color:var(--text-main);font:inherit;padding:9px;"></textarea>
     <textarea id="ai-doctor-note" rows="3" placeholder="ملاحظات سريرية إضافية (اختياري)" style="width:100%;margin-top:10px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,0.03);color:var(--text-main);font:inherit;padding:9px;"></textarea>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
       <button class="btn-primary" onclick="runDoctorAi()">تحليل الحالة الحالية</button>
-      <button class="ghost-btn" onclick="document.getElementById('ai-doctor-note').value=''">مسح الملاحظة</button>
+      <button class="ghost-btn" onclick="document.getElementById('ai-doctor-note').value='';document.getElementById('ai-doctor-complaint').value=''">مسح الإدخال</button>
     </div>
     <div id="ai-doctor-result" class="ai-result">لم يتم تشغيل التحليل بعد.</div>
   </section>
@@ -932,14 +964,41 @@ function renderDoctorAi(item) {
     return;
   }
   latestDoctorAi = item;
+  var triage = item.smartTriage || null;
   var actions = buildAiActionPlan(item);
   var actionsHtml = actions.map(function (action, index) {
     var actionId = 'ai-action-' + index;
     return '<label class="ai-action-item" for="' + actionId + '">' +
       '<input type="checkbox" id="' + actionId + '" data-ai-action-index="' + index + '" checked>' +
       '<span><strong>' + actionLabel(action.type) + '</strong> - ' + action.note + '</span>' +
-      '</label>';
+    '</label>';
   }).join('');
+
+  var triageBlock = '';
+  if (triage) {
+    var triageClass = triage.classification || 'simple';
+    var rationale = (triage.rationale || []).map(function (line) {
+      return '<div class="mini-log-item">• ' + line + '</div>';
+    }).join('');
+    var triageActions = (triage.recommendation && triage.recommendation.actions ? triage.recommendation.actions : []).map(function (line) {
+      return '<div class="mini-log-item">• ' + line + '</div>';
+    }).join('');
+    triageBlock =
+      '<div class="triage-summary">' +
+        '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+          '<span class="triage-chip ' + triageClass + '">' + (triage.classificationLabel || '-') + '</span>' +
+          '<span style="color:var(--text-soft);font-size:12px;">الدرجة: ' + (triage.score || 0) + '/100</span>' +
+          '<span style="color:var(--text-soft);font-size:12px;">الثقة: ' + Math.round(Number(triage.confidence || 0) * 100) + '%</span>' +
+          '<span style="color:var(--text-soft);font-size:12px;">TRIAGE: ' + (triage.triageCode || '-') + '</span>' +
+        '</div>' +
+        '<div style="margin-top:8px;"><strong>التوصية الأولية:</strong> ' + ((triage.recommendation && triage.recommendation.primary) || '-') + '</div>' +
+        '<div style="margin-top:6px;color:var(--text-soft);">البروتوكول: ' + ((triage.protocol && triage.protocol.id) || '-') + ' - ' + ((triage.protocol && triage.protocol.title) || '-') + '</div>' +
+        '<div style="margin-top:8px;color:var(--text-soft);">مبررات القرار</div>' +
+        (rationale || '<div class="mini-log-item">• لا توجد مبررات إضافية.</div>') +
+        '<div style="margin-top:8px;color:var(--text-soft);">إجراءات البروتوكول</div>' +
+        (triageActions || '<div class="mini-log-item">• لا توجد إجراءات مقترحة.</div>') +
+      '</div>';
+  }
 
   var priorityLabel = item.priority === 'immediate' ? 'فوري' : (item.priority === 'urgent' ? 'عاجل' : 'قياسي');
   var checklist = (item.checklist || []).map(function (x) { return '<div class="mini-log-item">• ' + x + '</div>'; }).join('');
@@ -947,6 +1006,7 @@ function renderDoctorAi(item) {
   document.getElementById('ai-doctor-result').innerHTML =
     '<div><strong>الأولوية: ' + priorityLabel + ' | TRIAGE: ' + (item.triage || '-') + '</strong></div>' +
     '<div style="margin-top:6px;color:var(--text-soft);">توصية رئيسية: ' + (item.recommendation || '-') + '</div>' +
+    triageBlock +
     '<div style="margin-top:8px;color:var(--text-soft);">Checklist تنفيذي</div>' + checklist +
     '<div style="margin-top:8px;color:var(--text-soft);">خطة رعاية مقترحة</div>' + plan +
     '<div style="margin-top:10px;color:var(--text-soft);">إجراءات AI المقترحة (قابلة للتحديد)</div>' +
@@ -964,9 +1024,10 @@ async function runDoctorAi() {
     return;
   }
   var note = document.getElementById('ai-doctor-note').value.trim();
+  var complaint = document.getElementById('ai-doctor-complaint').value.trim();
   var result = await SmartClinicSecurity.apiJson('/ai/doctor-support', {
     method: 'POST',
-    body: JSON.stringify({ caseId: activeCaseId, note: note })
+    body: JSON.stringify({ caseId: activeCaseId, note: note, complaint: complaint })
   });
   if (!result.ok || !result.data) {
     notify(result.error || 'فشل تحليل AI للطبيب.');
@@ -979,13 +1040,19 @@ async function runDoctorAi() {
 function buildAiActionPlan(ai) {
   var plan = [];
   if (!ai) return plan;
+  var triage = ai.smartTriage || null;
+  var triageClass = triage ? triage.classification : '';
 
-  if (ai.priority === 'immediate') {
+  if (ai.priority === 'immediate' || triageClass === 'immediate') {
     plan.push({ type: 'emergency_protocol', note: 'تنفيذ AI: تفعيل بروتوكول الطوارئ' });
   }
 
   if (ai.sla && ai.sla.breached) {
     plan.push({ type: 'external_referral', note: 'تنفيذ AI: تحويل خارجي بسبب تجاوز SLA' });
+  }
+
+  if (triageClass === 'follow_up') {
+    plan.push({ type: 'contact_guardian', note: 'تنفيذ AI: إبلاغ ولي الأمر بمتطلبات المتابعة الطبية' });
   }
 
   plan.push({ type: 'vitals_update', note: 'تنفيذ AI: تحديث العلامات الحيوية للحالة' });

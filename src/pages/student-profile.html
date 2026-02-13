@@ -4,266 +4,155 @@
 <meta charset="UTF-8">
 <title>الملف الصحي للطالب – Smart Clinic</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../assets/css/variables.css">
+<link rel="stylesheet" href="../../assets/css/layout.css">
+<link rel="stylesheet" href="../../assets/css/cards.css">
+<link rel="stylesheet" href="../../assets/css/tables.css">
 <style>
-body {
-  margin: 0;
-  font-family: "Segoe UI", system-ui;
-  background: radial-gradient(circle at top, #020617 0%, #000 70%);
-  color: #e5e7eb;
-  padding: 24px;
-}
-.shell {
-  max-width: 1220px;
-  margin: 0 auto;
-  background: radial-gradient(circle at top left, rgba(15,23,42,0.96), #020617 60%);
-  border-radius: 28px;
-  border: 1px solid rgba(148,163,184,0.35);
-  box-shadow: 0 26px 80px rgba(0,0,0,0.9);
-  padding: 20px 22px 22px;
-}
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 18px;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.header-main { display: flex; align-items: center; gap: 14px; }
-.avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 18px;
-  background: linear-gradient(135deg,#0ea5e9,#22c55e);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:22px;
-  font-weight:700;
-}
-.header-name { font-size: 18px; font-weight: 600; }
-.header-sub { font-size: 12px; color: #9ca3af; }
-.section-nav {
-  margin-bottom: 12px;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.section-btn {
-  border: 1px solid rgba(148,163,184,0.5);
-  background: rgba(255,255,255,0.03);
-  color: #e5e7eb;
-  border-radius: 999px;
-  padding: 6px 10px;
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-.btn-ghost {
-  padding: 7px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(148,163,184,0.5);
-  background: transparent;
-  color: #e5e7eb;
-  font-size: 11px;
-  cursor: pointer;
-}
-.layout {
-  display: grid;
-  grid-template-columns: 1.1fr 1fr;
-  gap: 14px;
-}
-@media (max-width: 940px) {
-  .layout { grid-template-columns: 1fr; }
-}
-.card {
-  background: rgba(15,23,42,0.96);
-  border-radius: 22px;
-  border: 1px solid rgba(30,64,175,0.8);
-  padding: 14px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.9);
-}
-.card-header {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:10px;
-}
-.card-title { font-size:14px; font-weight:600; }
-.card-sub { font-size:11px; color:#9ca3af; }
-.pill {
-  font-size:10px;
-  padding:2px 8px;
-  border-radius:999px;
-  border:1px solid rgba(148,163,184,0.5);
-  color:#9ca3af;
-}
-.info-grid {
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:8px;
-  font-size:12px;
-}
-.info-label { color:#9ca3af; font-size:11px; }
-.info-value { font-size:13px; }
-.stats {
-  margin-top: 10px;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0,1fr));
-  gap: 8px;
-}
-.stat {
-  border: 1px solid rgba(148,163,184,0.35);
-  border-radius: 12px;
-  padding: 8px;
-}
-.stat-label { font-size: 11px; color: #9ca3af; }
-.stat-value { font-size: 20px; font-weight: 700; margin-top: 2px; }
-.vitals-grid {
-  margin-top: 8px;
+.profile-overview-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 12px;
 }
-@media (max-width: 560px) {
-  .vitals-grid { grid-template-columns: 1fr; }
+
+.profile-overview-item {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--sc-radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 10px 12px;
 }
+
+.profile-overview-label {
+  color: var(--sc-text-soft);
+  font-size: 12px;
+}
+
+.profile-overview-value {
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.vitals-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
 .vital {
-  border: 1px solid rgba(14, 165, 233, 0.45);
-  border-radius: 12px;
-  padding: 8px;
-  background: rgba(15, 23, 42, 0.82);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px;
 }
-.vital-label { font-size: 11px; color: #9ca3af; }
-.vital-value { font-size: 18px; font-weight: 700; margin-top: 2px; }
+
+.vital-label {
+  color: var(--sc-text-soft);
+  font-size: 12px;
+}
+
+.vital-value {
+  margin-top: 4px;
+  font-size: 26px;
+  font-weight: 800;
+}
+
 .risk-badge {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   padding: 4px 10px;
+  border: 1px solid var(--sc-border);
   border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.45);
-  font-size: 11px;
-}
-.risk-badge.stable { border-color: rgba(34,197,94,0.55); color: #86efac; }
-.risk-badge.warning { border-color: rgba(245,158,11,0.55); color: #fcd34d; }
-.risk-badge.critical { border-color: rgba(239,68,68,0.7); color: #fca5a5; }
-.risk-badge.unknown { border-color: rgba(148,163,184,0.45); color: #cbd5e1; }
-.list {
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-  font-size:12px;
-}
-.item {
-  padding:8px;
-  border-radius:12px;
-  border:1px solid rgba(30,64,175,0.85);
-  background:rgba(15,23,42,0.96);
-}
-.item-title { font-weight: 600; }
-.item-meta { color:#9ca3af; font-size:11px; margin-top:2px; }
-.inline-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-.btn-primary {
-  padding:8px 14px;
-  border-radius:999px;
-  border:none;
-  background:#0ea5e9;
-  color:#fff;
-  font-size:12px;
-  cursor:pointer;
-}
-.btn-muted {
-  padding:8px 12px;
-  border-radius:999px;
-  border:1px solid rgba(148,163,184,0.5);
-  background:transparent;
-  color:#e5e7eb;
-  font-size:12px;
-  cursor:pointer;
-}
-select {
-  width: 100%;
-  border-radius: 12px;
-  border:1px solid rgba(30,64,175,0.85);
-  background: rgba(15,23,42,0.96);
-  color: #e5e7eb;
   font-size: 12px;
-  padding: 8px;
 }
-textarea {
-  width: 100%;
-  margin-top: 8px;
-  border-radius: 12px;
-  border:1px solid rgba(30,64,175,0.85);
-  background: rgba(15,23,42,0.96);
-  color: #e5e7eb;
-  font-size: 12px;
-  padding: 8px;
+
+#med-adherence-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
 }
+
+#alerts-list {
+  margin-bottom: 12px;
+}
+
 .toast {
   position: fixed;
   left: 16px;
   bottom: 16px;
-  background: rgba(15,23,42,0.96);
-  border: 1px solid rgba(148,163,184,0.5);
-  color: #e5e7eb;
-  border-radius: 10px;
-  padding: 9px 12px;
+  background: var(--sc-surface-strong);
+  border: 1px solid var(--sc-border);
+  color: var(--sc-text);
+  border-radius: var(--sc-radius-md);
+  padding: 10px 12px;
   font-size: 12px;
   display: none;
+  z-index: 40;
 }
-.stat-value.warn { color: #fcd34d; }
-.report-actions {
-  margin-top: 6px;
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+
+@media (max-width: 780px) {
+  .profile-overview-grid,
+  .vitals-grid,
+  #med-adherence-stats {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
 </head>
-<body>
-<div class="shell">
-  <div class="header">
-    <div class="header-main">
-      <div class="avatar" id="avatar-letter">ط</div>
+<body class="sc-page">
+<div class="sc-shell">
+  <header class="sc-page-header">
+    <div class="sc-page-header-main">
+      <div class="sc-page-icon" id="avatar-letter">ط</div>
       <div>
-        <div class="header-name" id="student-name">الملف الصحي للطالب</div>
-        <div class="header-sub">الوصول حسب الصلاحية: <span data-session-role>الطالب</span></div>
+        <h1 class="sc-page-title" id="student-name">الملف الصحي للطالب</h1>
+        <p class="sc-page-subtitle">الوصول حسب الصلاحية: <span data-session-role>الطالب</span></p>
       </div>
     </div>
-    <button class="btn-ghost" onclick="goRoleHome()">العودة</button>
-  </div>
-  <div class="section-nav">
-    <button class="section-btn" onclick="scrollProfileSection('cases')">سجل الحالات</button>
-    <button class="section-btn" onclick="scrollProfileSection('reports')">التقارير</button>
-    <button class="section-btn" onclick="scrollProfileSection('medication')">الالتزام الدوائي</button>
-    <button class="section-btn" onclick="scrollProfileSection('alerts')">التنبيهات والتواصل</button>
-  </div>
+    <div class="sc-header-actions">
+      <span class="sc-role-chip">Health Passport</span>
+      <button class="sc-action-btn" onclick="goRoleHome()">العودة</button>
+    </div>
+  </header>
 
-  <div class="layout">
-    <section class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">الملف الصحي الأساسي</div>
-          <div class="card-sub">بيانات الطالب، مؤشرات الحالة، وصلاحيات المتابعة.</div>
-        </div>
-        <span class="pill">Health Passport</span>
-      </div>
+  <section class="section-nav sc-section-nav">
+    <button class="section-btn sc-action-btn" onclick="scrollProfileSection('cases')">سجل الحالات</button>
+    <button class="section-btn sc-action-btn" onclick="scrollProfileSection('reports')">التقارير</button>
+    <button class="section-btn sc-action-btn" onclick="scrollProfileSection('medication')">الالتزام الدوائي</button>
+    <button class="section-btn sc-action-btn" onclick="scrollProfileSection('alerts')">التنبيهات والتواصل</button>
+  </section>
 
-      <div class="info-grid">
-        <div><div class="info-label">الاسم</div><div class="info-value" id="info-name">-</div></div>
-        <div><div class="info-label">المعرف</div><div class="info-value" id="info-id">-</div></div>
-        <div><div class="info-label">العمر</div><div class="info-value" id="info-age">-</div></div>
-        <div><div class="info-label">الصف</div><div class="info-value" id="info-grade">-</div></div>
-        <div><div class="info-label">تواصل ولي الأمر</div><div class="info-value" id="info-guardian">-</div></div>
-        <div><div class="info-label">آخر حالة</div><div class="info-value" id="info-latest-case">-</div></div>
-        <div><div class="info-label">آخر تحديث</div><div class="info-value" id="info-updated">-</div></div>
-      </div>
+  <section class="sc-grid-3 sc-kpi-grid sc-mb-24">
+    <article class="sc-kpi-card">
+      <div class="sc-kpi-label">الحالات المفتوحة</div>
+      <div id="st-open" class="sc-kpi-value">0</div>
+    </article>
+    <article class="sc-kpi-card">
+      <div class="sc-kpi-label">طلبات زيارة معلقة</div>
+      <div id="st-pending" class="sc-kpi-value">0</div>
+    </article>
+    <article class="sc-kpi-card">
+      <div class="sc-kpi-label">عدد التقارير</div>
+      <div id="st-reports" class="sc-kpi-value">0</div>
+    </article>
+  </section>
 
-      <div class="stats">
-        <div class="stat"><div class="stat-label">الحالات المفتوحة</div><div id="st-open" class="stat-value">0</div></div>
-        <div class="stat"><div class="stat-label">طلبات معلقة</div><div id="st-pending" class="stat-value">0</div></div>
-        <div class="stat"><div class="stat-label">التقارير</div><div id="st-reports" class="stat-value">0</div></div>
+  <section class="sc-grid-3">
+    <section class="sc-panel">
+      <h2 class="sc-panel-title">الملف الصحي الأساسي</h2>
+      <p class="sc-panel-subtitle">بيانات الطالب وصلاحيات المتابعة والتواصل السريع.</p>
+
+      <div class="profile-overview-grid sc-mb-16">
+        <div class="profile-overview-item"><div class="profile-overview-label">الاسم</div><div class="profile-overview-value" id="info-name">-</div></div>
+        <div class="profile-overview-item"><div class="profile-overview-label">المعرف</div><div class="profile-overview-value" id="info-id">-</div></div>
+        <div class="profile-overview-item"><div class="profile-overview-label">العمر</div><div class="profile-overview-value" id="info-age">-</div></div>
+        <div class="profile-overview-item"><div class="profile-overview-label">الصف</div><div class="profile-overview-value" id="info-grade">-</div></div>
+        <div class="profile-overview-item"><div class="profile-overview-label">تواصل ولي الأمر</div><div class="profile-overview-value" id="info-guardian">-</div></div>
+        <div class="profile-overview-item"><div class="profile-overview-label">آخر حالة</div><div class="profile-overview-value" id="info-latest-case">-</div></div>
+        <div class="profile-overview-item"><div class="profile-overview-label">آخر تحديث</div><div class="profile-overview-value" id="info-updated">-</div></div>
       </div>
 
       <div class="inline-row">
@@ -275,29 +164,13 @@ textarea {
       </div>
     </section>
 
-    <section class="card" id="cases">
-      <div class="card-header">
-        <div>
-          <div class="card-title">سجل الحالات</div>
-          <div class="card-sub">جميع الحالات المرتبطة بالطالب حسب الصلاحية.</div>
-        </div>
-        <span class="pill">Cases</span>
-      </div>
-      <div id="cases-list" class="list"></div>
-    </section>
+    <section class="sc-panel sc-col-span-2">
+      <h2 class="sc-panel-title">العلامات الحيوية والحساسات</h2>
+      <p class="sc-panel-subtitle">لوحة موحدة لقراءات الحيوية، حالة الخطورة، والحساسات المرتبطة.</p>
 
-    <section class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">العلامات الحيوية والحساسات</div>
-          <div class="card-sub">قراءات مباشرة للطالب مع متابعة حالة الحساسات.</div>
-        </div>
-        <span class="pill">Vitals</span>
-      </div>
-
-      <div class="inline-row" style="justify-content:space-between;align-items:center;">
+      <div class="inline-row" style="justify-content:space-between;align-items:center;margin-bottom:12px;">
         <span id="vt-risk" class="risk-badge unknown">غير متوفر</span>
-        <span class="card-sub">آخر تحديث: <span id="vt-updated">-</span></span>
+        <span class="sc-muted">آخر تحديث: <span id="vt-updated">-</span></span>
       </div>
 
       <div class="vitals-grid">
@@ -307,65 +180,83 @@ textarea {
         <div class="vital"><div class="vital-label">الضغط</div><div class="vital-value" id="vt-bp">-</div></div>
       </div>
 
-      <div class="inline-row">
+      <div class="inline-row sc-mb-16">
         <button class="btn-primary" data-permission="update.vitals" onclick="generateVitalsReading()">توليد قراءة حساسات</button>
         <button class="btn-muted" onclick="loadProfile()">تحديث القراءات</button>
       </div>
 
-      <div class="card-sub" style="margin-top:10px;">الحساسات المرتبطة</div>
-      <div id="sensors-list" class="list"></div>
+      <h3 class="sc-panel-title">الحساسات المرتبطة</h3>
+      <div id="sensors-list" class="list sc-mb-16"></div>
 
-      <div class="card-sub" style="margin-top:10px;">آخر القراءات</div>
+      <h3 class="sc-panel-title">آخر القراءات</h3>
       <div id="vitals-history-list" class="list"></div>
     </section>
 
-    <section class="card" id="reports">
-      <div class="card-header">
-        <div>
-          <div class="card-title">التقارير الصحية</div>
-          <div class="card-sub">التقارير المتاحة للعرض أو التصدير.</div>
-        </div>
-        <span class="pill">Reports</span>
+    <section class="sc-panel sc-col-span-3" id="cases">
+      <h2 class="sc-panel-title">سجل الحالات</h2>
+      <p class="sc-panel-subtitle">جميع الحالات المرتبطة بالطالب حسب الصلاحية.</p>
+      <div class="sc-table-wrap">
+        <table class="sc-table">
+          <thead>
+            <tr>
+              <th>عنوان الحالة</th>
+              <th>الخطورة</th>
+              <th>الحالة</th>
+              <th>آخر تحديث</th>
+            </tr>
+          </thead>
+          <tbody id="cases-table-body">
+            <tr><td colspan="4" class="sc-table-empty">لا توجد حالات مسجلة.</td></tr>
+          </tbody>
+        </table>
       </div>
-      <div id="reports-list" class="list"></div>
     </section>
 
-    <section class="card" id="medication">
-      <div class="card-header">
-        <div>
-          <div class="card-title">الالتزام الدوائي الأسبوعي</div>
-          <div class="card-sub">قياس الجرعات المنفذة ومتابعة الانخفاض قبل وصوله لمستوى خطر.</div>
-        </div>
-        <span class="pill">Medication</span>
+    <section class="sc-panel" id="reports">
+      <h2 class="sc-panel-title">التقارير الصحية</h2>
+      <p class="sc-panel-subtitle">تقارير قابلة للعرض والتصدير.</p>
+      <div class="sc-table-wrap">
+        <table class="sc-table">
+          <thead>
+            <tr>
+              <th>اسم التقرير</th>
+              <th>التاريخ</th>
+              <th>إجراء</th>
+            </tr>
+          </thead>
+          <tbody id="reports-table-body">
+            <tr><td colspan="3" class="sc-table-empty">لا توجد تقارير متاحة.</td></tr>
+          </tbody>
+        </table>
       </div>
+    </section>
+
+    <section class="sc-panel sc-col-span-2" id="medication">
+      <h2 class="sc-panel-title">الالتزام الدوائي الأسبوعي</h2>
+      <p class="sc-panel-subtitle">قياس الجرعات المنفذة والتنبيه قبل انخفاض الالتزام.</p>
       <div id="med-adherence-stats" class="stats"></div>
-      <div class="inline-row">
+      <div class="inline-row sc-mb-16">
         <select id="med-plan-select"></select>
         <button class="btn-primary" onclick="logMedicationFromProfile('taken')">تم أخذ الجرعة</button>
         <button class="btn-muted" onclick="logMedicationFromProfile('skipped')">تم تجاوز الجرعة</button>
       </div>
-      <div class="inline-row" data-permission="prescribe.medication">
+      <div class="inline-row sc-mb-16" data-permission="prescribe.medication">
         <button class="btn-primary" onclick="createMedicationPlanFromProfile()">إضافة خطة دوائية</button>
       </div>
       <div id="med-recent-logs" class="list"></div>
     </section>
 
-    <section class="card" id="alerts">
-      <div class="card-header">
-        <div>
-          <div class="card-title">التنبيهات والتواصل</div>
-          <div class="card-sub">تنبيهاتك الصحية مع قناة تواصل مباشرة.</div>
-        </div>
-        <span class="pill">Alerts & Messages</span>
-      </div>
+    <section class="sc-panel sc-col-span-3" id="alerts">
+      <h2 class="sc-panel-title">التنبيهات والتواصل</h2>
+      <p class="sc-panel-subtitle">تنبيهاتك الصحية مع قناة تواصل مباشرة.</p>
       <div id="alerts-list" class="list"></div>
       <textarea id="msg-box" rows="3" data-permission="send.message" placeholder="اكتب رسالتك للعيادة..."></textarea>
-      <div class="inline-row">
+      <div class="inline-row" style="margin-top:12px;">
         <button class="btn-primary" data-permission="send.message" onclick="sendMessage()">إرسال الرسالة</button>
         <button class="btn-muted" onclick="loadProfile()">تحديث</button>
       </div>
     </section>
-  </div>
+  </section>
 </div>
 
 <div id="toast" class="toast"></div>
@@ -456,6 +347,50 @@ function riskLabel(risk) {
   return map[risk] || map.unknown;
 }
 
+function severityTone(value) {
+  var level = String(value || '').toLowerCase();
+  if (level === 'critical' || level === 'حرجة') return 'sc-severity-critical';
+  if (level === 'medium' || level === 'moderate' || level === 'warning' || level === 'متوسطة') return 'sc-severity-medium';
+  if (level === 'low' || level === 'stable' || level === 'منخفضة' || level === 'مستقرة') return 'sc-severity-low';
+  return '';
+}
+
+function renderCasesTable(items) {
+  var tbody = document.getElementById('cases-table-body');
+  if (!items || !items.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="sc-table-empty">لا توجد حالات مسجلة.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = items.map(function (c) {
+    var tone = severityTone(c.severity);
+    return '<tr>' +
+      '<td>' + escapeHtml(c.title || 'حالة') + '</td>' +
+      '<td><span class="sc-badge ' + tone + '">' + escapeHtml(c.severity || '-') + '</span></td>' +
+      '<td>' + escapeHtml(c.status || '-') + '</td>' +
+      '<td>' + escapeHtml(fmtDate(c.updatedAt)) + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function renderReportsTable(items) {
+  var tbody = document.getElementById('reports-table-body');
+  if (!items || !items.length) {
+    tbody.innerHTML = '<tr><td colspan="3" class="sc-table-empty">لا توجد تقارير متاحة.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = items.map(function (r) {
+    var id = String((r && r.id) || '');
+    var action = id
+      ? ('<button class="btn-muted" type="button" onclick="exportProfileReport(\'' + escapeHtml(id) + '\')">تصدير</button>')
+      : '-';
+    return '<tr>' +
+      '<td>' + escapeHtml(r.title || 'تقرير') + '</td>' +
+      '<td>' + escapeHtml(fmtDate(r.createdAt)) + '</td>' +
+      '<td>' + action + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
 function renderList(id, items, emptyText, mapper) {
   var wrap = document.getElementById(id);
   if (!items || !items.length) {
@@ -518,18 +453,8 @@ function renderProfile(data) {
   document.getElementById('st-pending').textContent = Number(snapshot.pendingVisits || 0);
   document.getElementById('st-reports').textContent = Number(snapshot.reports || 0);
 
-  renderList('cases-list', latestData.cases, 'لا توجد حالات مسجلة.', function (c) {
-    return '<div class="item"><div class="item-title">' + (c.title || 'حالة') + '</div><div class="item-meta">الخطورة: ' + (c.severity || '-') + ' • الحالة: ' + (c.status || '-') + ' • ' + fmtDate(c.updatedAt) + '</div></div>';
-  });
-
-  renderList('reports-list', latestData.reports, 'لا توجد تقارير متاحة.', function (r) {
-    var id = String((r && r.id) || '');
-    var exportBtn = '';
-    if (id) {
-      exportBtn = '<div class="report-actions"><button class="btn-muted" type="button" onclick="exportProfileReport(\'' + escapeHtml(id) + '\')">تصدير هذا التقرير</button></div>';
-    }
-    return '<div class="item"><div class="item-title">' + escapeHtml(r.title || 'تقرير') + '</div><div class="item-meta">' + fmtDate(r.createdAt) + '</div>' + exportBtn + '</div>';
-  });
+  renderCasesTable(latestData.cases || []);
+  renderReportsTable(latestData.reports || []);
 
   renderList('alerts-list', latestData.alerts, 'لا توجد تنبيهات جديدة.', function (a) {
     return '<div class="item"><div class="item-title">' + (a.text || 'تنبيه') + '</div><div class="item-meta">' + fmtDate(a.createdAt) + '</div></div>';
@@ -874,7 +799,7 @@ window.addEventListener('DOMContentLoaded', function () {
       links.push({ label: 'تفاصيل الحالة', href: linkedCaseId ? ('case-details.html?id=' + encodeURIComponent(linkedCaseId)) : 'case-details.html?id=case_1' });
     }
     SmartClinicUI.mountQuickNav({
-      afterSelector: '.header',
+      afterSelector: '.sc-page-header',
       onRefresh: loadProfile,
       links: links
     });

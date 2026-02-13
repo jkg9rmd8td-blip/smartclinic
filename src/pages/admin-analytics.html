@@ -4,164 +4,143 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dashboard تحليلي – Smart Clinic</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/css/variables.css">
+<link rel="stylesheet" href="../../assets/css/layout.css">
+<link rel="stylesheet" href="../../assets/css/cards.css">
+<link rel="stylesheet" href="../../assets/css/tables.css">
 <style>
-:root {
-  --bg1: #0e1a2b;
-  --bg2: #152f47;
-  --card: rgba(12, 34, 56, 0.82);
-  --line: rgba(147, 197, 253, 0.3);
-  --text: #f1f8ff;
-  --soft: #b8cee2;
-  --accent: #38bdf8;
-  --ok: #22c55e;
-  --warn: #f59e0b;
-  --danger: #ef4444;
+.analytics-hero {
+  margin-bottom: var(--sc-space-5);
 }
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  font-family: "Tajawal", sans-serif;
-  color: var(--text);
-  background:
-    radial-gradient(900px 460px at 8% 0%, rgba(56,189,248,.2), transparent 60%),
-    linear-gradient(130deg, var(--bg1), var(--bg2));
-  min-height: 100vh;
-  padding: 18px 14px;
+
+.analytics-hero .sc-panel-title {
+  font-size: 30px;
 }
-.shell { max-width: 1240px; margin: 0 auto; }
-.top {
-  display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
-  margin-bottom: 12px;
-}
-.btn {
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--text);
-  border-radius: 10px;
-  padding: 8px 12px;
-  font: inherit;
-  cursor: pointer;
-}
-.chip {
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgba(255,255,255,0.04);
-  color: var(--soft);
-  padding: 8px 14px;
-  font-size: 13px;
-}
-.hero {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 16px;
-}
-.hero h1 { margin: 0; font-size: 32px; }
-.hero p { margin: 6px 0 0; color: var(--soft); }
-.stats {
-  margin-top: 12px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
-}
-.stat {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 12px;
-}
-.stat .label { color: var(--soft); font-size: 13px; }
-.stat .value { margin-top: 4px; font-size: 30px; font-weight: 800; }
-.grid {
-  margin-top: 12px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.panel {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 12px;
-}
-.panel h2 { margin: 0 0 8px; font-size: 20px; }
-.row {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  align-items: center;
-  background: rgba(255,255,255,.04);
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 10px;
-  padding: 8px;
-  margin-top: 6px;
-}
-.badge { border-radius: 999px; padding: 2px 8px; font-size: 12px; }
-.b-ok { background: rgba(34,197,94,.18); color: #86efac; }
-.b-warn { background: rgba(245,158,11,.2); color: #fcd34d; }
-.b-danger { background: rgba(239,68,68,.2); color: #fca5a5; }
-.log {
-  margin-top: 6px;
-  background: rgba(255,255,255,.03);
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 10px;
-  padding: 8px;
-}
-.log .meta { color: var(--soft); font-size: 12px; }
-@media (max-width: 900px) {
-  .grid { grid-template-columns: 1fr; }
+
+.analytics-panel .sc-table-wrap + .sc-panel-title {
+  margin-top: 18px;
 }
 </style>
 </head>
-<body>
-<div class="shell">
-  <div class="top">
-    <div class="chip">Dashboard حي • تحديث تلقائي كل 15 ثانية</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <button class="btn" onclick="window.location.href='admin-dashboard.html'">لوحة الإدارة</button>
-      <button class="btn" data-action="logout">تسجيل الخروج</button>
+<body class="sc-page">
+<div class="sc-shell">
+  <header class="sc-page-header">
+    <div class="sc-page-header-main">
+      <div class="sc-page-icon">📊</div>
+      <div>
+        <h1 class="sc-page-title">التحليلات الحية للمنصة</h1>
+        <p class="sc-page-subtitle">قراءة مباشرة من API للحالات، المستخدمين، الطلبات، والأنشطة التشغيلية.</p>
+      </div>
     </div>
-  </div>
+    <div class="sc-header-actions">
+      <span class="sc-role-chip">تحديث تلقائي كل 15 ثانية</span>
+      <button class="sc-action-btn" onclick="window.location.href='admin-dashboard.html'">لوحة الإدارة</button>
+      <button class="sc-action-btn" data-action="logout">تسجيل الخروج</button>
+    </div>
+  </header>
 
-  <section class="hero">
-    <h1>التحليلات الحية للمنصة</h1>
-    <p>قراءة مباشرة من API للحالات، المستخدمين، الطلبات، والأنشطة التشغيلية.</p>
+  <section class="sc-panel analytics-hero">
+    <h2 class="sc-panel-title">لوحة الإحصاء التشغيلي</h2>
+    <p class="sc-panel-subtitle">مؤشرات KPI موحدة + جداول تشغيلية بنفس التنسيق عبر الصفحات الإدارية والطبية.</p>
   </section>
 
-  <section id="snapshot" class="stats"></section>
+  <section id="snapshot" class="sc-grid-3 sc-kpi-grid sc-mb-24"></section>
 
-  <section class="grid">
-    <section class="panel">
-      <h2>توزيع الحالات</h2>
-      <div id="statusDist"></div>
-      <h2 style="margin-top:10px;">توزيع الخطورة</h2>
-      <div id="severityDist"></div>
+  <section class="sc-grid-3">
+    <section class="sc-panel analytics-panel">
+      <h2 class="sc-panel-title">توزيع الحالات</h2>
+      <div class="sc-table-wrap">
+        <table class="sc-table">
+          <thead>
+            <tr>
+              <th>التصنيف</th>
+              <th>القيمة</th>
+            </tr>
+          </thead>
+          <tbody id="statusDist"></tbody>
+        </table>
+      </div>
     </section>
 
-    <section class="panel">
-      <h2>توزيع الأدوار</h2>
-      <div id="rolesDist"></div>
-      <h2 style="margin-top:10px;">نشاط اليوم</h2>
-      <div id="todayDist"></div>
+    <section class="sc-panel analytics-panel">
+      <h2 class="sc-panel-title">توزيع الخطورة</h2>
+      <div class="sc-table-wrap">
+        <table class="sc-table">
+          <thead>
+            <tr>
+              <th>مستوى الخطورة</th>
+              <th>القيمة</th>
+            </tr>
+          </thead>
+          <tbody id="severityDist"></tbody>
+        </table>
+      </div>
     </section>
-  </section>
 
-  <section class="panel" style="margin-top:10px;">
-    <h2>آخر العمليات</h2>
-    <div id="recentLogs"></div>
+    <section class="sc-panel analytics-panel">
+      <h2 class="sc-panel-title">توزيع الأدوار</h2>
+      <div class="sc-table-wrap">
+        <table class="sc-table">
+          <thead>
+            <tr>
+              <th>الدور</th>
+              <th>القيمة</th>
+            </tr>
+          </thead>
+          <tbody id="rolesDist"></tbody>
+        </table>
+      </div>
+
+      <h3 class="sc-panel-title">نشاط اليوم</h3>
+      <div class="sc-table-wrap">
+        <table class="sc-table">
+          <thead>
+            <tr>
+              <th>المؤشر</th>
+              <th>القيمة</th>
+            </tr>
+          </thead>
+          <tbody id="todayDist"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="sc-panel sc-col-span-3 analytics-panel">
+      <h2 class="sc-panel-title">آخر العمليات</h2>
+      <div class="sc-table-wrap">
+        <table class="sc-table">
+          <thead>
+            <tr>
+              <th>الإجراء</th>
+              <th>المستهدف</th>
+              <th>الدور</th>
+              <th>الوقت</th>
+            </tr>
+          </thead>
+          <tbody id="recentLogs"></tbody>
+        </table>
+      </div>
+    </section>
   </section>
 </div>
 
 <script src="../../assets/js/security.js"></script>
 <script>
-function rowHtml(label, value, cls) {
-  return '<div class="row"><span>' + label + '</span><span class="badge ' + cls + '">' + value + '</span></div>';
+function safeNum(v) { return typeof v === 'number' ? v : 0; }
+
+function severityBadgeClass(key) {
+  var normalized = String(key || '').toLowerCase();
+  if (normalized.indexOf('critical') !== -1 || normalized.indexOf('حرج') !== -1) return 'sc-severity-critical';
+  if (normalized.indexOf('medium') !== -1 || normalized.indexOf('warning') !== -1 || normalized.indexOf('متوسط') !== -1) return 'sc-severity-medium';
+  if (normalized.indexOf('low') !== -1 || normalized.indexOf('stable') !== -1 || normalized.indexOf('منخفض') !== -1) return 'sc-severity-low';
+  return '';
 }
 
-function safeNum(v) { return typeof v === 'number' ? v : 0; }
+function valueBadgeClass(value) {
+  if (value >= 3) return 'b-danger';
+  if (value >= 1) return 'b-warn';
+  return 'b-ok';
+}
 
 function renderSnapshot(s) {
   var items = [
@@ -173,39 +152,50 @@ function renderSnapshot(s) {
     ['تنبيهات مفتوحة', safeNum(s.openAlerts)]
   ];
   document.getElementById('snapshot').innerHTML = items.map(function (it) {
-    return '<article class="stat"><div class="label">' + it[0] + '</div><div class="value">' + it[1] + '</div></article>';
+    return '<article class="sc-kpi-card"><div class="sc-kpi-label">' + it[0] + '</div><div class="sc-kpi-value">' + it[1] + '</div></article>';
   }).join('');
 }
 
 function renderDist(id, obj) {
+  var body = document.getElementById(id);
   var keys = Object.keys(obj || {});
   if (!keys.length) {
-    document.getElementById(id).innerHTML = '<div class="row">لا توجد بيانات</div>';
+    body.innerHTML = '<tr><td colspan="2" class="sc-table-empty">لا توجد بيانات</td></tr>';
     return;
   }
-  document.getElementById(id).innerHTML = keys.map(function (k) {
+  body.innerHTML = keys.map(function (k) {
     var val = safeNum(obj[k]);
-    var cls = val >= 3 ? 'b-danger' : (val >= 1 ? 'b-warn' : 'b-ok');
-    return rowHtml(k, val, cls);
+    var cls = id === 'severityDist' ? severityBadgeClass(k) : valueBadgeClass(val);
+    return '<tr><td>' + k + '</td><td><span class="sc-badge ' + cls + '">' + val + '</span></td></tr>';
   }).join('');
 }
 
 function renderRecent(logs) {
-  var wrap = document.getElementById('recentLogs');
+  var body = document.getElementById('recentLogs');
   if (!logs || !logs.length) {
-    wrap.innerHTML = '<div class="log">لا توجد عمليات مسجلة.</div>';
+    body.innerHTML = '<tr><td colspan="4" class="sc-table-empty">لا توجد عمليات مسجلة.</td></tr>';
     return;
   }
-  wrap.innerHTML = logs.map(function (l) {
-    var when = new Date(l.createdAt).toLocaleString('ar-SA');
-    return '<div class="log"><div><strong>' + l.action + '</strong></div><div class="meta">المستهدف: ' + (l.target || '-') + ' | الدور: ' + (l.actorRole || '-') + '</div><div class="meta">' + when + '</div></div>';
+  body.innerHTML = logs.map(function (l) {
+    var when = l.createdAt ? new Date(l.createdAt).toLocaleString('ar-SA') : '-';
+    return '<tr>' +
+      '<td><strong>' + (l.action || '-') + '</strong></td>' +
+      '<td>' + (l.target || '-') + '</td>' +
+      '<td>' + (l.actorRole || '-') + '</td>' +
+      '<td>' + when + '</td>' +
+    '</tr>';
   }).join('');
 }
 
 async function loadAnalytics() {
   var result = await SmartClinicSecurity.apiJson('/analytics/overview');
   if (!result.ok || !result.data) {
-    document.getElementById('snapshot').innerHTML = '<article class="stat"><div class="label">خطأ</div><div class="value">الخادم غير متاح</div></article>';
+    document.getElementById('snapshot').innerHTML = '<article class="sc-kpi-card"><div class="sc-kpi-label">خطأ</div><div class="sc-kpi-value">الخادم غير متاح</div></article>';
+    renderDist('statusDist', {});
+    renderDist('severityDist', {});
+    renderDist('rolesDist', {});
+    renderDist('todayDist', {});
+    renderRecent([]);
     return;
   }
   var payload = result.data;

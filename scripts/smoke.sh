@@ -120,6 +120,26 @@ for endpoint in "${auth_endpoints[@]}"; do
   check_code "200" "$(http_code GET "$endpoint" "$token")" "$endpoint"
 done
 
+triage_code="$(
+  curl -s -o /dev/null -w "%{http_code}" \
+    -X POST \
+    -H "Authorization: Bearer $token" \
+    -H "content-type: application/json" \
+    -d '{"caseId":"case_1","complaint":"ضيق تنفس"}' \
+    "$BASE_URL/api/ai/triage" 2>/dev/null || true
+)"
+check_code "200" "${triage_code:-000}" "/api/ai/triage"
+
+doctor_ai_code="$(
+  curl -s -o /dev/null -w "%{http_code}" \
+    -X POST \
+    -H "Authorization: Bearer $token" \
+    -H "content-type: application/json" \
+    -d '{"caseId":"case_1","complaint":"ضيق تنفس","note":"متابعة حالة تنفسية"}' \
+    "$BASE_URL/api/ai/doctor-support" 2>/dev/null || true
+)"
+check_code "200" "${doctor_ai_code:-000}" "/api/ai/doctor-support"
+
 check_code "200" "$(http_code POST /api/auth/logout "$token")" "/api/auth/logout"
 
 echo "TOTAL:$TOTAL BAD:$BAD"

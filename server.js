@@ -52,6 +52,42 @@ const SECURITY_HEADERS = {
   'Referrer-Policy': 'same-origin'
 };
 
+const SMART_TRIAGE_PROTOCOLS = {
+  immediate: {
+    id: 'SC-TRIAGE-01',
+    title: 'بروتوكول الاستجابة الفورية',
+    triageCode: 'RED',
+    primaryRecommendation: 'الحالة تستدعي تدخلًا فوريًا: تفعيل مسار الطوارئ وتثبيت المؤشرات الحيوية دون تأخير.',
+    actions: [
+      'تفعيل بروتوكول الطوارئ (ABC) خلال دقائق.',
+      'إعادة قياس العلامات الحيوية كل 5-10 دقائق.',
+      'تجهيز التحويل الخارجي/الإسعاف عند عدم الاستقرار.'
+    ]
+  },
+  follow_up: {
+    id: 'SC-TRIAGE-02',
+    title: 'بروتوكول المتابعة العاجلة',
+    triageCode: 'YELLOW',
+    primaryRecommendation: 'الحالة تحتاج متابعة طبية قريبة مع مراقبة لصيقة وتقييم خلال نفس المناوبة.',
+    actions: [
+      'مراجعة الطبيب المناوب وتحديث خطة الرعاية.',
+      'إعادة قياس العلامات الحيوية كل 15-30 دقيقة.',
+      'إبلاغ ولي الأمر بمتطلبات المتابعة.'
+    ]
+  },
+  simple: {
+    id: 'SC-TRIAGE-03',
+    title: 'بروتوكول الرعاية الأولية',
+    triageCode: 'GREEN',
+    primaryRecommendation: 'الحالة بسيطة حاليًا: متابعة روتينية وتطبيق الإرشادات العامة مع إعادة التقييم عند تغير الأعراض.',
+    actions: [
+      'التعامل بالأعراض العامة (راحة/سوائل/مراقبة).',
+      'إعادة تقييم الحالة خلال 24 ساعة أو عند أي تدهور.',
+      'توثيق الشكوى والإرشادات في الملف الصحي.'
+    ]
+  }
+};
+
 function withSecurityHeaders(headers) {
   return Object.assign({}, SECURITY_HEADERS, headers || {});
 }
@@ -424,13 +460,15 @@ function getSettings(data) {
       criticalResponseMinutes: 5,
       highResponseMinutes: 15,
       normalResponseMinutes: 30
-    }
+    },
+    protocolVersion: '2026.02'
   };
   const incoming = data.settings || {};
   return {
     sessionPolicy: Object.assign({}, fallback.sessionPolicy, incoming.sessionPolicy || {}),
     alerts: Object.assign({}, fallback.alerts, incoming.alerts || {}),
-    sla: Object.assign({}, fallback.sla, incoming.sla || {})
+    sla: Object.assign({}, fallback.sla, incoming.sla || {}),
+    protocolVersion: ensureString(incoming.protocolVersion, 0, 40, fallback.protocolVersion)
   };
 }
 
@@ -849,6 +887,205 @@ function vitalsPayloadForStudent(data, studentId, limit = 20) {
   };
 }
 
+function includesAnyKeyword(text, keywords) {
+  const source = String(text || '').toLowerCase();
+  return (keywords || []).some((word) => source.includes(String(word || '').toLowerCase()));
+}
+
+function normalizeCaseSeverityValue(severity) {
+  const value = ensureString(severity, 0, 20, 'low').toLowerCase();
+  if (['critical', 'high', 'medium', 'low'].includes(value)) return value;
+  return 'low';
+}
+
+function latestVisitReasonForStudent(data, studentId) {
+  const items = (data.visitRequests || [])
+    .filter((item) => item.studentId === studentId)
+    .slice()
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  const latest = items[0] || null;
+  return latest ? ensureString(latest.reason, 0, 260, '') : '';
+}
+
+function compactCaseHistory(data, studentId, currentCaseId) {
+  return (data.cases || [])
+    .filter((item) => item.studentId === studentId && item.id !== currentCaseId)
+    .slice()
+    .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))
+    .slice(0, 6);
+}
+
+function smartTriageHistoryProfile(data, studentId, currentCaseId) {
+  const student = findStudent(data, studentId) || {};
+  const previousCases = compactCaseHistory(data, studentId, currentCaseId);
+  const previousCriticalCases = previousCases.filter((item) => item.severity === 'critical').length;
+  const previousHighRiskCases = previousCases.filter((item) => ['critical', 'high'].includes(item.severity)).length;
+  const historyText = [
+    ensureString(student.medicalHistory, 0, 500, ''),
+    ensureString(student.chronicCondition, 0, 300, ''),
+    previousCases.map((item) => `${item.title || ''} ${item.notes || ''}`).join(' ')
+  ].join(' ').trim();
+  const chronicRiskWords = ['ربو', 'سكري', 'قلب', 'صرع', 'حساسية', 'مناعي', 'كلوي', 'تنفسي مزمن'];
+  const hasHighRiskHistory = includesAnyKeyword(historyText, chronicRiskWords) || previousCriticalCases > 0;
+
+  return {
+    studentId,
+    previousCasesCount: previousCases.length,
+    previousCriticalCases,
+    previousHighRiskCases,
+    hasHighRiskHistory,
+    historyText: ensureString(historyText, 0, 700, '')
+  };
+}
+
+function smartTriageDecisionForCase(data, targetCase, input = {}) {
+  const settings = getSettings(data);
+  const studentId = targetCase.studentId;
+  const latestVitals = vitalsPayloadForStudent(data, studentId, 1).latest;
+  const latestVisitReason = latestVisitReasonForStudent(data, studentId);
+  const complaint = ensureString(
+    [input.complaint, input.note, targetCase.title, latestVisitReason].filter(Boolean).join(' | '),
+    0,
+    700,
+    ensureString(targetCase.title, 0, 260, 'بدون شكوى مكتوبة')
+  );
+  const complaintText = complaint.toLowerCase();
+  const history = smartTriageHistoryProfile(data, studentId, targetCase.id);
+  const reasons = [];
+  let score = 0;
+
+  const severeComplaintWords = ['ضيق تنفس', 'اختناق', 'فقدان الوعي', 'إغماء', 'تشنج', 'نزيف', 'ألم صدر', 'شلل', 'cyanosis', 'unresponsive'];
+  const followComplaintWords = ['حمى', 'صداع', 'دوخة', 'دوار', 'غثيان', 'قيء', 'سعال', 'ألم', 'إرهاق'];
+
+  if (!latestVitals) {
+    score += 8;
+    reasons.push('لا توجد قراءة حيوية حديثة، يلزم قياس أساسي قبل الإغلاق.');
+  } else {
+    if (latestVitals.spo2 <= 92) {
+      score += 45;
+      reasons.push(`SpO2 منخفض (${latestVitals.spo2}%).`);
+    } else if (latestVitals.spo2 <= 94) {
+      score += 24;
+      reasons.push(`SpO2 يحتاج متابعة (${latestVitals.spo2}%).`);
+    }
+
+    if (latestVitals.hr >= 130 || latestVitals.hr <= 45) {
+      score += 34;
+      reasons.push(`معدل نبض خارج النطاق الآمن (${latestVitals.hr}).`);
+    } else if (latestVitals.hr >= 110 || latestVitals.hr <= 54) {
+      score += 16;
+      reasons.push(`النبض يميل للاضطراب (${latestVitals.hr}).`);
+    }
+
+    if (latestVitals.temp >= 39.2) {
+      score += 30;
+      reasons.push(`ارتفاع حرارة شديد (${latestVitals.temp}°C).`);
+    } else if (latestVitals.temp >= 37.8) {
+      score += 14;
+      reasons.push(`حرارة فوق الطبيعي (${latestVitals.temp}°C).`);
+    }
+
+    if (latestVitals.bpSys >= 160 || latestVitals.bpDia >= 100 || latestVitals.bpSys <= 90 || latestVitals.bpDia <= 55) {
+      score += 30;
+      reasons.push(`ضغط دم غير مستقر (${latestVitals.bpSys}/${latestVitals.bpDia}).`);
+    } else if (latestVitals.bpSys >= 145 || latestVitals.bpDia >= 92) {
+      score += 13;
+      reasons.push(`ضغط دم يحتاج متابعة (${latestVitals.bpSys}/${latestVitals.bpDia}).`);
+    }
+
+    if (latestVitals.risk === 'critical') {
+      score += 24;
+      reasons.push('تصنيف العلامات الحيوية الحالي = critical.');
+    } else if (latestVitals.risk === 'warning') {
+      score += 12;
+      reasons.push('تصنيف العلامات الحيوية الحالي = warning.');
+    }
+  }
+
+  if (includesAnyKeyword(complaintText, severeComplaintWords)) {
+    score += 30;
+    reasons.push('الشكوى تتضمن مؤشرات خطورة عالية سريريًا.');
+  } else if (includesAnyKeyword(complaintText, followComplaintWords)) {
+    score += 12;
+    reasons.push('الشكوى تتضمن أعراضًا تستدعي متابعة طبية.');
+  }
+
+  if (history.hasHighRiskHistory) {
+    score += 14;
+    reasons.push('وجود تاريخ مرضي/حالات سابقة ترفع عامل الخطورة.');
+  }
+
+  const normalizedSeverity = normalizeCaseSeverityValue(targetCase.severity);
+  if (normalizedSeverity === 'critical') {
+    score += 22;
+    reasons.push('الحالة الحالية موسومة كـ critical.');
+  } else if (normalizedSeverity === 'high') {
+    score += 12;
+    reasons.push('الحالة الحالية موسومة كـ high.');
+  } else if (normalizedSeverity === 'medium') {
+    score += 6;
+  }
+
+  score = Math.max(0, Math.min(100, Math.round(score)));
+
+  let classification = 'simple';
+  if (score >= 70) {
+    classification = 'immediate';
+  } else if (score >= 35) {
+    classification = 'follow_up';
+  }
+
+  const protocol = SMART_TRIAGE_PROTOCOLS[classification] || SMART_TRIAGE_PROTOCOLS.simple;
+  const labels = {
+    simple: 'بسيطة',
+    follow_up: 'تحتاج متابعة',
+    immediate: 'تستدعي تدخلاً فورياً'
+  };
+
+  let confidenceBase = 0.66;
+  if (latestVitals) confidenceBase += 0.12;
+  if (complaint && complaint !== 'بدون شكوى مكتوبة') confidenceBase += 0.1;
+  if (history.historyText) confidenceBase += 0.08;
+  if (classification === 'immediate') confidenceBase += 0.03;
+  const confidence = Math.max(0.62, Math.min(0.97, Number(confidenceBase.toFixed(2))));
+
+  return {
+    generatedAt: nowIso(),
+    classification,
+    classificationLabel: labels[classification] || labels.simple,
+    triageCode: protocol.triageCode,
+    score,
+    confidence,
+    protocol: {
+      id: protocol.id,
+      title: protocol.title,
+      version: ensureString(settings && settings.protocolVersion, 0, 40, '2026.02'),
+      source: 'SmartClinic Clinical Protocols'
+    },
+    complaint,
+    latestVitals: latestVitals ? {
+      temp: latestVitals.temp,
+      spo2: latestVitals.spo2,
+      hr: latestVitals.hr,
+      bpSys: latestVitals.bpSys,
+      bpDia: latestVitals.bpDia,
+      risk: latestVitals.risk || 'unknown',
+      measuredAt: latestVitals.measuredAt || null
+    } : null,
+    history: {
+      previousCasesCount: history.previousCasesCount,
+      previousCriticalCases: history.previousCriticalCases,
+      previousHighRiskCases: history.previousHighRiskCases,
+      hasHighRiskHistory: history.hasHighRiskHistory
+    },
+    rationale: reasons.slice(0, 7),
+    recommendation: {
+      primary: protocol.primaryRecommendation,
+      actions: protocol.actions.slice(0, 3)
+    }
+  };
+}
+
 function aiStudentSupport(data, studentId, input) {
   const text = ensureString(input && input.text, 0, 600, '');
   const context = String(text || '').toLowerCase();
@@ -922,6 +1159,7 @@ function aiDoctorSupport(data, caseId, input) {
   const note = ensureString(input && input.note, 0, 800, '');
   const context = String(note || '').toLowerCase();
   const flow = emergencyFlowForCase(data, target.id);
+  const triageDecision = smartTriageDecisionForCase(data, target, input || {});
   const caseLogs = (data.auditLogs || []).filter(l => l.target === target.id);
   const hasReferral = caseLogs.some(l => l.action === 'case.action.external_referral' || l.action === 'case.action.ambulance_dispatch');
   const hasProtocol = caseLogs.some(l => l.action === 'case.action.emergency_protocol');
@@ -929,11 +1167,14 @@ function aiDoctorSupport(data, caseId, input) {
   const urgentWords = ['هبوط', 'فشل', 'نزيف', 'اختناق', 'severe', 'critical'];
   const contextCritical = urgentWords.some(word => context.includes(word));
 
-  let priority = target.severity === 'critical' ? 'immediate' : (target.severity === 'high' ? 'urgent' : 'standard');
+  let priority = triageDecision.classification === 'immediate'
+    ? 'immediate'
+    : (triageDecision.classification === 'follow_up' ? 'urgent' : 'standard');
   if (flow && flow.urgency && flow.urgency.breached) priority = 'immediate';
   if (contextCritical) priority = 'immediate';
 
   const checklist = [];
+  checklist.push('الفرز الذكي: ' + triageDecision.classificationLabel + ' (' + triageDecision.protocol.id + ')');
   if (!hasProtocol) checklist.push('تفعيل بروتوكول الطوارئ للحالة');
   checklist.push('تحديث العلامات الحيوية مع توثيق واضح');
   if (!hasGuardian) checklist.push('إشعار ولي الأمر بحالة الطالب');
@@ -948,14 +1189,20 @@ function aiDoctorSupport(data, caseId, input) {
     'استقرار أولي: تأمين مجرى التنفس وتقييم ABC',
     'مراقبة مستمرة: قياس SpO2 والنبض والضغط كل 10 دقائق',
     'تواصل: تحديث الحالة للطبيب المناوب وولي الأمر',
+    'تطبيق توصية الفرز الذكي: ' + triageDecision.recommendation.primary,
     hasReferral ? 'التحويل الخارجي مفعل بالفعل - استكمال التوثيق والتسليم' : 'قرار التحويل الخارجي حسب الاستجابة خلال نافذة SLA'
   ];
+
+  const triageCode = triageDecision.triageCode || (flow && flow.urgency ? flow.urgency.triage : 'YELLOW');
+  const recommendation = flow && flow.recommendation
+    ? (triageDecision.recommendation.primary + ' • ' + flow.recommendation)
+    : triageDecision.recommendation.primary;
 
   return {
     role: 'doctor',
     generatedAt: nowIso(),
     caseId: target.id,
-    triage: flow && flow.urgency ? flow.urgency.triage : 'YELLOW',
+    triage: triageCode,
     priority,
     confidence: priority === 'immediate' ? 0.95 : (priority === 'urgent' ? 0.88 : 0.8),
     sla: {
@@ -963,9 +1210,10 @@ function aiDoctorSupport(data, caseId, input) {
       elapsedMin: flow && flow.urgency ? flow.urgency.elapsedMin : 0,
       breached: Boolean(flow && flow.urgency && flow.urgency.breached)
     },
+    smartTriage: triageDecision,
     checklist,
     carePlan,
-    recommendation: flow && flow.recommendation ? flow.recommendation : 'متابعة الحالة حسب البروتوكول القياسي.'
+    recommendation
   };
 }
 
@@ -2709,9 +2957,43 @@ const server = http.createServer(async (req, res) => {
           json(res, 404, { error: 'Case not found' });
           return;
         }
-        logAction(data, auth, 'ai.doctor.support', result.caseId, { priority: result.priority });
+        logAction(data, auth, 'ai.doctor.support', result.caseId, {
+          priority: result.priority,
+          triage: result.triage,
+          classification: result.smartTriage ? result.smartTriage.classification : 'simple',
+          protocolId: result.smartTriage && result.smartTriage.protocol ? result.smartTriage.protocol.id : ''
+        });
         writeData(data);
         json(res, 200, { item: result });
+        return;
+      }
+
+      if (pathname === '/api/ai/triage' && req.method === 'POST') {
+        if (!enforceRateLimit(req, res, 'ai.triage', 60, 60 * 1000)) return;
+        if (!requireRole(res, auth, ['doctor', 'admin'])) return;
+        if (!hasPermission(auth.user.role, 'use.ai.assistant')) {
+          json(res, 403, { error: 'Permission denied for AI assistant' });
+          return;
+        }
+        const body = await parseBody(req);
+        const caseId = ensureString(body.caseId, 1, 60, '');
+        if (!caseId) {
+          json(res, 400, { error: 'caseId is required' });
+          return;
+        }
+        const target = getCaseByAnyId(data, caseId);
+        if (!target) {
+          json(res, 404, { error: 'Case not found' });
+          return;
+        }
+        const triage = smartTriageDecisionForCase(data, target, body || {});
+        logAction(data, auth, 'ai.triage.evaluate', target.id, {
+          classification: triage.classification,
+          score: triage.score,
+          protocolId: triage.protocol ? triage.protocol.id : ''
+        });
+        writeData(data);
+        json(res, 200, { item: triage });
         return;
       }
 
@@ -3055,7 +3337,8 @@ const server = http.createServer(async (req, res) => {
         const next = {
           sessionPolicy: Object.assign({}, current.sessionPolicy, incoming.sessionPolicy || {}),
           alerts: Object.assign({}, current.alerts, incoming.alerts || {}),
-          sla: Object.assign({}, current.sla, incoming.sla || {})
+          sla: Object.assign({}, current.sla, incoming.sla || {}),
+          protocolVersion: ensureString(incoming.protocolVersion, 0, 40, current.protocolVersion || '2026.02')
         };
 
         if (!['info', 'operational', 'critical'].includes(next.alerts.minimumLevel)) {

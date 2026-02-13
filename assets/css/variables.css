@@ -1,0 +1,29 @@
+:root {
+  --sc-font: "Tajawal", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --sc-bg-a: #061427;
+  --sc-bg-b: #152e45;
+  --sc-surface: rgba(10, 24, 40, 0.86);
+  --sc-surface-strong: rgba(8, 20, 34, 0.94);
+  --sc-border: rgba(148, 186, 224, 0.3);
+  --sc-border-strong: rgba(56, 189, 248, 0.34);
+  --sc-text: #eef6ff;
+  --sc-text-soft: #afc4d8;
+  --sc-accent: #38bdf8;
+  --sc-shadow: 0 18px 46px rgba(2, 6, 23, 0.5);
+  --sc-radius-xl: 20px;
+  --sc-radius-lg: 16px;
+  --sc-radius-md: 12px;
+  --sc-radius-sm: 10px;
+  --sc-shell-max: 1200px;
+  --sc-space-1: 8px;
+  --sc-space-2: 12px;
+  --sc-space-3: 16px;
+  --sc-space-4: 20px;
+  --sc-space-5: 24px;
+  --sc-title-mb: 14px;
+  --sc-card-padding: 20px;
+  --sc-control-height: 40px;
+  --sc-critical: #FF4D4F;
+  --sc-medium: #FA8C16;
+  --sc-low: #52C41A;
+}

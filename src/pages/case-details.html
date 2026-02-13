@@ -4,181 +4,92 @@
 <meta charset="UTF-8">
 <title>تفاصيل الحالة – Smart Clinic</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../assets/css/variables.css">
+<link rel="stylesheet" href="../../assets/css/layout.css">
+<link rel="stylesheet" href="../../assets/css/cards.css">
+<link rel="stylesheet" href="../../assets/css/tables.css">
 <style>
-body {
-  margin: 0;
-  font-family: "Segoe UI", system-ui;
-  background: radial-gradient(circle at top, #020617 0%, #000 70%);
-  color: #e5e7eb;
-  padding: 24px;
-}
-.shell {
-  max-width: 1280px;
-  margin: 0 auto;
-  background: radial-gradient(circle at top left, rgba(15,23,42,0.96), #020617 60%);
-  border-radius: 28px;
-  border: 1px solid rgba(148,163,184,0.35);
-  box-shadow: 0 26px 80px rgba(0,0,0,0.9);
-  padding: 20px 22px 22px;
-}
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 18px;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.header-title { font-size: 20px; font-weight: 600; }
-.header-sub { font-size: 12px; color: #9ca3af; }
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 10px;
+.case-pill-dot {
+  width: 8px;
+  height: 8px;
   border-radius: 999px;
-  border: 1px solid rgba(148,163,184,0.5);
-  font-size: 11px;
-  color: #9ca3af;
+  background: var(--sc-low);
+  box-shadow: 0 0 0 4px rgba(82, 196, 26, 0.25);
 }
-.pill-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: #22c55e;
-  box-shadow: 0 0 0 4px rgba(34,197,94,0.25);
+
+.case-kpi-grid .sc-kpi-value {
+  font-size: 28px;
 }
-.btn-ghost {
-  padding: 7px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(148,163,184,0.5);
-  background: transparent;
-  color: #e5e7eb;
-  font-size: 11px;
-  cursor: pointer;
+
+.case-actions-panel textarea {
+  min-height: 140px;
 }
-.layout {
-  display: grid;
-  grid-template-columns: 1.15fr 1fr;
-  gap: 14px;
+
+.case-actions-panel .actions-row {
+  margin-top: 12px;
 }
-@media (max-width: 920px) {
-  .layout { grid-template-columns: 1fr; }
-}
-.card {
-  background: rgba(15,23,42,0.96);
-  border-radius: 22px;
-  border: 1px solid rgba(30,64,175,0.8);
-  padding: 14px 14px 12px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.9);
-}
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-.card-title { font-size: 14px; font-weight: 600; }
-.card-sub { font-size: 11px; color: #9ca3af; }
-.card-pill {
-  font-size: 10px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(148,163,184,0.5);
-  color: #9ca3af;
-}
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(2,minmax(0,1fr));
-  gap: 8px;
-  font-size: 12px;
-}
-.info-label { color: #9ca3af; font-size: 11px; }
-.info-value { font-size: 13px; }
-textarea {
-  width: 100%;
-  min-height: 98px;
-  border-radius: 14px;
-  border: 1px solid rgba(30,64,175,0.9);
-  background: rgba(15,23,42,0.96);
-  color: #e5e7eb;
-  font-size: 12px;
-  padding: 8px;
-  resize: vertical;
-}
-.actions-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
-}
-.action-btn {
-  padding: 7px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(30,64,175,0.9);
-  background: rgba(15,23,42,0.96);
-  font-size: 11px;
-  color: #e5e7eb;
-  cursor: pointer;
-}
-.action-btn.primary { background: #0ea5e9; border-color: #0ea5e9; }
-.action-btn.danger { background: #ef4444; border-color: #ef4444; }
-.timeline { display: flex; flex-direction: column; gap: 6px; font-size: 11px; }
-.timeline-item {
-  padding: 8px;
-  border-radius: 14px;
-  border: 1px solid rgba(30,64,175,0.9);
-  background: rgba(15,23,42,0.96);
-}
-.small-muted { font-size: 10px; color: #9ca3af; margin-top: 4px; }
+
 .toast {
   position: fixed;
   left: 16px;
   bottom: 16px;
-  background: rgba(15,23,42,0.96);
-  border: 1px solid rgba(148,163,184,0.5);
-  color: #e5e7eb;
-  border-radius: 10px;
+  background: var(--sc-surface-strong);
+  border: 1px solid var(--sc-border);
+  color: var(--sc-text);
+  border-radius: var(--sc-radius-md);
   font-size: 12px;
-  padding: 9px 12px;
+  padding: 10px 12px;
   display: none;
+  z-index: 50;
 }
 </style>
 </head>
-<body>
-<div class="shell">
-  <div class="header">
-    <div>
-      <div class="header-title" id="case-title">تفاصيل الحالة</div>
-      <div class="header-sub" id="case-sub">جاري تحميل بيانات الحالة...</div>
+<body class="sc-page">
+<div class="sc-shell">
+  <header class="sc-page-header">
+    <div class="sc-page-header-main">
+      <div class="sc-page-icon">🩺</div>
+      <div>
+        <h1 class="sc-page-title" id="case-title">تفاصيل الحالة</h1>
+        <p class="sc-page-subtitle" id="case-sub">جاري تحميل بيانات الحالة...</p>
+      </div>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <span class="pill"><span class="pill-dot"></span><span id="case-status">قيد المعالجة</span></span>
+    <div class="sc-header-actions">
+      <span class="sc-badge"><span class="case-pill-dot"></span><span id="case-status">قيد المعالجة</span></span>
       <button class="btn-ghost" onclick="copyCaseId()">نسخ رقم الحالة</button>
       <button class="btn-ghost" onclick="goRoleHome()">العودة</button>
     </div>
-  </div>
+  </header>
 
-  <div class="layout">
-    <section class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">بيانات الحالة</div>
-          <div class="card-sub">معلومات الطالب، مستوى الخطورة، وآخر تحديث.</div>
-        </div>
-        <span class="card-pill" id="case-id-pill">Case</span>
-      </div>
+  <section class="sc-grid-3 sc-kpi-grid case-kpi-grid sc-mb-24">
+    <article class="sc-kpi-card">
+      <div class="sc-kpi-label">معرف الحالة</div>
+      <div class="sc-kpi-value" id="case-id-pill">-</div>
+    </article>
+    <article class="sc-kpi-card">
+      <div class="sc-kpi-label">اسم الطالب</div>
+      <div class="sc-kpi-value" id="student-name">-</div>
+    </article>
+    <article class="sc-kpi-card">
+      <div class="sc-kpi-label">مستوى الخطورة</div>
+      <div class="sc-kpi-value" id="case-severity">-</div>
+    </article>
+    <article class="sc-kpi-card">
+      <div class="sc-kpi-label">عنوان الحالة</div>
+      <div class="sc-kpi-value" id="case-topic">-</div>
+    </article>
+    <article class="sc-kpi-card">
+      <div class="sc-kpi-label">آخر تحديث</div>
+      <div class="sc-kpi-value" id="case-updated">-</div>
+    </article>
+  </section>
 
-      <div class="info-grid">
-        <div><div class="info-label">اسم الطالب</div><div class="info-value" id="student-name">-</div></div>
-        <div><div class="info-label">عنوان الحالة</div><div class="info-value" id="case-topic">-</div></div>
-        <div><div class="info-label">الخطورة</div><div class="info-value" id="case-severity">-</div></div>
-        <div><div class="info-label">آخر تحديث</div><div class="info-value" id="case-updated">-</div></div>
-      </div>
+  <section class="sc-grid-3">
+    <section class="sc-panel case-actions-panel">
+      <h2 class="sc-panel-title">الإجراءات العلاجية</h2>
+      <p class="sc-panel-subtitle">تنفيذ الإجراءات المصرح بها وتوثيقها مباشرة في سجل التدقيق.</p>
 
-      <hr style="border:none;border-top:1px solid rgba(30,64,175,0.8);margin:10px 0;">
-
-      <div class="card-sub">الخطة العلاجية الحالية</div>
+      <div class="sc-panel-subtitle">الخطة العلاجية الحالية</div>
       <textarea id="plan-box" data-permission="edit.careplan" placeholder="اكتب الخطة العلاجية المحدثة..."></textarea>
 
       <div class="actions-row">
@@ -191,21 +102,27 @@ textarea {
       <div class="small-muted">يتم حفظ جميع العمليات في سجل التدقيق وربطها بمعرف الحالة.</div>
     </section>
 
-    <section class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">السجل الزمني للحالة</div>
-          <div class="card-sub">آخر الإجراءات الموثقة من الفريق الطبي.</div>
-        </div>
-        <span class="card-pill">Timeline</span>
+    <section class="sc-panel sc-col-span-2">
+      <h2 class="sc-panel-title">السجل الزمني للحالة</h2>
+      <p class="sc-panel-subtitle">فصل واضح بين إجراءات التنفيذ والسجل الزمني الموثق.</p>
+      <div class="sc-table-wrap">
+        <table class="sc-table">
+          <thead>
+            <tr>
+              <th>الإجراء</th>
+              <th>التفاصيل</th>
+              <th>الوقت</th>
+            </tr>
+          </thead>
+          <tbody id="timeline"></tbody>
+        </table>
       </div>
-      <div id="timeline" class="timeline"></div>
-      <div class="actions-row">
+      <div class="actions-row" style="margin-top:12px;">
         <button class="action-btn" onclick="window.location.href='emergency-flow.html?id=' + encodeURIComponent(currentCaseId)">فتح مسار الطوارئ</button>
         <button class="action-btn" onclick="openStudentProfile()">فتح ملف الطالب</button>
       </div>
     </section>
-  </div>
+  </section>
 </div>
 
 <div id="toast" class="toast"></div>
@@ -227,6 +144,14 @@ function normalizeCaseId(raw) {
   return raw;
 }
 
+function severityTone(value) {
+  var level = String(value || '').toLowerCase();
+  if (level.indexOf('critical') !== -1 || level.indexOf('حرج') !== -1) return 'sc-severity-critical';
+  if (level.indexOf('medium') !== -1 || level.indexOf('warning') !== -1 || level.indexOf('متوسط') !== -1) return 'sc-severity-medium';
+  if (level.indexOf('low') !== -1 || level.indexOf('stable') !== -1 || level.indexOf('منخفض') !== -1) return 'sc-severity-low';
+  return '';
+}
+
 function notify(text) {
   var el = document.getElementById('toast');
   el.textContent = text;
@@ -239,13 +164,13 @@ function notify(text) {
 function renderTimeline(items) {
   var wrap = document.getElementById('timeline');
   if (!items || !items.length) {
-    wrap.innerHTML = '<div class="timeline-item">لا توجد أحداث مسجلة حتى الآن.</div>';
+    wrap.innerHTML = '<tr><td colspan="3" class="sc-table-empty">لا توجد أحداث مسجلة حتى الآن.</td></tr>';
     return;
   }
   wrap.innerHTML = items.map(function (entry) {
     var when = entry.createdAt ? new Date(entry.createdAt).toLocaleString('ar-SA') : '-';
     var details = entry.details && entry.details.note ? entry.details.note : 'بدون تفاصيل';
-    return '<div class="timeline-item"><strong>' + entry.action + '</strong><div class="small-muted">' + details + '</div><div class="small-muted">' + when + '</div></div>';
+    return '<tr><td><strong>' + entry.action + '</strong></td><td>' + details + '</td><td>' + when + '</td></tr>';
   }).join('');
 }
 
@@ -254,10 +179,12 @@ function renderCase(item, timeline) {
   document.getElementById('case-title').textContent = 'فتح الحالة - ' + (item.studentName || '-');
   document.getElementById('case-sub').textContent = (item.title || '-') + ' • صلاحية: ' + (SmartClinicSecurity.getSession() || {}).role;
   document.getElementById('case-status').textContent = item.status || '-';
-  document.getElementById('case-id-pill').textContent = item.id;
+  document.getElementById('case-id-pill').textContent = item.id || '-';
   document.getElementById('student-name').textContent = item.studentName || '-';
   document.getElementById('case-topic').textContent = item.title || '-';
-  document.getElementById('case-severity').textContent = item.severity || '-';
+  var severityEl = document.getElementById('case-severity');
+  severityEl.textContent = item.severity || '-';
+  severityEl.className = 'sc-kpi-value ' + severityTone(item.severity);
   document.getElementById('case-updated').textContent = item.updatedAt ? new Date(item.updatedAt).toLocaleString('ar-SA') : '-';
   document.getElementById('plan-box').value = item.notes || '';
   renderTimeline(timeline || []);
