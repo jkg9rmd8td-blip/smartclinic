@@ -837,21 +837,9 @@
 
   function defaultDemoData() {
     return {
-      users: [
-        { id: 'u_admin_1', name: 'مدير المنصة', role: 'admin', active: true },
-        { id: 'u_doctor_1', name: 'د. أحمد الشمري', role: 'doctor', active: true },
-        { id: 'u_emergency_1', name: 'فريق الطوارئ - خالد الحربي', role: 'emergency', active: true },
-        { id: 'u_parent_1', name: 'ولية أمر - سارة الغامدي', role: 'parent', active: true },
-        {
-          id: 'u_student_1',
-          name: 'عمر الحارثي',
-          age: 17,
-          grade: 'ثاني ثانوي - 2/ب',
-          guardianPhone: '05********',
-          role: 'student',
-          active: true
-        }
-      ],
+      users: ['admin', 'doctor', 'emergency', 'parent', 'student'].map(function (role) {
+        return demoDefaultRoleUser(role);
+      }),
       cases: [
         {
           id: 'case_1',
@@ -963,14 +951,7 @@
       if (!Array.isArray(demoDataCache.users)) {
         demoDataCache.users = [];
       }
-      if (!(demoDataCache.users || []).some(function (user) { return user && user.role === 'emergency' && user.active; })) {
-        demoDataCache.users.push({
-          id: 'u_emergency_1',
-          name: 'فريق الطوارئ - خالد الحربي',
-          role: 'emergency',
-          active: true
-        });
-      }
+      demoEnsureRoleLoginUser(demoDataCache, 'emergency');
       ['consents', 'emergencyCards', 'homeCarePlans', 'appointments', 'tickets', 'medicationPlans', 'medicationLogs', 'referrals', 'monthlyReports'].forEach(function (key) {
         if (!Array.isArray(demoDataCache[key])) {
           demoDataCache[key] = [];
@@ -1074,6 +1055,53 @@
     }) || null;
   }
 
+  function demoDefaultRoleUser(role) {
+    if (role === 'admin') {
+      return { id: 'u_admin_1', name: 'مدير المنصة', role: 'admin', active: true };
+    }
+    if (role === 'doctor') {
+      return { id: 'u_doctor_1', name: 'د. أحمد الشمري', role: 'doctor', active: true };
+    }
+    if (role === 'emergency') {
+      return { id: 'u_emergency_1', name: 'فريق الطوارئ - خالد الحربي', role: 'emergency', active: true };
+    }
+    if (role === 'parent') {
+      return { id: 'u_parent_1', name: 'ولية أمر - سارة الغامدي', role: 'parent', active: true };
+    }
+    if (role === 'student') {
+      return {
+        id: 'u_student_1',
+        name: 'عمر الحارثي',
+        age: 17,
+        grade: 'ثاني ثانوي - 2/ب',
+        guardianPhone: '05********',
+        role: 'student',
+        active: true
+      };
+    }
+    return null;
+  }
+
+  function demoEnsureRoleLoginUser(data, role) {
+    if (!data || !ROLE_LABELS[role]) return null;
+    if (!Array.isArray(data.users)) {
+      data.users = [];
+    }
+    var active = demoFindRoleUser(data, role);
+    if (active) {
+      return active;
+    }
+    var any = (data.users || []).find(function (user) { return user && user.role === role; }) || null;
+    if (any) {
+      any.active = true;
+      return any;
+    }
+    var fallback = demoDefaultRoleUser(role);
+    if (!fallback) return null;
+    data.users.push(fallback);
+    return fallback;
+  }
+
   function demoAuth(data) {
     var session = getSession();
     if (!session || !session.role) {
@@ -1106,7 +1134,7 @@
   function demoAnalyticsOverview(data) {
     var statusCounts = { open: 0, in_progress: 0, closed: 0 };
     var severityCounts = { critical: 0, high: 0, medium: 0, low: 0 };
-    var roleCounts = { student: 0, parent: 0, doctor: 0, admin: 0 };
+    var roleCounts = { student: 0, parent: 0, doctor: 0, admin: 0, emergency: 0 };
     var dayStart = demoTodayStart();
 
     (data.cases || []).forEach(function (item) {
@@ -1918,7 +1946,7 @@
       if (!ROLE_LABELS[role]) {
         return demoJsonResponse(400, { error: 'Invalid role' });
       }
-      var loginUser = demoFindRoleUser(data, role);
+      var loginUser = demoEnsureRoleLoginUser(data, role);
       if (!loginUser) {
         return demoJsonResponse(404, { error: 'No active user for this role' });
       }

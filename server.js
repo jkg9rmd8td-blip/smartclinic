@@ -1660,6 +1660,49 @@ function roleLabel(role) {
   return labels[role] || role;
 }
 
+function defaultRoleUser(role) {
+  if (role === 'admin') {
+    return { id: 'u_admin_1', name: 'مدير المنصة', role: 'admin', active: true };
+  }
+  if (role === 'doctor') {
+    return { id: 'u_doctor_1', name: 'د. أحمد الشمري', role: 'doctor', active: true };
+  }
+  if (role === 'emergency') {
+    return { id: 'u_emergency_1', name: 'فريق الطوارئ - خالد الحربي', role: 'emergency', active: true };
+  }
+  if (role === 'parent') {
+    return { id: 'u_parent_1', name: 'ولية أمر - سارة الغامدي', role: 'parent', active: true };
+  }
+  if (role === 'student') {
+    return {
+      id: 'u_student_1',
+      name: 'عمر الحارثي',
+      age: 17,
+      grade: 'ثاني ثانوي - 2/ب',
+      guardianPhone: '05********',
+      role: 'student',
+      active: true
+    };
+  }
+  return null;
+}
+
+function ensureRoleLoginUser(data, role) {
+  if (!data || !ROLE_PERMISSIONS[role]) return null;
+  if (!Array.isArray(data.users)) data.users = [];
+  let active = data.users.find((u) => u && u.role === role && u.active);
+  if (active) return active;
+  const any = data.users.find((u) => u && u.role === role);
+  if (any) {
+    any.active = true;
+    return any;
+  }
+  const fallback = defaultRoleUser(role);
+  if (!fallback) return null;
+  data.users.push(fallback);
+  return fallback;
+}
+
 function resolveLinkedStudentId(data, auth, urlObj) {
   if (!auth || !auth.user) return 'u_student_1';
   if (auth.user.role === 'student') return auth.user.id;
@@ -1967,7 +2010,7 @@ const server = http.createServer(async (req, res) => {
           json(res, 400, { error: 'Invalid role' });
           return;
         }
-        const user = data.users.find(u => u.role === role && u.active);
+        const user = ensureRoleLoginUser(data, role);
         if (!user) {
           json(res, 404, { error: 'No active user for this role' });
           return;
