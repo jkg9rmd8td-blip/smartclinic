@@ -22,12 +22,318 @@
   color: var(--sc-text-soft);
 }
 
+.student-overview {
+  position: relative;
+  overflow: hidden;
+}
+
+.student-overview::after {
+  content: "";
+  position: absolute;
+  inset: auto -120px -120px auto;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.18), transparent 70%);
+  pointer-events: none;
+}
+
+.overview-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hero-cta {
+  margin-top: 6px;
+}
+
+.primary-cta {
+  min-width: 180px;
+  box-shadow: 0 10px 24px rgba(56, 189, 248, 0.28);
+}
+
+.status-banner {
+  margin-top: 12px;
+  border: 1px solid var(--sc-border);
+  border-right: 4px solid var(--sc-accent);
+  border-radius: var(--sc-radius-lg);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px;
+}
+
+.status-line {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.status-title {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--sc-text-soft);
+}
+
+.status-text {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.status-foot {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  background: rgba(56, 189, 248, 0.16);
+  font-size: 12px;
+}
+
+.status-chip.pending {
+  border-color: rgba(250, 140, 22, 0.55);
+  background: rgba(250, 140, 22, 0.16);
+  color: #ffd591;
+}
+
+.status-chip.clear {
+  border-color: rgba(82, 196, 26, 0.55);
+  background: rgba(82, 196, 26, 0.14);
+  color: #d9f7be;
+}
+
+.risk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--sc-border);
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.risk-badge.critical {
+  border-color: rgba(255, 77, 79, 0.6);
+  color: var(--sc-critical);
+  background: rgba(255, 77, 79, 0.14);
+}
+
+.risk-badge.warning {
+  border-color: rgba(250, 140, 22, 0.6);
+  color: var(--sc-medium);
+  background: rgba(250, 140, 22, 0.14);
+}
+
+.risk-badge.stable {
+  border-color: rgba(82, 196, 26, 0.6);
+  color: var(--sc-low);
+  background: rgba(82, 196, 26, 0.14);
+}
+
+.risk-badge.unknown {
+  color: var(--sc-text-soft);
+}
+
+.vitals-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.vital-card {
+  position: relative;
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-md);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  padding: 14px;
+  overflow: hidden;
+}
+
+.vital-card::after {
+  content: "";
+  position: absolute;
+  inset: auto -40px -40px auto;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.2), transparent 70%);
+}
+
+.vital-card-hero .vital-value {
+  font-size: 32px;
+}
+
+.vital-label {
+  color: var(--sc-text-soft);
+  font-size: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.vital-value {
+  margin-top: 6px;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.1;
+  position: relative;
+  z-index: 1;
+}
+
+.sensor-title {
+  margin-top: 14px;
+}
+
+.sensor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sensor-card {
+  --sensor-accent: var(--sc-accent);
+  position: relative;
+  border: 1px solid rgba(148, 186, 224, 0.35);
+  border-radius: var(--sc-radius-md);
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(14px);
+  padding: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sensor-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.sensor-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 4px;
+  border-radius: 999px;
+  background: var(--sensor-accent);
+}
+
+.sensor-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sensor-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--sensor-accent);
+  box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.45);
+  animation: sensorPulse 1.7s infinite;
+}
+
+@keyframes sensorPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
+.sensor-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.sensor-reading {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--sensor-accent);
+  margin-bottom: 4px;
+}
+
+.sensor-meta {
+  font-size: 12px;
+  color: var(--sc-text-soft);
+}
+
+.sensor-card.type-hr {
+  --sensor-accent: #95de64;
+}
+
+.sensor-card.type-spo2 {
+  --sensor-accent: #69c0ff;
+}
+
+.sensor-card.type-temp {
+  --sensor-accent: #ff7875;
+}
+
+.sensor-card.type-bp {
+  --sensor-accent: #b37feb;
+}
+
+.sensor-card.is-warning {
+  --sensor-accent: #fa8c16;
+}
+
+.sensor-card.is-offline {
+  --sensor-accent: #ff4d4f;
+}
+
+.ai-panel {
+  background: linear-gradient(140deg, rgba(56, 189, 248, 0.08), rgba(255, 255, 255, 0.03));
+}
+
 .ai-box {
   margin-top: 10px;
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--sc-radius-md);
-  background: rgba(255,255,255,0.03);
+  background: rgba(255, 255, 255, 0.03);
   padding: 10px;
+}
+
+.guide-steps {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.guide-step {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--sc-radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.empty-hint {
+  margin-top: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: var(--sc-radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--sc-text-soft);
+  padding: 10px;
+  font-size: 12px;
 }
 
 .toast {
@@ -43,6 +349,26 @@
   display: none;
   z-index: 40;
 }
+
+@media (max-width: 1100px) {
+  .sensor-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 780px) {
+  .overview-top {
+    flex-direction: column;
+  }
+
+  .vitals-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .vital-card-hero .vital-value {
+    font-size: 28px;
+  }
+}
 </style>
 </head>
 <body class="sc-page">
@@ -52,7 +378,7 @@
       <div class="sc-page-icon">🎓</div>
       <div>
         <h1 class="sc-page-title">بوابة الطالب</h1>
-        <p class="sc-page-subtitle">متابعة صحية مباشرة، طلبات زيارة، إشعارات، ومراسلة العيادة من واجهة موحدة.</p>
+        <p class="sc-page-subtitle">واجهة مبسطة تجمع العلامات الحيوية، طلب الزيارة، التواصل، والمستشار الذكي.</p>
       </div>
     </div>
     <div class="sc-header-actions">
@@ -61,37 +387,99 @@
     </div>
   </header>
 
-  <section class="sc-panel sc-mb-24">
-    <h2 class="sc-panel-title">ملخص الحالة اللحظي</h2>
-    <div class="portal-meta">
-      <div class="meta-item">النمط: <strong id="status-mode">-</strong></div>
-      <div class="meta-item">آخر مزامنة: <strong id="status-sync">-</strong></div>
-      <div class="meta-item">مستوى الخطر: <strong id="status-risk">-</strong></div>
+  <section class="sc-panel student-overview sc-mb-24">
+    <div class="overview-top">
+      <div>
+        <h2 class="sc-panel-title">لوحة المتابعة الفورية</h2>
+        <p class="sc-panel-subtitle">ابدأ بالحساسات ثم المستشار الذكي، وبعدها نفّذ طلب الزيارة إذا احتجت.</p>
+      </div>
+      <div class="portal-meta">
+        <div class="meta-item">النمط: <strong id="status-mode">-</strong></div>
+        <div class="meta-item">آخر مزامنة: <strong id="status-sync">-</strong></div>
+        <div class="meta-item">مستوى الخطر: <strong id="status-risk">-</strong></div>
+      </div>
     </div>
     <div class="section-nav sc-section-nav">
-      <button class="section-btn sc-action-btn" onclick="scrollStudentSection('student-care')">المتابعة الصحية</button>
-      <button class="section-btn sc-action-btn" onclick="scrollStudentSection('student-comm')">التواصل والتنبيهات</button>
-      <button class="section-btn sc-action-btn" onclick="scrollStudentSection('student-tools')">الأدوات الذكية</button>
+      <button class="section-btn sc-action-btn" onclick="scrollStudentSection('vitals-zone')">الحساسات والحيوية</button>
+      <button class="section-btn sc-action-btn" onclick="scrollStudentSection('support-zone')">المستشار الذكي</button>
+      <button class="section-btn sc-action-btn" onclick="scrollStudentSection('visit-zone')">طلب زيارة</button>
+      <button class="section-btn sc-action-btn" onclick="scrollStudentSection('communication-zone')">التواصل والتنبيهات</button>
+    </div>
+    <div class="inline-row hero-cta">
+      <button class="btn-primary primary-cta" onclick="focusVisitReason()">طلب زيارة الآن</button>
+      <button class="btn-muted" onclick="openStudentProfile()">فتح الملف الصحي</button>
+      <button class="btn-muted" onclick="loadOverview()">تحديث فوري</button>
+    </div>
+    <div class="status-banner">
+      <div class="status-line">
+        <div>
+          <div class="status-title">حالة المتابعة الحالية</div>
+          <div id="latest-case-text" class="status-text">جاري تحميل أحدث حالة...</div>
+        </div>
+        <span id="latest-case-badge" class="badge b-ok">مستقرة</span>
+      </div>
+      <div class="status-foot">
+        <span id="current-request-status" class="status-chip">جاري التحقق من طلبات الزيارة...</span>
+        <span id="current-status-help" class="sc-muted">سنعرض هنا ماذا تفعل الآن حسب الحالة.</span>
+      </div>
     </div>
   </section>
 
   <section id="stats" class="sc-grid-3 sc-kpi-grid sc-mb-24"></section>
 
-  <h2 id="student-care" class="sc-section-title">المتابعة الصحية والزيارات</h2>
+  <h2 id="vitals-zone" class="sc-section-title">العلامات الحيوية والحساسات</h2>
   <section class="sc-grid-3 sc-mb-24">
-    <article class="sc-panel" data-permission="view.student">
-      <h3 class="sc-panel-title">حالة اليوم</h3>
-      <p id="latest-case-text" class="sc-panel-subtitle">جاري تحميل أحدث حالة...</p>
-      <span id="latest-case-badge" class="badge b-ok">مستقرة</span>
-      <div class="inline-row" style="margin-top:12px;">
-        <button class="btn-primary" onclick="openStudentProfile()">فتح الملف الصحي الكامل</button>
-        <button class="btn-muted" data-permission="view.cases" onclick="jumpToCases()">عرض الحالات</button>
+    <article class="sc-panel sc-col-span-2" data-permission="view.student">
+      <div class="inline-row" style="justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span id="vt-risk" class="risk-badge unknown">الحالة: غير متوفر</span>
+        <span class="sc-muted">آخر قراءة: <span id="vt-updated">-</span></span>
       </div>
+
+      <div class="vitals-cards">
+        <div class="vital-card vital-card-hero">
+          <div class="vital-label">نبض القلب</div>
+          <div class="vital-value" id="vt-hr">-</div>
+        </div>
+        <div class="vital-card vital-card-hero">
+          <div class="vital-label">الأكسجين SpO2</div>
+          <div class="vital-value" id="vt-spo2">-</div>
+        </div>
+        <div class="vital-card">
+          <div class="vital-label">درجة الحرارة</div>
+          <div class="vital-value" id="vt-temp">-</div>
+        </div>
+        <div class="vital-card">
+          <div class="vital-label">ضغط الدم</div>
+          <div class="vital-value" id="vt-bp">-</div>
+        </div>
+      </div>
+
+      <h3 class="sc-panel-title sensor-title">الحساسات النشطة</h3>
+      <div id="sensor-cards" class="sensor-grid"></div>
     </article>
 
+    <article class="sc-panel ai-panel" id="support-zone" data-permission="use.ai.assistant">
+      <h3 class="sc-panel-title">مستشار الطالب الذكي</h3>
+      <p class="sc-panel-subtitle">اكتب ما تشعر به، وسيعرض النظام تحليلًا سريعًا مع الإجراءات المقترحة.</p>
+      <textarea id="ai-student-input" rows="3" placeholder="مثال: أشعر بضيق تنفس بعد النشاط..."></textarea>
+      <div class="inline-row">
+        <button class="btn-primary" onclick="askStudentAi()">تحليل الحالة</button>
+        <button class="btn-muted" onclick="prefillAiEmergency()">وصف طارئ</button>
+      </div>
+      <div id="ai-student-output" class="ai-box">لم يتم تشغيل التحليل بعد.</div>
+      <div class="guide-steps">
+        <div class="guide-step">1) راقب الحساسات في الأعلى أولًا.</div>
+        <div class="guide-step">2) استخدم المستشار الذكي عند ظهور أعراض جديدة.</div>
+        <div class="guide-step">3) إذا التوصية عاجلة، نفّذ طلب الزيارة مباشرة.</div>
+      </div>
+    </article>
+  </section>
+
+  <h2 id="visit-zone" class="sc-section-title">الإجراءات اليومية</h2>
+  <section class="sc-grid-3">
     <article class="sc-panel" data-permission="request.visit">
       <h3 class="sc-panel-title">طلب زيارة للعيادة</h3>
-      <p class="sc-panel-subtitle">أرسل طلب فحص عادي أو مستعجل للفريق الصحي.</p>
+      <p class="sc-panel-subtitle">هذا هو الإجراء الأساسي عند وجود أعراض تحتاج فحصًا.</p>
       <select id="visit-priority">
         <option value="normal">عادي</option>
         <option value="urgent">مستعجل</option>
@@ -103,41 +491,32 @@
       </div>
       <textarea id="visit-reason" rows="3" placeholder="اكتب سبب الطلب..." oninput="updateVisitReasonMeta()"></textarea>
       <div class="inline-help">تفاصيل السبب: <span id="visit-reason-count">0</span>/220</div>
-      <button class="btn-primary" onclick="requestVisit()">إرسال الطلب</button>
+      <button class="btn-primary primary-cta" onclick="requestVisit()">إرسال الطلب</button>
     </article>
 
     <article class="sc-panel" data-permission="view.student">
-      <h3 class="sc-panel-title">العيادة الافتراضية (صوت وصورة)</h3>
+      <h3 class="sc-panel-title">التواصل الطبي المباشر</h3>
       <p id="telemed-student-status" class="sc-panel-subtitle">جارٍ التحقق من وجود جلسة مباشرة...</p>
       <span id="telemed-student-badge" class="badge b-ok">غير نشطة</span>
       <div class="inline-row" style="margin-top:12px;">
         <button class="btn-primary" id="telemed-student-join" onclick="joinStudentTelemed()" disabled>انضمام للجلسة</button>
         <button class="btn-muted" onclick="refreshStudentTelemed()">تحديث حالة الجلسة</button>
       </div>
-    </article>
-
-    <article class="sc-panel" data-permission="view.student">
-      <h3 class="sc-panel-title">مركز التنسيق العلاجي</h3>
-      <p class="sc-panel-subtitle">الموافقات الرقمية، بطاقة الطوارئ QR، المتابعة المنزلية، والمواعيد في صفحة واحدة.</p>
-      <button class="btn-primary" onclick="window.location.href='care-center.html'">فتح المركز</button>
-    </article>
-  </section>
-
-  <h2 id="student-comm" class="sc-section-title">التواصل والتنبيهات</h2>
-  <section class="sc-grid-3 sc-mb-24">
-    <article class="sc-panel" data-permission="send.message">
-      <h3 class="sc-panel-title">مراسلة العيادة</h3>
-      <p class="sc-panel-subtitle">تواصل مع الفريق الصحي لأي استفسار أو متابعة.</p>
-      <textarea id="message-text" rows="3" placeholder="اكتب رسالتك..." data-permission="send.message"></textarea>
-      <div class="inline-row">
-        <button class="btn-primary" data-permission="send.message" onclick="sendClinicMessage()">إرسال الرسالة</button>
-        <button class="btn-muted" data-permission="view.alerts" onclick="loadOverview()">تحديث البيانات</button>
+      <div class="empty-hint">إذا لم توجد جلسة نشطة، ارسل طلب زيارة مستعجل أو تواصل مع العيادة.</div>
+      <div class="inline-row" style="margin-top:10px;">
+        <button class="btn-muted" onclick="window.location.href='care-center.html'">فتح مركز التنسيق</button>
+        <button class="btn-muted" onclick="openStudentProfile()">الملف الصحي الكامل</button>
       </div>
     </article>
 
-    <article class="sc-panel" data-permission="view.alerts">
-      <h3 class="sc-panel-title">تنبيهات صحية لك</h3>
-      <p class="sc-panel-subtitle">آخر التنبيهات المرتبطة بمتابعتك الصحية.</p>
+    <article class="sc-panel" id="communication-zone" data-permission="send.message">
+      <h3 class="sc-panel-title">المراسلة والتنبيهات</h3>
+      <p class="sc-panel-subtitle">أرسل رسالة للفريق الصحي وراجع آخر التنبيهات من نفس البطاقة.</p>
+      <textarea id="message-text" rows="3" placeholder="اكتب رسالتك..." data-permission="send.message"></textarea>
+      <div class="inline-row">
+        <button class="btn-primary" data-permission="send.message" onclick="sendClinicMessage()">إرسال الرسالة</button>
+        <button class="btn-muted" data-permission="view.alerts" onclick="loadOverview()">تحديث</button>
+      </div>
       <select id="alert-filter" onchange="applyAlertFilter()">
         <option value="all">كل التنبيهات</option>
         <option value="critical">حرج</option>
@@ -145,42 +524,32 @@
         <option value="info">معلوماتي</option>
       </select>
       <div id="alerts-list" class="list"></div>
-    </article>
-
-    <article class="sc-panel" data-permission="view.notifications">
-      <h3 class="sc-panel-title">مركز الإشعارات الموحد</h3>
-      <p class="sc-panel-subtitle">استعرض إشعاراتك مع الفلاتر حسب النوع.</p>
-      <button class="btn-primary" onclick="window.location.href='notifications-center.html'">فتح المركز</button>
-    </article>
-  </section>
-
-  <h2 id="student-tools" class="sc-section-title">الأدوات الذكية</h2>
-  <section class="sc-grid-3">
-    <article class="sc-panel" data-permission="use.ai.assistant">
-      <h3 class="sc-panel-title">مستشار الطالب AI</h3>
-      <p class="sc-panel-subtitle">تحليل فوري للأعراض الحالية وتوصيات عملية حسب ملفك الصحي.</p>
-      <textarea id="ai-student-input" rows="3" placeholder="اكتب الأعراض أو حالتك الآن..."></textarea>
       <div class="inline-row">
-        <button class="btn-primary" onclick="askStudentAi()">تحليل الحالة</button>
-        <button class="btn-muted" onclick="document.getElementById('ai-student-input').value=''">مسح</button>
-      </div>
-      <div id="ai-student-output" class="ai-box">لم يتم تشغيل التحليل بعد.</div>
-    </article>
-
-    <article class="sc-panel" data-permission="view.reports">
-      <h3 class="sc-panel-title">تقاريري الصحية</h3>
-      <p class="sc-panel-subtitle">أحدث التقارير الطبية المتاحة لك.</p>
-      <div id="reports-list" class="list"></div>
-      <div class="inline-row">
-        <button class="btn-muted" onclick="window.location.href='student-profile.html#reports'">عرض كل التقارير</button>
-        <button class="btn-muted" data-permission="export.report" onclick="exportStudentReport()">تصدير التقرير</button>
+        <button class="btn-muted" data-permission="view.notifications" onclick="window.location.href='notifications-center.html'">فتح مركز الإشعارات</button>
       </div>
     </article>
 
-    <article class="sc-panel" data-permission="view.tips">
-      <h3 class="sc-panel-title">نصيحة ذكية اليوم</h3>
-      <p id="tip-text" class="sc-panel-subtitle">جاري اختيار نصيحة مناسبة...</p>
-      <button class="btn-primary" onclick="nextTip()">نصيحة جديدة</button>
+    <article class="sc-panel sc-col-span-3" data-permission="view.reports">
+      <div class="two-col">
+        <div>
+          <h3 class="sc-panel-title">تقاريري الصحية</h3>
+          <p class="sc-panel-subtitle">أحدث التقارير الطبية المتاحة لك، مع خيار التصدير.</p>
+          <div id="reports-list" class="list"></div>
+          <div class="inline-row">
+            <button class="btn-muted" onclick="window.location.href='student-profile.html#reports'">عرض كل التقارير</button>
+            <button class="btn-muted" data-permission="export.report" onclick="exportStudentReport()">تصدير التقرير</button>
+          </div>
+        </div>
+        <div>
+          <h3 class="sc-panel-title">نصيحة اليوم</h3>
+          <p id="tip-text" class="sc-panel-subtitle">جاري اختيار نصيحة مناسبة...</p>
+          <div class="inline-row">
+            <button class="btn-primary" onclick="nextTip()">نصيحة جديدة</button>
+            <button class="btn-muted" onclick="focusAiPanel()">تحليل AI</button>
+          </div>
+          <div class="empty-hint">ماذا أفعل الآن؟ ابدأ بالحساسات، ثم طبق نصيحة اليوم، ثم تابع الطلبات أو الرسائل.</div>
+        </div>
+      </div>
     </article>
   </section>
 </div>
@@ -207,6 +576,29 @@ function notify(text) {
   window.setTimeout(function () { el.style.display = 'none'; }, 2200);
 }
 
+function fmtDate(value) {
+  if (!value) return '-';
+  var date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleString('ar-SA');
+}
+
+function fmtNum(value, digits, suffix) {
+  var num = Number(value);
+  if (!Number.isFinite(num)) return '-';
+  var fixed = typeof digits === 'number' ? num.toFixed(digits) : String(Math.round(num));
+  return suffix ? (fixed + suffix) : fixed;
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 function nextTip() {
   tipIndex = (tipIndex + 1) % tips.length;
   document.getElementById('tip-text').textContent = tips[tipIndex];
@@ -219,10 +611,39 @@ function scrollStudentSection(id) {
   }
 }
 
+function focusVisitReason() {
+  scrollStudentSection('visit-zone');
+  var input = document.getElementById('visit-reason');
+  if (input) input.focus();
+}
+
+function focusAiPanel() {
+  scrollStudentSection('support-zone');
+  var input = document.getElementById('ai-student-input');
+  if (input) input.focus();
+}
+
+function prefillAiEmergency() {
+  var input = document.getElementById('ai-student-input');
+  input.value = 'أشعر بضيق تنفس وألم في الصدر مع دوخة.';
+  input.focus();
+}
+
 function statusBadgeClass(severity) {
   if (severity === 'critical' || severity === 'high') return 'b-danger';
   if (severity === 'medium') return 'b-warn';
   return 'b-ok';
+}
+
+function severityLabel(value) {
+  var map = {
+    critical: 'حرج',
+    high: 'مرتفع',
+    medium: 'متوسط',
+    low: 'منخفض',
+    stable: 'مستقر'
+  };
+  return map[value] || 'مستقرة';
 }
 
 function riskLabel(risk) {
@@ -244,6 +665,24 @@ function refreshHeroMeta(overview) {
   document.getElementById('status-risk').textContent = riskLabel(risk);
 }
 
+function updateCurrentStatus(snapshot) {
+  var s = snapshot || {};
+  var pending = Number(s.pendingVisits || 0);
+  var chip = document.getElementById('current-request-status');
+  var help = document.getElementById('current-status-help');
+
+  if (pending > 0) {
+    chip.className = 'status-chip pending';
+    chip.textContent = 'لديك ' + pending + ' طلب زيارة قيد المعالجة';
+    help.textContent = 'تابع التنبيهات أو افتح الجلسة المرئية إذا أصبحت متاحة.';
+    return;
+  }
+
+  chip.className = 'status-chip clear';
+  chip.textContent = 'لا توجد طلبات معلقة';
+  help.textContent = 'إذا ظهرت أعراض جديدة استخدم المستشار الذكي ثم أرسل طلب زيارة.';
+}
+
 function renderStats(snapshot) {
   var s = snapshot || {};
   var items = [
@@ -258,20 +697,76 @@ function renderStats(snapshot) {
 
 function renderLatestCase(item) {
   if (!item) {
-    document.getElementById('latest-case-text').textContent = 'لا توجد حالات مسجلة حاليًا.';
+    document.getElementById('latest-case-text').textContent = 'لا توجد حالات نشطة الآن. استمر في متابعة الحساسات.';
     document.getElementById('latest-case-badge').textContent = 'مستقرة';
     document.getElementById('latest-case-badge').className = 'badge b-ok';
     return;
   }
-  document.getElementById('latest-case-text').textContent = (item.title || 'حالة صحية') + ' • آخر تحديث: ' + new Date(item.updatedAt).toLocaleString('ar-SA');
-  document.getElementById('latest-case-badge').textContent = item.severity || 'low';
+  document.getElementById('latest-case-text').textContent = (item.title || 'حالة صحية') + ' • آخر تحديث: ' + fmtDate(item.updatedAt);
+  document.getElementById('latest-case-badge').textContent = severityLabel(item.severity || 'low');
   document.getElementById('latest-case-badge').className = 'badge ' + statusBadgeClass(item.severity);
+}
+
+function sensorCardType(type) {
+  var val = String(type || '').toLowerCase();
+  if (val === 'hr') return 'type-hr';
+  if (val === 'spo2') return 'type-spo2';
+  if (val === 'temp') return 'type-temp';
+  if (val === 'bp') return 'type-bp';
+  return '';
+}
+
+function sensorCardState(sensor) {
+  var status = String((sensor && sensor.status) || '').toLowerCase();
+  var battery = Number(sensor && sensor.battery);
+  if (status === 'disconnected' || status === 'offline' || status === 'inactive' || status === 'error') {
+    return 'is-offline';
+  }
+  if (Number.isFinite(battery) && battery < 25) {
+    return 'is-warning';
+  }
+  return 'is-online';
+}
+
+function renderSensors(sensors) {
+  var wrap = document.getElementById('sensor-cards');
+  if (!Array.isArray(sensors) || !sensors.length) {
+    wrap.innerHTML = '<div class="empty-hint">لا توجد حساسات مرتبطة. ماذا أفعل الآن؟ راجع الفريق الصحي لربط الجهاز.</div>';
+    return;
+  }
+
+  wrap.innerHTML = sensors.map(function (s) {
+    var tone = sensorCardState(s);
+    var typeClass = sensorCardType(s.type);
+    var battery = fmtNum(s.battery, 0, '%');
+    var status = escapeHtml(s.status || 'unknown');
+    return '<article class="sensor-card ' + typeClass + ' ' + tone + '">' +
+      '<div class="sensor-head"><span class="sensor-dot"></span><span class="sensor-name">' + escapeHtml(s.label || 'حساس') + '</span></div>' +
+      '<div class="sensor-reading">' + battery + '</div>' +
+      '<div class="sensor-meta">الحالة: ' + status + '</div>' +
+      '<div class="sensor-meta">آخر تواصل: ' + escapeHtml(fmtDate(s.lastSeenAt)) + '</div>' +
+    '</article>';
+  }).join('');
+}
+
+function renderVitals(data) {
+  var latest = data && data.latestVitals ? data.latestVitals : null;
+  var risk = latest ? (latest.risk || 'unknown') : 'unknown';
+  var riskEl = document.getElementById('vt-risk');
+  riskEl.className = 'risk-badge ' + risk;
+  riskEl.textContent = 'الحالة: ' + riskLabel(risk);
+  document.getElementById('vt-updated').textContent = latest ? fmtDate(latest.measuredAt) : '-';
+  document.getElementById('vt-temp').textContent = latest ? fmtNum(latest.temp, 1, '°C') : '-';
+  document.getElementById('vt-spo2').textContent = latest ? fmtNum(latest.spo2, 0, '%') : '-';
+  document.getElementById('vt-hr').textContent = latest ? fmtNum(latest.hr, 0, ' bpm') : '-';
+  document.getElementById('vt-bp').textContent = latest ? (fmtNum(latest.bpSys, 0) + '/' + fmtNum(latest.bpDia, 0) + ' mmHg') : '-';
+  renderSensors((data && data.sensors) || []);
 }
 
 function renderAlerts(items) {
   var wrap = document.getElementById('alerts-list');
   if (!items || !items.length) {
-    wrap.innerHTML = '<div class="item">لا توجد تنبيهات جديدة.</div>';
+    wrap.innerHTML = '<div class="item">لا توجد تنبيهات جديدة. ماذا أفعل الآن؟ استمر بمراقبة الحساسات ونصيحة اليوم.</div>';
     return;
   }
   wrap.innerHTML = items.slice(0, 4).map(function (a) {
@@ -292,7 +787,7 @@ function applyAlertFilter() {
 function renderReports(items) {
   var wrap = document.getElementById('reports-list');
   if (!items || !items.length) {
-    wrap.innerHTML = '<div class="item">لا توجد تقارير متاحة حاليًا.</div>';
+    wrap.innerHTML = '<div class="item">لا توجد تقارير متاحة حاليًا. يمكنك متابعة القياسات ثم العودة لاحقًا.</div>';
     return;
   }
   wrap.innerHTML = items.slice(0, 4).map(function (r) {
@@ -312,6 +807,8 @@ async function loadOverview() {
   renderStats(result.data.snapshot || {});
   renderLatestCase(result.data.latestCase || null);
   refreshHeroMeta(result.data);
+  updateCurrentStatus(result.data.snapshot || {});
+  renderVitals(result.data || {});
   alertsCache = result.data.alerts || [];
   applyAlertFilter();
   renderReports(result.data.reports || []);
@@ -377,10 +874,6 @@ function openStudentProfile() {
   window.location.href = target;
 }
 
-function jumpToCases() {
-  window.location.href = 'student-profile.html#cases';
-}
-
 async function exportStudentReport() {
   var reportId = '';
   if (lastOverview && Array.isArray(lastOverview.reports) && lastOverview.reports.length) {
@@ -420,28 +913,52 @@ function useVisitTemplate(text) {
   updateVisitReasonMeta();
 }
 
+function localStudentAiFallback(text) {
+  var t = String(text || '');
+  var emergency = t.includes('صدر') || t.includes('تنفس') || t.includes('إغماء') || t.includes('دوخة');
+  if (emergency) {
+    return {
+      risk: 'critical',
+      triggers: ['رصد كلمات مرتبطة بأعراض حرجة في الوصف'],
+      actions: ['أرسل طلب زيارة مستعجل الآن', 'إذا كان العرض شديدًا، توجه فورًا للعيادة أو الطوارئ']
+    };
+  }
+  return {
+    risk: 'low',
+    triggers: ['الوصف لا يتضمن مؤشرات طارئة واضحة'],
+    actions: ['راقب العلامات الحيوية خلال الساعة القادمة', 'احجز زيارة عادية إذا استمر العرض']
+  };
+}
+
 function renderStudentAi(item) {
   if (!item) {
     document.getElementById('ai-student-output').textContent = 'تعذر عرض نتيجة التحليل.';
     return;
   }
-  var riskLabel = item.risk === 'critical' ? 'حرج' : (item.risk === 'medium' ? 'متوسط' : 'منخفض');
-  var actions = (item.actions || []).map(function (a) { return '<div class="item">• ' + a + '</div>'; }).join('');
-  var triggers = (item.triggers || []).map(function (t) { return '<div class="item">' + t + '</div>'; }).join('');
+  var risk = String(item.risk || '').toLowerCase();
+  var riskText = risk === 'critical' ? 'حرج' : (risk === 'medium' ? 'متوسط' : 'منخفض');
+  var actions = (item.actions || []).map(function (a) { return '<div class="item">• ' + escapeHtml(a) + '</div>'; }).join('');
+  var triggers = (item.triggers || []).map(function (t) { return '<div class="item">' + escapeHtml(t) + '</div>'; }).join('');
   document.getElementById('ai-student-output').innerHTML =
-    '<div><strong>مستوى الخطورة: ' + riskLabel + '</strong></div>' +
-    '<div style="margin-top:6px;color:#bfd5e6;">مسببات التقييم</div>' + triggers +
-    '<div style="margin-top:6px;color:#bfd5e6;">إجراءات مقترحة</div>' + actions;
+    '<div><strong>مستوى الخطورة: ' + riskText + '</strong></div>' +
+    '<div style="margin-top:6px;color:#bfd5e6;">مسببات التقييم</div>' + (triggers || '<div class="item">لا توجد مسببات إضافية.</div>') +
+    '<div style="margin-top:6px;color:#bfd5e6;">إجراءات مقترحة</div>' + (actions || '<div class="item">لا توجد إجراءات مقترحة.</div>');
 }
 
 async function askStudentAi() {
   var text = document.getElementById('ai-student-input').value.trim();
+  if (!text) {
+    notify('اكتب وصف الحالة أولًا.');
+    return;
+  }
+
   var result = await SmartClinicSecurity.apiJson('/ai/student-support', {
     method: 'POST',
     body: JSON.stringify({ text: text })
   });
   if (!result.ok || !result.data) {
-    notify(result.error || 'فشل تحليل AI.');
+    renderStudentAi(localStudentAiFallback(text));
+    notify('تم تقديم توصية مبدئية (بدون اتصال كامل بالخادم).');
     return;
   }
   renderStudentAi(result.data.item || null);
@@ -496,7 +1013,6 @@ window.addEventListener('DOMContentLoaded', function () {
       afterSelector: '.sc-page-header',
       onRefresh: loadOverview,
       links: [
-        { label: 'بوابة الطالب', href: 'student-portal.html' },
         { label: 'الملف الصحي', href: 'student-profile.html' },
         { label: 'مركز التنسيق', href: 'care-center.html' },
         { label: 'الإشعارات', href: 'notifications-center.html' }
