@@ -27,6 +27,20 @@
   overflow: hidden;
 }
 
+.student-overview::before {
+  content: "";
+  position: absolute;
+  top: -120px;
+  left: -120px;
+  width: 280px;
+  height: 280px;
+  border-radius: 42% 58% 63% 37% / 45% 36% 64% 55%;
+  background: radial-gradient(circle, rgba(129, 230, 217, 0.22), transparent 70%);
+  filter: blur(2px);
+  animation: driftShape 10s ease-in-out infinite;
+  pointer-events: none;
+}
+
 .student-overview::after {
   content: "";
   position: absolute;
@@ -36,6 +50,18 @@
   border-radius: 50%;
   background: radial-gradient(circle, rgba(56, 189, 248, 0.18), transparent 70%);
   pointer-events: none;
+}
+
+@keyframes driftShape {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate(12px, 10px) rotate(8deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
 }
 
 .overview-top {
@@ -50,66 +76,70 @@
   margin-top: 6px;
 }
 
-.hero-cta .btn-muted[disabled] {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
 .primary-cta {
   min-width: 180px;
   box-shadow: 0 10px 24px rgba(56, 189, 248, 0.28);
 }
 
-.quick-actions {
+.live-strip {
   margin-top: 14px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--sc-radius-md);
-  background: rgba(255, 255, 255, 0.02);
+  background: linear-gradient(145deg, rgba(56, 189, 248, 0.08), rgba(255, 255, 255, 0.02));
   padding: 12px;
-}
-
-.quick-actions-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.quick-actions-grid {
-  margin-top: 10px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
 }
 
-.quick-action-btn {
-  border: 1px solid var(--sc-border);
+.live-cell {
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--sc-radius-md);
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--sc-text);
-  padding: 10px;
-  text-align: right;
-  cursor: pointer;
-  transition: transform 0.2s ease, background 0.2s ease;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 8px 10px;
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
-.quick-action-btn:hover {
-  transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.09);
-}
-
-.quick-action-btn .qa-title {
-  display: block;
-  font-size: 13px;
-  font-weight: 700;
-  margin-bottom: 2px;
-}
-
-.quick-action-btn .qa-sub {
-  display: block;
+.live-label {
   font-size: 11px;
   color: var(--sc-text-soft);
+}
+
+.live-value {
+  margin-top: 4px;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.live-signal {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.live-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #36cfc9;
+  box-shadow: 0 0 0 0 rgba(54, 207, 201, 0.45);
+  animation: livePulse 1.6s infinite;
+}
+
+@keyframes livePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(54, 207, 201, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 9px rgba(54, 207, 201, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(54, 207, 201, 0);
+  }
 }
 
 .message-templates {
@@ -412,12 +442,20 @@
 }
 
 @media (max-width: 1100px) {
+  .live-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .sensor-grid {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 780px) {
+  .live-strip {
+    grid-template-columns: 1fr;
+  }
+
   .overview-top {
     flex-direction: column;
   }
@@ -469,7 +507,7 @@
     <div class="inline-row hero-cta">
       <button class="btn-primary primary-cta" onclick="focusVisitReason()">طلب زيارة الآن</button>
       <button class="btn-muted" onclick="focusAiPanel()">استشارة سريعة</button>
-      <button class="btn-muted" id="hero-telemed-btn" onclick="joinStudentTelemed()" disabled>الجلسة المرئية غير متاحة</button>
+      <button class="btn-muted" onclick="openStudentProfile()">فتح الملف الصحي</button>
     </div>
     <div class="status-banner">
       <div class="status-line">
@@ -484,32 +522,26 @@
         <span id="current-status-help" class="sc-muted">سنعرض هنا ماذا تفعل الآن حسب الحالة.</span>
       </div>
     </div>
-    <div class="quick-actions">
-      <div class="quick-actions-head">
-        <strong>مركز الإجراءات السريعة</strong>
-        <span class="sc-muted">كل الإجراءات العامة من مكان واحد بدون تكرار.</span>
+    <div class="live-strip" aria-live="polite">
+      <div class="live-cell">
+        <span class="live-label live-signal"><span class="live-dot"></span>تدفق مباشر</span>
+        <strong class="live-value" id="live-mode">جاري التهيئة...</strong>
       </div>
-      <div class="quick-actions-grid">
-        <button class="quick-action-btn" onclick="openStudentProfile()">
-          <span class="qa-title">الملف الصحي</span>
-          <span class="qa-sub">عرض الحالات والتقارير</span>
-        </button>
-        <button class="quick-action-btn" onclick="focusMessageComposer()">
-          <span class="qa-title">إرسال رسالة</span>
-          <span class="qa-sub">التواصل المباشر مع العيادة</span>
-        </button>
-        <button class="quick-action-btn" onclick="window.location.href='notifications-center.html'">
-          <span class="qa-title">مركز الإشعارات</span>
-          <span class="qa-sub">متابعة التنبيهات الكاملة</span>
-        </button>
-        <button class="quick-action-btn" onclick="window.location.href='care-center.html'">
-          <span class="qa-title">مركز التنسيق</span>
-          <span class="qa-sub">التواصل مع الجهات الداعمة</span>
-        </button>
-        <button class="quick-action-btn" onclick="loadOverview()">
-          <span class="qa-title">تحديث البيانات</span>
-          <span class="qa-sub">مزامنة الحالة والقراءات</span>
-        </button>
+      <div class="live-cell">
+        <span class="live-label">نبض القلب</span>
+        <strong class="live-value" id="live-hr">-</strong>
+      </div>
+      <div class="live-cell">
+        <span class="live-label">الأكسجين</span>
+        <strong class="live-value" id="live-spo2">-</strong>
+      </div>
+      <div class="live-cell">
+        <span class="live-label">آخر تنبيه</span>
+        <strong class="live-value" id="live-alert">-</strong>
+      </div>
+      <div class="live-cell">
+        <span class="live-label">الجلسة المرئية</span>
+        <strong class="live-value" id="live-session">غير متاحة</strong>
       </div>
     </div>
   </section>
@@ -592,7 +624,7 @@
         <button class="btn-muted" onclick="refreshStudentTelemed()">تحديث حالة الجلسة</button>
       </div>
       <div class="empty-hint">إذا لم توجد جلسة نشطة، ارسل طلب زيارة مستعجل أو تواصل مع العيادة.</div>
-      <div class="inline-help">تم نقل أزرار الملف الصحي ومركز التنسيق إلى مركز الإجراءات السريعة أعلى الصفحة.</div>
+      <div class="inline-help">عند تفعيل الجلسة سيتغير المؤشر الحي أعلى الصفحة مباشرة.</div>
     </article>
 
     <article class="sc-panel" id="communication-zone" data-permission="send.message">
@@ -607,7 +639,7 @@
       <div class="inline-help">طول الرسالة: <span id="message-count">0</span>/280</div>
       <div class="inline-row">
         <button class="btn-primary" data-permission="send.message" onclick="sendClinicMessage()">إرسال الرسالة</button>
-        <button class="btn-muted" type="button" onclick="focusVisitReason()">طلب زيارة سريع</button>
+        <button class="btn-muted" type="button" onclick="clearMessageComposer()">مسح النص</button>
       </div>
       <select id="alert-filter" onchange="applyAlertFilter()">
         <option value="all">كل التنبيهات</option>
@@ -711,12 +743,6 @@ function focusAiPanel() {
   if (input) input.focus();
 }
 
-function focusMessageComposer() {
-  scrollStudentSection('communication-zone');
-  var input = document.getElementById('message-text');
-  if (input) input.focus();
-}
-
 function prefillAiEmergency() {
   var input = document.getElementById('ai-student-input');
   input.value = 'أشعر بضيق تنفس وألم في الصدر مع دوخة.';
@@ -754,9 +780,13 @@ function riskLabel(risk) {
 
 function refreshHeroMeta(overview) {
   var risk = (((overview || {}).snapshot || {}).latestVitalsRisk) || 'unknown';
+  var liveMode = document.getElementById('live-mode');
   document.getElementById('status-mode').textContent = SmartClinicSecurity.isDemoMode() ? 'Demo' : 'Live';
   document.getElementById('status-sync').textContent = new Date().toLocaleTimeString('ar-SA');
   document.getElementById('status-risk').textContent = riskLabel(risk);
+  if (liveMode) {
+    liveMode.textContent = SmartClinicSecurity.isDemoMode() ? 'محاكاة تدريبية' : 'مراقبة مباشرة';
+  }
 }
 
 function updateCurrentStatus(snapshot) {
@@ -890,6 +920,25 @@ function renderReports(items) {
   }).join('');
 }
 
+function trimText(value, max) {
+  var text = String(value || '').trim();
+  if (!text) return '-';
+  if (text.length <= max) return text;
+  return text.slice(0, max - 1) + '…';
+}
+
+function renderLiveStrip(data) {
+  var latest = data && data.latestVitals ? data.latestVitals : null;
+  var alerts = (data && data.alerts) || [];
+  document.getElementById('live-hr').textContent = latest ? fmtNum(latest.hr, 0, ' bpm') : '-';
+  document.getElementById('live-spo2').textContent = latest ? fmtNum(latest.spo2, 0, '%') : '-';
+  if (!alerts.length) {
+    document.getElementById('live-alert').textContent = 'لا يوجد';
+  } else {
+    document.getElementById('live-alert').textContent = trimText(alerts[0].text || alerts[0].type || 'تنبيه جديد', 20);
+  }
+}
+
 async function loadOverview() {
   var result = await SmartClinicSecurity.apiJson('/student/overview');
   if (!result.ok || !result.data) {
@@ -906,6 +955,7 @@ async function loadOverview() {
   alertsCache = result.data.alerts || [];
   applyAlertFilter();
   renderReports(result.data.reports || []);
+  renderLiveStrip(result.data || {});
   await refreshStudentTelemed();
 }
 
@@ -915,7 +965,7 @@ async function refreshStudentTelemed() {
   });
   var status = document.getElementById('telemed-student-status');
   var joinBtn = document.getElementById('telemed-student-join');
-  var heroBtn = document.getElementById('hero-telemed-btn');
+  var liveSession = document.getElementById('live-session');
 
   if (!session) {
     studentTelemedSessionId = null;
@@ -923,9 +973,8 @@ async function refreshStudentTelemed() {
     document.getElementById('telemed-student-badge').className = 'badge b-warn';
     document.getElementById('telemed-student-badge').textContent = 'غير نشطة';
     joinBtn.disabled = true;
-    if (heroBtn) {
-      heroBtn.disabled = true;
-      heroBtn.textContent = 'الجلسة المرئية غير متاحة';
+    if (liveSession) {
+      liveSession.textContent = 'غير متاحة';
     }
     return;
   }
@@ -936,9 +985,8 @@ async function refreshStudentTelemed() {
   document.getElementById('telemed-student-badge').className = 'badge b-ok';
   document.getElementById('telemed-student-badge').textContent = 'نشطة الآن';
   joinBtn.disabled = false;
-  if (heroBtn) {
-    heroBtn.disabled = false;
-    heroBtn.textContent = 'انضم للجلسة المرئية';
+  if (liveSession) {
+    liveSession.textContent = 'نشطة الآن';
   }
 }
 
@@ -1019,6 +1067,11 @@ function useVisitTemplate(text) {
 function updateMessageMeta() {
   var text = document.getElementById('message-text').value || '';
   document.getElementById('message-count').textContent = String(text.trim().length);
+}
+
+function clearMessageComposer() {
+  document.getElementById('message-text').value = '';
+  updateMessageMeta();
 }
 
 function useMessageTemplate(text) {
