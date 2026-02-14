@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مركز الطوارئ – Smart Clinic</title>
+<link rel="stylesheet" href="../../assets/css/variables.css">
+<link rel="stylesheet" href="../../assets/css/layout.css">
+<link rel="stylesheet" href="../../assets/css/cards.css">
+<link rel="stylesheet" href="../../assets/css/tables.css">
+<style>
+.em-header {
+  border: 1px solid rgba(255, 120, 117, 0.45);
+  background: linear-gradient(145deg, rgba(127, 29, 29, 0.5), rgba(22, 24, 29, 0.78));
+}
+
+.em-role-chip {
+  border-color: rgba(255, 120, 117, 0.45);
+  color: #ffd6d1;
+}
+
+.em-state {
+  border: 1px solid rgba(255, 120, 117, 0.35);
+  border-radius: var(--sc-radius-md);
+  background: rgba(127, 29, 29, 0.2);
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+
+.em-state strong {
+  color: #ffd6d1;
+}
+
+.em-state-line {
+  margin-top: 6px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.em-pulse {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ff4d4f;
+  box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.45);
+  animation: emPulse 1.6s infinite;
+}
+
+@keyframes emPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 77, 79, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 77, 79, 0);
+  }
+}
+
+.case-row-active td {
+  background: rgba(255, 77, 79, 0.1);
+}
+
+.case-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.mini-btn {
+  border: 1px solid var(--sc-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--sc-text);
+  font-size: 12px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.mini-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.action-grid .btn-primary,
+.action-grid .btn-muted {
+  width: 100%;
+}
+
+.queue-list,
+.alert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.queue-item,
+.alert-item {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--sc-radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px;
+}
+
+.queue-item strong,
+.alert-item strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.toast {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  background: var(--sc-surface-strong);
+  border: 1px solid var(--sc-border);
+  color: var(--sc-text);
+  border-radius: var(--sc-radius-md);
+  padding: 10px 12px;
+  font-size: 12px;
+  display: none;
+  z-index: 40;
+}
+
+@media (max-width: 780px) {
+  .action-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+</head>
+<body class="sc-page">
+<div class="sc-shell">
+  <header class="sc-page-header em-header">
+    <div class="sc-page-header-main">
+      <div class="sc-page-icon">🚨</div>
+      <div>
+        <h1 class="sc-page-title">مركز الطوارئ</h1>
+        <p class="sc-page-subtitle">لوحة ميدانية لمتابعة الحالات الحرجة وتنفيذ إجراءات الاستجابة السريعة.</p>
+      </div>
+    </div>
+    <div class="sc-header-actions">
+      <span class="sc-role-chip em-role-chip">الدور الحالي: <strong data-session-role>الطوارئ</strong></span>
+      <button class="sc-action-btn" data-action="logout">تسجيل الخروج</button>
+    </div>
+  </header>
+
+  <section class="em-state">
+    <strong id="em-state-title">الحالة التشغيلية: جاهزية عالية</strong>
+    <div class="em-state-line">
+      <span class="em-pulse"></span>
+      <span class="sc-muted">آخر تحديث: <span id="em-last-sync">-</span></span>
+      <span class="sc-muted">الحالة المحددة: <span id="em-selected-case">لا يوجد</span></span>
+    </div>
+  </section>
+
+  <section class="sc-grid-3 sc-kpi-grid sc-mb-24">
+    <article class="sc-kpi-card">
+      <div class="sc-kpi-label">حالات حرجة</div>
+      <div id="kpi-critical" class="sc-kpi-value">0</div>
+    </article>
+    <article class="sc-kpi-card">
+      <div class="sc-kpi-label">حالات مفتوحة</div>
+      <div id="kpi-open" class="sc-kpi-value">0</div>
+    </article>
+    <article class="sc-kpi-card">
+      <div class="sc-kpi-label">طلبات زيارة معلّقة</div>
+      <div id="kpi-pending" class="sc-kpi-value">0</div>
+    </article>
+  </section>
+
+  <section class="sc-grid-3">
+    <section class="sc-panel sc-col-span-2">
+      <h2 class="sc-panel-title">قائمة الحالات العاجلة</h2>
+      <p class="sc-panel-subtitle">اختر حالة لتفعيل إجراءات الطوارئ أو فتح مسارها التفصيلي.</p>
+      <div class="sc-table-wrap">
+        <table class="sc-table">
+          <thead>
+            <tr>
+              <th>الحالة</th>
+              <th>الخطورة</th>
+              <th>الوضع</th>
+              <th>آخر تحديث</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="em-cases-body">
+            <tr><td colspan="5" class="sc-table-empty">جاري تحميل الحالات...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="sc-panel">
+      <h2 class="sc-panel-title">توجيه سريع</h2>
+      <p class="sc-panel-subtitle">قرارات أولية فقط. التنفيذ التفصيلي داخل مسار الطوارئ.</p>
+      <div class="action-grid">
+        <button class="btn-primary" data-permission="edit.careplan" onclick="runEmergencyAction('emergency_protocol', 'تم تفعيل بروتوكول الطوارئ الكامل')">تفعيل البروتوكول</button>
+        <button class="btn-primary" data-permission="approve.referral" onclick="runEmergencyAction('ambulance_dispatch', 'تم طلب إسعاف وتحويل الحالة للطوارئ الخارجية')">طلب إسعاف</button>
+      </div>
+      <div class="inline-row sc-mb-16" style="margin-top:12px;">
+        <button class="btn-primary" onclick="openEmergencyFlow()">فتح مسار الطوارئ</button>
+        <button class="btn-muted" onclick="loadEmergencyDashboard()">تحديث</button>
+      </div>
+      <div class="inline-help">بعد التوجيه الأولي، أكمل التنفيذ التفصيلي من صفحة المسار.</div>
+    </section>
+
+    <section class="sc-panel">
+      <h2 class="sc-panel-title">البلاغات المعلقة</h2>
+      <p class="sc-panel-subtitle">طلبات الزيارة الحديثة لفرز الأولوية.</p>
+      <div id="em-visit-queue" class="queue-list"></div>
+    </section>
+
+    <section class="sc-panel sc-col-span-2">
+      <h2 class="sc-panel-title">التنبيهات العاجلة</h2>
+      <p class="sc-panel-subtitle">آخر التنبيهات التشغيلية والحرجة الموجهة لفريق الطوارئ.</p>
+      <div id="em-alerts-list" class="alert-list"></div>
+    </section>
+  </section>
+</div>
+
+<div id="toast" class="toast"></div>
+<script src="../../assets/js/security.js"></script>
+<script src="../../assets/js/ui-shell.js"></script>
+<script>
+var casesCache = [];
+var selectedCaseId = '';
+
+function notify(text) {
+  var el = document.getElementById('toast');
+  el.textContent = text;
+  el.style.display = 'block';
+  window.setTimeout(function () { el.style.display = 'none'; }, 2200);
+}
+
+function fmtDate(value) {
+  if (!value) return '-';
+  var dt = new Date(value);
+  if (Number.isNaN(dt.getTime())) return '-';
+  return dt.toLocaleString('ar-SA');
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function severityTone(value) {
+  var level = String(value || '').toLowerCase();
+  if (level === 'critical' || level === 'حرج') return 'sc-severity-critical';
+  if (level === 'high' || level === 'medium' || level === 'warning') return 'sc-severity-medium';
+  return 'sc-severity-low';
+}
+
+function severityWeight(value) {
+  var v = String(value || '').toLowerCase();
+  if (v === 'critical') return 4;
+  if (v === 'high') return 3;
+  if (v === 'medium') return 2;
+  return 1;
+}
+
+function ensureSelectedCase() {
+  if (selectedCaseId && casesCache.some(function (item) { return item.id === selectedCaseId; })) return;
+  selectedCaseId = casesCache.length ? String(casesCache[0].id) : '';
+}
+
+function updateSelectedMeta() {
+  var selected = casesCache.find(function (item) { return item.id === selectedCaseId; }) || null;
+  document.getElementById('em-selected-case').textContent = selected ? ((selected.title || 'حالة') + ' (' + (selected.id || '-') + ')') : 'لا يوجد';
+}
+
+function selectCase(caseId) {
+  selectedCaseId = String(caseId || '');
+  updateSelectedMeta();
+  renderCasesTable(casesCache);
+}
+
+function renderKpis(cases, visits, alerts) {
+  var critical = cases.filter(function (item) { return String(item.severity || '').toLowerCase() === 'critical'; }).length;
+  var open = cases.filter(function (item) { return String(item.status || '').toLowerCase() !== 'closed'; }).length;
+  var pending = visits.filter(function (item) { return String(item.status || '').toLowerCase() === 'pending'; }).length;
+  var criticalAlerts = alerts.filter(function (item) { return String(item.type || '').toLowerCase() === 'critical'; }).length;
+  document.getElementById('kpi-critical').textContent = String(critical);
+  document.getElementById('kpi-open').textContent = String(open);
+  document.getElementById('kpi-pending').textContent = String(pending);
+  document.getElementById('em-state-title').textContent = critical > 0
+    ? ('الحالة التشغيلية: إنذار مرتفع (' + critical + ' حالات حرجة)')
+    : ('الحالة التشغيلية: متابعة مستقرة (' + criticalAlerts + ' تنبيهات حرجة)');
+}
+
+function renderCasesTable(items) {
+  var tbody = document.getElementById('em-cases-body');
+  if (!items.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="sc-table-empty">لا توجد حالات متاحة للطوارئ.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = items.map(function (item) {
+    var tone = severityTone(item.severity);
+    var active = item.id === selectedCaseId ? ' class="case-row-active"' : '';
+    return '<tr' + active + '>' +
+      '<td>' + escapeHtml(item.title || 'حالة') + '</td>' +
+      '<td><span class="sc-badge ' + tone + '">' + escapeHtml(item.severity || '-') + '</span></td>' +
+      '<td>' + escapeHtml(item.status || '-') + '</td>' +
+      '<td>' + escapeHtml(fmtDate(item.updatedAt)) + '</td>' +
+      '<td><div class="case-actions">' +
+        '<button class="mini-btn" type="button" onclick="selectCase(\'' + escapeHtml(item.id) + '\')">تحديد</button>' +
+        '<button class="mini-btn" type="button" onclick="openEmergencyFlow(\'' + escapeHtml(item.id) + '\')">فتح المسار</button>' +
+      '</div></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function renderVisitQueue(items) {
+  var wrap = document.getElementById('em-visit-queue');
+  if (!items.length) {
+    wrap.innerHTML = '<div class="queue-item">لا توجد طلبات معلقة الآن.</div>';
+    return;
+  }
+  wrap.innerHTML = items.slice(0, 6).map(function (item) {
+    return '<div class="queue-item"><strong>' + escapeHtml(item.reason || 'طلب زيارة') + '</strong><div class="sc-muted">' + escapeHtml(fmtDate(item.createdAt)) + '</div></div>';
+  }).join('');
+}
+
+function renderAlerts(items) {
+  var wrap = document.getElementById('em-alerts-list');
+  if (!items.length) {
+    wrap.innerHTML = '<div class="alert-item">لا توجد تنبيهات حالية.</div>';
+    return;
+  }
+  wrap.innerHTML = items.slice(0, 8).map(function (item) {
+    var tone = severityTone(item.type || 'low');
+    return '<div class="alert-item"><strong>' + escapeHtml(item.text || 'تنبيه') + '</strong>' +
+      '<div class="sc-muted">' + escapeHtml(fmtDate(item.createdAt)) + '</div>' +
+      '<div style="margin-top:4px;"><span class="sc-badge ' + tone + '">' + escapeHtml(item.type || 'info') + '</span></div></div>';
+  }).join('');
+}
+
+async function loadEmergencyDashboard() {
+  var now = new Date();
+  document.getElementById('em-last-sync').textContent = now.toLocaleTimeString('ar-SA');
+
+  var results = await Promise.all([
+    SmartClinicSecurity.apiJson('/cases'),
+    SmartClinicSecurity.apiJson('/visit-requests'),
+    SmartClinicSecurity.apiJson('/alerts')
+  ]);
+  var casesResult = results[0];
+  var visitsResult = results[1];
+  var alertsResult = results[2];
+
+  if (!casesResult.ok || !casesResult.data) {
+    notify(casesResult.error || 'تعذر تحميل حالات الطوارئ.');
+    return;
+  }
+
+  var allCases = Array.isArray(casesResult.data.items) ? casesResult.data.items.slice() : [];
+  var emergencyCases = allCases.filter(function (item) {
+    var severity = String(item.severity || '').toLowerCase();
+    var status = String(item.status || '').toLowerCase();
+    return status !== 'closed' || severity === 'critical' || severity === 'high';
+  }).sort(function (a, b) {
+    var sev = severityWeight(b.severity) - severityWeight(a.severity);
+    if (sev !== 0) return sev;
+    return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
+  });
+
+  var visitItems = (visitsResult.ok && visitsResult.data && Array.isArray(visitsResult.data.items))
+    ? visitsResult.data.items
+    : [];
+  var alertItems = (alertsResult.ok && alertsResult.data && Array.isArray(alertsResult.data.items))
+    ? alertsResult.data.items
+    : [];
+
+  casesCache = emergencyCases;
+  ensureSelectedCase();
+  updateSelectedMeta();
+  renderKpis(emergencyCases, visitItems, alertItems);
+  renderCasesTable(emergencyCases);
+  renderVisitQueue(visitItems);
+  renderAlerts(alertItems);
+}
+
+function openEmergencyFlow(caseId) {
+  var target = String(caseId || selectedCaseId || '');
+  if (!target) {
+    notify('حدد حالة أولًا.');
+    return;
+  }
+  window.location.href = 'emergency-flow.html?id=' + encodeURIComponent(target);
+}
+
+async function runEmergencyAction(type, note) {
+  if (!selectedCaseId) {
+    notify('حدد حالة قبل تنفيذ الإجراء.');
+    return;
+  }
+  var result = await SmartClinicSecurity.apiJson('/cases/' + encodeURIComponent(selectedCaseId) + '/actions', {
+    method: 'POST',
+    body: JSON.stringify({ type: type, note: note })
+  });
+  if (!result.ok) {
+    notify(result.error || 'تعذر تنفيذ الإجراء.');
+    return;
+  }
+  notify(note);
+  loadEmergencyDashboard();
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  SmartClinicSecurity.requireAccess(['emergency', 'admin'], 'مركز الطوارئ');
+  if (window.SmartClinicUI) {
+    SmartClinicUI.mountQuickNav({
+      afterSelector: '.sc-page-header',
+      onRefresh: loadEmergencyDashboard,
+      links: [
+        { label: 'مركز الطوارئ', href: 'emergency-dashboard.html' },
+        { label: 'مسار الطوارئ', href: 'emergency-flow.html?id=case_1' },
+        { label: 'الإشعارات', href: 'notifications-center.html' }
+      ],
+      hideShellActions: true
+    });
+  }
+  SmartClinicSecurity.createAutoRefresh(loadEmergencyDashboard, 15000, { immediate: true });
+});
+</script>
+</body>
+</html>

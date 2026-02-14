@@ -20,6 +20,7 @@
       --doctor: #00b4d8;
       --parent: #34d399;
       --admin: #ffb703;
+      --emergency: #ff6b6b;
     }
     * { box-sizing: border-box; }
     body {
@@ -182,6 +183,7 @@
     .student-btn { background: var(--student); }
     .parent-btn { background: var(--parent); }
     .admin-btn { background: var(--admin); color: #16202a; }
+    .emergency-btn { background: var(--emergency); }
     .btn:hover { filter: brightness(1.08); transform: translateX(-3px); }
     @keyframes fadeIn { to { opacity: 1; } }
     @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
@@ -206,7 +208,7 @@
   </div>
 
   <div class="title">منصة العيادة المدرسية الذكية</div>
-  <p class="subtitle">بوابة موحدة لأدوار المنصة الأساسية: الطالب، الطبيب، ولي الأمر، والإدارة مع دخول حسب الصلاحيات.</p>
+  <p class="subtitle">بوابة موحدة لأدوار المنصة الأساسية: الطالب، الطبيب، الطوارئ، ولي الأمر، والإدارة مع دخول حسب الصلاحيات.</p>
   <div id="resume-box" class="resume-box">
     <div id="resume-meta" class="resume-meta">جلسة سابقة متاحة.</div>
     <div class="resume-actions">
@@ -218,8 +220,9 @@
   <div class="roles">
     <div class="role-card" onclick="openSecureRoute('src/pages/student-portal.html', 'student')" onkeydown="cardKey(event, 'src/pages/student-portal.html', 'student')" tabindex="0" style="animation-delay:0.2s;"><div class="icon">🎓</div><div class="role-title">الطالب</div><div class="role-desc">بوابة الطالب للخدمات الذاتية: الملف الصحي، الطلبات، والتنبيهات المدرسية.</div><button class="btn student-btn">دخول الطالب</button></div>
     <div class="role-card" onclick="openSecureRoute('src/pages/doctor.html', 'doctor')" onkeydown="cardKey(event, 'src/pages/doctor.html', 'doctor')" tabindex="0" style="animation-delay:0.35s;"><div class="icon">🩺</div><div class="role-title">الطبيب</div><div class="role-desc">تشخيص الحالة، مراجعة السجل الصحي، وتوصيات علاجية مدعومة بالبيانات.</div><button class="btn doctor-btn">دخول الطبيب</button></div>
-    <div class="role-card" onclick="openSecureRoute('src/pages/parent-portal.html', 'parent')" onkeydown="cardKey(event, 'src/pages/parent-portal.html', 'parent')" tabindex="0" style="animation-delay:0.5s;"><div class="icon">👨‍👩‍👧</div><div class="role-title">ولي الأمر</div><div class="role-desc">متابعة الحالة الصحية للابن، التقارير، والتواصل مع العيادة المدرسية.</div><button class="btn parent-btn">دخول ولي الأمر</button></div>
-    <div class="role-card" onclick="openSecureRoute('src/pages/admin-dashboard.html', 'admin')" onkeydown="cardKey(event, 'src/pages/admin-dashboard.html', 'admin')" tabindex="0" style="animation-delay:0.65s;"><div class="icon">🏛️</div><div class="role-title">الإدارة</div><div class="role-desc">إدارة النظام، الصلاحيات، ومؤشرات الأداء التشغيلية للعيادة المدرسية.</div><button class="btn admin-btn">دخول الإدارة</button></div>
+    <div class="role-card" onclick="openSecureRoute('src/pages/emergency-dashboard.html', 'emergency')" onkeydown="cardKey(event, 'src/pages/emergency-dashboard.html', 'emergency')" tabindex="0" style="animation-delay:0.5s;"><div class="icon">🚨</div><div class="role-title">الطوارئ</div><div class="role-desc">إدارة البلاغات الحرجة، تنفيذ إجراءات الاستجابة، وتشغيل مسار الطوارئ بشكل لحظي.</div><button class="btn emergency-btn">دخول الطوارئ</button></div>
+    <div class="role-card" onclick="openSecureRoute('src/pages/parent-portal.html', 'parent')" onkeydown="cardKey(event, 'src/pages/parent-portal.html', 'parent')" tabindex="0" style="animation-delay:0.65s;"><div class="icon">👨‍👩‍👧</div><div class="role-title">ولي الأمر</div><div class="role-desc">متابعة الحالة الصحية للابن، التقارير، والتواصل مع العيادة المدرسية.</div><button class="btn parent-btn">دخول ولي الأمر</button></div>
+    <div class="role-card" onclick="openSecureRoute('src/pages/admin-dashboard.html', 'admin')" onkeydown="cardKey(event, 'src/pages/admin-dashboard.html', 'admin')" tabindex="0" style="animation-delay:0.8s;"><div class="icon">🏛️</div><div class="role-title">الإدارة</div><div class="role-desc">إدارة النظام، الصلاحيات، ومؤشرات الأداء التشغيلية للعيادة المدرسية.</div><button class="btn admin-btn">دخول الإدارة</button></div>
   </div>
 
   <footer>
@@ -251,7 +254,7 @@ function refreshResumeActions() {
   var roleLabel = SmartClinicSecurity.roles[session.role] || session.role;
   meta.textContent = 'جلسة محفوظة للدور: ' + roleLabel + ' • يمكنك المتابعة مباشرة.';
   if (careBtn) {
-    careBtn.style.display = session.role === 'student' ? 'none' : 'inline-flex';
+    careBtn.style.display = (session.role === 'doctor' || session.role === 'parent' || session.role === 'admin') ? 'inline-flex' : 'none';
   }
   box.style.display = 'flex';
 }
@@ -274,6 +277,11 @@ function openCareCenter() {
   if (session.role === 'student') {
     window.alert('مركز التنسيق مخصص للأطباء وولي الأمر والإدارة. تم توجيهك للملف الصحي.');
     window.location.href = 'src/pages/student-profile.html';
+    return;
+  }
+  if (session.role === 'emergency') {
+    window.alert('تم توجيهك إلى مركز الطوارئ الخاص بدورك.');
+    window.location.href = 'src/pages/emergency-dashboard.html';
     return;
   }
   window.location.href = 'src/pages/care-center.html';

@@ -214,7 +214,7 @@ function goRoleHome() {
   SmartClinicSecurity.goToRoleHome();
 }
 window.addEventListener('DOMContentLoaded', function () {
-  SmartClinicSecurity.requireAccess(['doctor', 'admin'], 'مسار الطوارئ');
+  SmartClinicSecurity.requireAccess(['doctor', 'admin', 'emergency'], 'مسار الطوارئ');
   currentCaseId = normalizeCaseId(qs('id'));
   SmartClinicSecurity.createAutoRefresh(loadEmergency, 15000, { immediate: true });
 });

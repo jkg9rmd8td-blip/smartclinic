@@ -332,7 +332,7 @@ async function loadNotifications() {
 }
 
 window.addEventListener('DOMContentLoaded', function () {
-  SmartClinicSecurity.requireAccess(['student', 'parent', 'doctor', 'admin'], 'مركز الإشعارات');
+  SmartClinicSecurity.requireAccess(['student', 'parent', 'doctor', 'admin', 'emergency'], 'مركز الإشعارات');
   if (window.SmartClinicUI) {
     SmartClinicUI.mountQuickNav({
       afterSelector: '.top',

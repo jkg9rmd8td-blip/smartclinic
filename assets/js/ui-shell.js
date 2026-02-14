@@ -111,6 +111,8 @@
     } else if (role === 'doctor') {
       links.push({ label: 'الحالات', href: 'case-details.html?id=case_1' });
       links.push({ label: 'الطوارئ', href: 'emergency-flow.html?id=case_1' });
+    } else if (role === 'emergency') {
+      links.push({ label: 'مسار الطوارئ', href: 'emergency-flow.html?id=case_1' });
     } else if (role === 'parent') {
       links.push({ label: 'التقارير', href: 'parent-reports.html' });
       links.push({ label: 'الرسائل', href: 'parent-messages.html' });

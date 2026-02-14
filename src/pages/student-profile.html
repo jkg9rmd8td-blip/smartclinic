@@ -187,7 +187,7 @@
   <section class="sc-grid-3">
     <section class="sc-panel">
       <h2 class="sc-panel-title">الملف الصحي الأساسي</h2>
-      <p class="sc-panel-subtitle">بيانات الطالب وصلاحيات المتابعة والتواصل السريع.</p>
+      <p class="sc-panel-subtitle">مرجع الملف الصحي للبيانات والتاريخ الطبي، بينما التنفيذ اليومي يتم عبر البوابة الحية لكل دور.</p>
 
       <div class="profile-overview-grid sc-mb-16">
         <div class="profile-overview-item"><div class="profile-overview-label">الاسم</div><div class="profile-overview-value" id="info-name">-</div></div>
@@ -200,9 +200,8 @@
       </div>
 
       <div class="inline-row">
-        <button class="btn-primary" data-permission="request.visit" onclick="quickVisitRequest()">طلب زيارة سريع</button>
-        <button class="btn-muted" data-permission="send.message" onclick="focusMessageBox()">مراسلة العيادة</button>
-        <button class="btn-muted" data-permission="view.case" onclick="openLinkedCase()">فتح الحالة المرتبطة</button>
+        <button class="btn-primary" onclick="goRoleHome()">العودة إلى البوابة الحية</button>
+        <button class="btn-muted" data-permission="view.case" onclick="openLinkedCase()">تفاصيل الحالة</button>
         <button class="btn-muted" id="profile-telemed-btn" onclick="handleProfileTelemed()">الجلسة المرئية</button>
         <button class="btn-muted" data-permission="export.report" onclick="exportProfileReport()">تصدير تقرير</button>
       </div>
@@ -828,29 +827,6 @@ async function loadProfile() {
   }
 }
 
-async function quickVisitRequest() {
-  try {
-    var response = await SmartClinicSecurity.apiRequest('/visit-requests', {
-      method: 'POST',
-      body: JSON.stringify({ reason: 'طلب زيارة سريع من صفحة الملف الصحي' })
-    });
-    var payload = await response.json();
-    if (!response.ok) {
-      notify(payload.error || 'تعذر إرسال الطلب.');
-      return;
-    }
-    notify('تم إرسال طلب الزيارة.');
-    loadProfile();
-  } catch (err) {
-    notify('تعذر الاتصال بالخادم.');
-  }
-}
-
-function focusMessageBox() {
-  var box = document.getElementById('msg-box');
-  if (box) box.focus();
-}
-
 async function sendMessage() {
   var text = document.getElementById('msg-box').value.trim();
   if (!text) {
@@ -916,7 +892,7 @@ window.addEventListener('DOMContentLoaded', function () {
       { label: 'بوابة الطالب', href: 'student-portal.html', roles: ['student', 'admin'] },
       { label: 'لوحة الطبيب', href: 'doctor.html', roles: ['doctor', 'admin'] },
       { label: 'بوابة ولي الأمر', href: 'parent-portal.html', roles: ['parent', 'admin'] },
-      { label: 'مركز التنسيق', href: 'care-center.html' },
+      { label: 'مركز التنسيق', href: 'care-center.html', roles: ['doctor', 'parent', 'admin'] },
       { label: 'الإشعارات', href: 'notifications-center.html' }
     ];
     if (auth && (auth.role === 'doctor' || auth.role === 'admin')) {
@@ -925,7 +901,8 @@ window.addEventListener('DOMContentLoaded', function () {
     SmartClinicUI.mountQuickNav({
       afterSelector: '.sc-page-header',
       onRefresh: loadProfile,
-      links: links
+      links: links,
+      hideShellActions: true
     });
   }
   if (window.location.hash) {

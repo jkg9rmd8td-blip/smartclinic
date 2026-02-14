@@ -21,7 +21,8 @@
     student: 'الطالب',
     doctor: 'الطبيب',
     parent: 'ولي الأمر',
-    admin: 'الإدارة'
+    admin: 'الإدارة',
+    emergency: 'الطوارئ'
   };
 
   var ROLE_PERMISSIONS = {
@@ -56,6 +57,20 @@
       'view.analytics',
       'view.notifications',
       'use.ai.assistant'
+    ],
+    emergency: [
+      'view.emergency',
+      'view.case',
+      'view.student',
+      'view.cases',
+      'view.alerts',
+      'view.notifications',
+      'update.vitals',
+      'edit.careplan',
+      'contact.guardian',
+      'send.report',
+      'approve.referral',
+      'close.case'
     ],
     parent: [
       'view.parent',
@@ -101,8 +116,9 @@
   };
 
   var ROUTE_ACCESS = {
-    'index.html': ['student', 'doctor', 'parent', 'admin'],
+    'index.html': ['student', 'doctor', 'parent', 'admin', 'emergency'],
     'src/pages/doctor.html': ['doctor', 'admin'],
+    'src/pages/emergency-dashboard.html': ['emergency', 'admin'],
     'src/pages/admin-dashboard.html': ['admin'],
     'src/pages/admin-settings.html': ['admin'],
     'src/pages/admin-executive-report.html': ['admin'],
@@ -115,17 +131,18 @@
     'src/pages/parent-messages.html': ['parent', 'admin'],
     'src/pages/nurse-dashboard.html': ['admin'],
     'src/pages/case-details.html': ['doctor', 'admin'],
-    'src/pages/emergency-flow.html': ['doctor', 'admin'],
+    'src/pages/emergency-flow.html': ['doctor', 'admin', 'emergency'],
     'src/pages/telemed-room.html': ['student', 'doctor', 'parent', 'admin'],
     'src/pages/student-portal.html': ['student', 'admin'],
     'src/pages/student-profile.html': ['student', 'doctor', 'parent', 'admin'],
-    'src/pages/notifications-center.html': ['student', 'doctor', 'parent', 'admin'],
+    'src/pages/notifications-center.html': ['student', 'doctor', 'parent', 'admin', 'emergency'],
     'src/pages/care-center.html': ['doctor', 'parent', 'admin']
   };
 
   var ENTRY_ROUTES = {
     student: 'src/pages/student-portal.html',
     doctor: 'src/pages/doctor.html',
+    emergency: 'src/pages/emergency-dashboard.html',
     parent: 'src/pages/parent-portal.html',
     admin: 'src/pages/admin-dashboard.html'
   };
@@ -823,6 +840,7 @@
       users: [
         { id: 'u_admin_1', name: 'مدير المنصة', role: 'admin', active: true },
         { id: 'u_doctor_1', name: 'د. أحمد الشمري', role: 'doctor', active: true },
+        { id: 'u_emergency_1', name: 'فريق الطوارئ - خالد الحربي', role: 'emergency', active: true },
         { id: 'u_parent_1', name: 'ولية أمر - سارة الغامدي', role: 'parent', active: true },
         {
           id: 'u_student_1',
@@ -941,6 +959,17 @@
       }
       if (!Array.isArray(demoDataCache.sensorDevices)) {
         demoDataCache.sensorDevices = [];
+      }
+      if (!Array.isArray(demoDataCache.users)) {
+        demoDataCache.users = [];
+      }
+      if (!(demoDataCache.users || []).some(function (user) { return user && user.role === 'emergency' && user.active; })) {
+        demoDataCache.users.push({
+          id: 'u_emergency_1',
+          name: 'فريق الطوارئ - خالد الحربي',
+          role: 'emergency',
+          active: true
+        });
       }
       ['consents', 'emergencyCards', 'homeCarePlans', 'appointments', 'tickets', 'medicationPlans', 'medicationLogs', 'referrals', 'monthlyReports'].forEach(function (key) {
         if (!Array.isArray(demoDataCache[key])) {
@@ -1398,7 +1427,7 @@
       };
     });
     var derived = [];
-    if (role === 'admin' || role === 'doctor') {
+    if (role === 'admin' || role === 'doctor' || role === 'emergency') {
       (data.visitRequests || []).filter(function (v) {
         return v.status === 'pending';
       }).slice(-10).forEach(function (v) {
@@ -1921,7 +1950,7 @@
     }
 
     if (pathname === '/cases' && method === 'GET') {
-      var casesGate = demoRequireRole(data, ['doctor', 'admin', 'student', 'parent']);
+      var casesGate = demoRequireRole(data, ['doctor', 'admin', 'emergency', 'student', 'parent']);
       if (!casesGate.ok) return casesGate.response;
       var list = deepClone(data.cases || []);
       if (casesGate.auth.user.role === 'student') {
@@ -1934,7 +1963,7 @@
     }
 
     if (parts[0] === 'cases' && parts.length === 3 && parts[2] === 'actions' && method === 'POST') {
-      var actionGate = demoRequireRole(data, ['doctor', 'admin']);
+      var actionGate = demoRequireRole(data, ['doctor', 'admin', 'emergency']);
       if (!actionGate.ok) return actionGate.response;
       var targetCaseForAction = demoGetCaseByAnyId(data, parts[1]);
       if (!targetCaseForAction) {
@@ -1969,7 +1998,7 @@
       demoLogAction(data, actionGate.auth, 'case.action.' + actionType, targetCaseForAction.id, { note: actionNote });
       demoPushAlert(
         data,
-        ['admin', 'doctor', 'parent', 'student'],
+        ['admin', 'doctor', 'emergency', 'parent', 'student'],
         'تحديث حالة ' + targetCaseForAction.studentName + ': ' + actionNote,
         (actionType === 'emergency_protocol' || actionType === 'external_referral' || actionType === 'ambulance_dispatch') ? 'critical' : 'operational'
       );
@@ -1978,7 +2007,7 @@
     }
 
     if (parts[0] === 'cases' && parts.length === 2 && method === 'GET') {
-      var caseGate = demoRequireRole(data, ['doctor', 'admin', 'student', 'parent']);
+      var caseGate = demoRequireRole(data, ['doctor', 'admin', 'emergency', 'student', 'parent']);
       if (!caseGate.ok) return caseGate.response;
       var targetCase = demoGetCaseByAnyId(data, parts[1]);
       if (!targetCase) {
@@ -1997,7 +2026,7 @@
     }
 
     if (parts[0] === 'cases' && parts.length === 2 && method === 'PATCH') {
-      var patchGate = demoRequireRole(data, ['doctor', 'admin']);
+      var patchGate = demoRequireRole(data, ['doctor', 'admin', 'emergency']);
       if (!patchGate.ok) return patchGate.response;
       var targetCaseForPatch = demoGetCaseByAnyId(data, parts[1]);
       if (!targetCaseForPatch) {
@@ -2014,7 +2043,7 @@
     }
 
     if (pathname === '/visit-requests' && method === 'GET') {
-      var visitListGate = demoRequireRole(data, ['doctor', 'admin']);
+      var visitListGate = demoRequireRole(data, ['doctor', 'admin', 'emergency']);
       if (!visitListGate.ok) return visitListGate.response;
       return demoJsonResponse(200, { items: (data.visitRequests || []).slice().reverse() });
     }
@@ -2033,7 +2062,7 @@
       data.visitRequests.push(visit);
       demoPushAlert(
         data,
-        ['doctor', 'admin', 'parent', 'student'],
+        ['doctor', 'admin', 'emergency', 'parent', 'student'],
         'طلب زيارة جديد: ' + visit.reason,
         String(visit.reason || '').toLowerCase().indexOf('urgent') !== -1 ? 'critical' : 'operational'
       );
@@ -2984,7 +3013,7 @@
     }
 
     if (pathname === '/notifications' && method === 'GET') {
-      var ntfGate = demoRequireRole(data, ['student', 'parent', 'doctor', 'admin']);
+      var ntfGate = demoRequireRole(data, ['student', 'parent', 'doctor', 'admin', 'emergency']);
       if (!ntfGate.ok) return ntfGate.response;
       var typeFilter = String(urlObj.searchParams.get('type') || 'all');
       var limit = Math.max(1, Math.min(200, Number(urlObj.searchParams.get('limit') || 100)));
@@ -3033,7 +3062,7 @@
     }
 
     if (pathname === '/alerts' && method === 'GET') {
-      var alertsGate = demoRequireRole(data, ['student', 'parent', 'doctor', 'admin']);
+      var alertsGate = demoRequireRole(data, ['student', 'parent', 'doctor', 'admin', 'emergency']);
       if (!alertsGate.ok) return alertsGate.response;
       var alertsItems = (data.alerts || []).filter(function (item) {
         return Array.isArray(item.roles) && item.roles.indexOf(alertsGate.auth.user.role) !== -1;
@@ -3054,7 +3083,7 @@
     }
 
     if (parts[0] === 'emergency' && parts.length === 2 && method === 'GET') {
-      var emergencyGate = demoRequireRole(data, ['doctor', 'admin']);
+      var emergencyGate = demoRequireRole(data, ['doctor', 'admin', 'emergency']);
       if (!emergencyGate.ok) return emergencyGate.response;
       var emergencyPayload = demoEmergencyFlowForCase(data, parts[1]);
       if (!emergencyPayload) {

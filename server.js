@@ -32,6 +32,11 @@ const ROLE_PERMISSIONS = {
     'prescribe.medication', 'order.labs', 'approve.referral', 'start.telemed',
     'sign.decision', 'export.report', 'view.analytics', 'view.notifications', 'use.ai.assistant'
   ],
+  emergency: [
+    'view.emergency', 'view.case', 'view.student', 'view.cases',
+    'view.alerts', 'view.notifications', 'update.vitals', 'edit.careplan',
+    'contact.guardian', 'send.report', 'approve.referral', 'close.case'
+  ],
   parent: ['view.parent', 'view.student', 'contact.guardian', 'export.report', 'view.alerts', 'send.message', 'view.notifications', 'use.ai.assistant'],
   admin: [
     'view.admin', 'view.doctor', 'view.parent', 'view.case', 'view.emergency', 'view.student',
@@ -510,7 +515,7 @@ function normalizeAlert(alert) {
 function analyticsOverview(data) {
   const statusCounts = { open: 0, in_progress: 0, closed: 0 };
   const severityCounts = { critical: 0, high: 0, medium: 0, low: 0 };
-  const roleCounts = { student: 0, parent: 0, doctor: 0, admin: 0 };
+  const roleCounts = { student: 0, parent: 0, doctor: 0, admin: 0, emergency: 0 };
 
   data.cases.forEach(c => {
     statusCounts[c.status] = (statusCounts[c.status] || 0) + 1;
@@ -1531,7 +1536,7 @@ function notificationsForRole(data, role) {
     }));
 
   const derived = [];
-  if (role === 'admin' || role === 'doctor') {
+  if (role === 'admin' || role === 'doctor' || role === 'emergency') {
     (data.visitRequests || [])
       .filter(v => v.status === 'pending')
       .slice(-10)
@@ -1649,7 +1654,8 @@ function roleLabel(role) {
     student: 'الطالب',
     doctor: 'الطبيب',
     parent: 'ولي الأمر',
-    admin: 'الإدارة'
+    admin: 'الإدارة',
+    emergency: 'الطوارئ'
   };
   return labels[role] || role;
 }
@@ -2011,7 +2017,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (pathname === '/api/cases' && req.method === 'GET') {
-        if (!requireRole(res, auth, ['doctor', 'admin', 'student', 'parent'])) return;
+        if (!requireRole(res, auth, ['doctor', 'admin', 'emergency', 'student', 'parent'])) return;
         let cases = data.cases;
         if (auth.user.role === 'student') {
           cases = cases.filter(c => c.studentId === auth.user.id);
@@ -2025,7 +2031,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (pathname.startsWith('/api/cases/') && req.method === 'GET') {
-        if (!requireRole(res, auth, ['doctor', 'admin', 'student', 'parent'])) return;
+        if (!requireRole(res, auth, ['doctor', 'admin', 'emergency', 'student', 'parent'])) return;
         const parts = pathname.split('/').filter(Boolean);
         if (parts.length === 3) {
           const caseId = parts[2];
@@ -2054,7 +2060,7 @@ const server = http.createServer(async (req, res) => {
 
       if (pathname.startsWith('/api/cases/') && req.method === 'PATCH') {
         if (!enforceRateLimit(req, res, 'cases.patch', 80, 60 * 1000)) return;
-        if (!requireRole(res, auth, ['doctor', 'admin'])) return;
+        if (!requireRole(res, auth, ['doctor', 'admin', 'emergency'])) return;
         const caseId = pathname.split('/').pop();
         const body = await parseBody(req);
         const target = getCaseByAnyId(data, caseId);
@@ -2074,7 +2080,7 @@ const server = http.createServer(async (req, res) => {
 
       if (pathname.startsWith('/api/cases/') && pathname.endsWith('/actions') && req.method === 'POST') {
         if (!enforceRateLimit(req, res, 'cases.actions', 120, 60 * 1000)) return;
-        if (!requireRole(res, auth, ['doctor', 'admin'])) return;
+        if (!requireRole(res, auth, ['doctor', 'admin', 'emergency'])) return;
         const parts = pathname.split('/').filter(Boolean);
         const caseId = parts[2];
         const body = await parseBody(req);
@@ -2119,7 +2125,7 @@ const server = http.createServer(async (req, res) => {
 
         pushAlert(
           data,
-          ['admin', 'doctor', 'parent', 'student'],
+          ['admin', 'doctor', 'emergency', 'parent', 'student'],
           `تحديث حالة ${target.studentName}: ${actionNote}`,
           ['emergency_protocol', 'external_referral', 'ambulance_dispatch'].includes(actionType) ? 'critical' : 'operational'
         );
@@ -2130,7 +2136,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (pathname === '/api/visit-requests' && req.method === 'GET') {
-        if (!requireRole(res, auth, ['doctor', 'admin'])) return;
+        if (!requireRole(res, auth, ['doctor', 'admin', 'emergency'])) return;
         const items = data.visitRequests.slice().reverse();
         json(res, 200, { items });
         return;
@@ -2150,7 +2156,7 @@ const server = http.createServer(async (req, res) => {
         data.visitRequests.push(item);
         pushAlert(
           data,
-          ['doctor', 'admin', 'parent', 'student'],
+          ['doctor', 'admin', 'emergency', 'parent', 'student'],
           `طلب زيارة جديد: ${item.reason}`,
           String(item.reason || '').toLowerCase().includes('urgent') ? 'critical' : 'operational'
         );
@@ -2960,7 +2966,7 @@ const server = http.createServer(async (req, res) => {
           createdAt: nowIso()
         };
         data.messages.push(item);
-        pushAlert(data, ['doctor', 'admin'], `رسالة جديدة من ${auth.user.role}`, 'info');
+        pushAlert(data, ['doctor', 'admin', 'emergency'], `رسالة جديدة من ${auth.user.role}`, 'info');
         logAction(data, auth, 'message.send', item.id);
         writeData(data);
         json(res, 201, { item });
@@ -3101,7 +3107,7 @@ const server = http.createServer(async (req, res) => {
         if (reading.risk === 'critical') {
           pushAlert(
             data,
-            ['doctor', 'admin', 'parent', 'student'],
+            ['doctor', 'admin', 'emergency', 'parent', 'student'],
             `قراءة حساسات حرجة للطالب ${studentId} (SpO2 ${reading.spo2}% / HR ${reading.hr})`,
             'critical'
           );
@@ -3142,7 +3148,7 @@ const server = http.createServer(async (req, res) => {
         if (reading.risk === 'critical') {
           pushAlert(
             data,
-            ['doctor', 'admin', 'parent', 'student'],
+            ['doctor', 'admin', 'emergency', 'parent', 'student'],
             `إنذار حيوي: قراءة حرجة للطالب ${studentId}`,
             'critical'
           );
@@ -3543,7 +3549,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (pathname === '/api/notifications' && req.method === 'GET') {
-        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin'])) return;
+        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin', 'emergency'])) return;
         const typeFilter = String(urlObj.searchParams.get('type') || 'all');
         const limit = Math.max(1, Math.min(200, Number(urlObj.searchParams.get('limit') || 100)));
         let items = notificationsForRole(data, auth.user.role);
@@ -3555,7 +3561,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (pathname === '/api/stream' && req.method === 'GET') {
-        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin'])) return;
+        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin', 'emergency'])) return;
         res.writeHead(200, withSecurityHeaders({
           'Content-Type': 'text/event-stream; charset=utf-8',
           'Cache-Control': 'no-cache, no-transform',
@@ -3641,7 +3647,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (pathname.startsWith('/api/emergency/') && req.method === 'GET') {
-        if (!requireRole(res, auth, ['doctor', 'admin'])) return;
+        if (!requireRole(res, auth, ['doctor', 'admin', 'emergency'])) return;
         const caseId = pathname.split('/').pop();
         const payload = emergencyFlowForCase(data, caseId);
         if (!payload) {

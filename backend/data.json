@@ -13,6 +13,12 @@
       "active": true
     },
     {
+      "id": "u_emergency_1",
+      "name": "فريق الطوارئ - خالد الحربي",
+      "role": "emergency",
+      "active": true
+    },
+    {
       "id": "u_parent_1",
       "name": "ولية أمر - سارة الغامدي",
       "role": "parent",
