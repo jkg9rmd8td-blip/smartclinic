@@ -232,8 +232,34 @@
   </footer>
 </div>
 
-<script src="assets/js/security.js"></script>
+<script src="assets/js/security.js?v=20260214a"></script>
 <script>
+function appBasePath() {
+  var path = String(window.location.pathname || '/');
+  var marker = '/smartclinic/';
+  var idx = path.indexOf(marker);
+  if (idx !== -1) {
+    return path.slice(0, idx + marker.length);
+  }
+  if (path === '/smartclinic') {
+    return '/smartclinic/';
+  }
+  if (path.slice(-11) === '/index.html') {
+    return path.slice(0, -10);
+  }
+  if (path.charAt(path.length - 1) === '/') {
+    return path;
+  }
+  var cut = path.lastIndexOf('/');
+  return cut >= 0 ? path.slice(0, cut + 1) : '/';
+}
+
+function appUrl(route) {
+  var clean = String(route || '').replace(/^\/+/, '');
+  var base = window.location.origin + appBasePath();
+  return new URL(clean, base).toString();
+}
+
 function updateRoleBadge() {
   var session = SmartClinicSecurity.getSession();
   var label = session ? SmartClinicSecurity.roles[session.role] : 'زائر';
@@ -265,7 +291,7 @@ function continueSession() {
     window.alert('لا توجد جلسة محفوظة.');
     return;
   }
-  window.location.href = SmartClinicSecurity.getRoleHomePath(session.role);
+  window.location.href = appUrl(SmartClinicSecurity.getRoleHomePath(session.role));
 }
 
 function openCareCenter() {
@@ -276,15 +302,15 @@ function openCareCenter() {
   }
   if (session.role === 'student') {
     window.alert('مركز التنسيق مخصص للأطباء وولي الأمر والإدارة. تم توجيهك للملف الصحي.');
-    window.location.href = 'src/pages/student-profile.html';
+    window.location.href = appUrl('src/pages/student-profile.html');
     return;
   }
   if (session.role === 'emergency') {
     window.alert('تم توجيهك إلى مركز الطوارئ الخاص بدورك.');
-    window.location.href = 'src/pages/emergency-dashboard.html';
+    window.location.href = appUrl('src/pages/emergency-dashboard.html');
     return;
   }
-  window.location.href = 'src/pages/care-center.html';
+  window.location.href = appUrl('src/pages/care-center.html');
 }
 
 async function updateApiStatus() {
@@ -310,7 +336,7 @@ async function openSecureRoute(route, role) {
     return;
   }
   updateRoleBadge();
-  window.location.href = route;
+  window.location.href = appUrl(route);
 }
 
 async function cardKey(event, page, role) {
