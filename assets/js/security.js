@@ -3267,9 +3267,9 @@
         payload = {};
       }
 
-      if ((response.status === 401 || response.status === 403) && !opts.skipAuthRedirect) {
+      if (response.status === 401 && !opts.skipAuthRedirect) {
         clearSession();
-        redirectHome('انتهت الجلسة أو لا توجد صلاحية للوصول.');
+        redirectHome('انتهت الجلسة. سجل الدخول مرة أخرى.');
       }
 
       return {
