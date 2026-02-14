@@ -859,7 +859,7 @@ async function refreshAll() {
 }
 
 window.addEventListener('DOMContentLoaded', function () {
-  currentSession = SmartClinicSecurity.requireAccess(['student', 'doctor', 'parent', 'admin'], 'مركز التنسيق العلاجي');
+  currentSession = SmartClinicSecurity.requireAccess(['doctor', 'parent', 'admin'], 'مركز التنسيق العلاجي');
   if (window.SmartClinicUI) {
     SmartClinicUI.mountQuickNav({
       afterSelector: '.sc-page-header',

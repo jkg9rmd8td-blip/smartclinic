@@ -120,7 +120,7 @@
     'src/pages/student-portal.html': ['student', 'admin'],
     'src/pages/student-profile.html': ['student', 'doctor', 'parent', 'admin'],
     'src/pages/notifications-center.html': ['student', 'doctor', 'parent', 'admin'],
-    'src/pages/care-center.html': ['student', 'doctor', 'parent', 'admin']
+    'src/pages/care-center.html': ['doctor', 'parent', 'admin']
   };
 
   var ENTRY_ROUTES = {

@@ -103,7 +103,7 @@
   function defaultLinks(role) {
     var links = [];
     links.push({ label: 'بوابة الدور', href: window.SmartClinicSecurity ? SmartClinicSecurity.getRoleHomePath(role) : '#' });
-    links.push({ label: 'مركز التنسيق', href: 'care-center.html' });
+    links.push({ label: 'مركز التنسيق', href: 'care-center.html', roles: ['doctor', 'parent', 'admin'] });
     links.push({ label: 'الإشعارات', href: 'notifications-center.html' });
 
     if (role === 'student') {

@@ -211,7 +211,7 @@
     <div id="resume-meta" class="resume-meta">جلسة سابقة متاحة.</div>
     <div class="resume-actions">
       <button class="resume-btn" onclick="continueSession()">متابعة الجلسة</button>
-      <button class="resume-btn" onclick="openCareCenter()">فتح مركز التنسيق</button>
+      <button id="resume-care-center-btn" class="resume-btn" onclick="openCareCenter()">فتح مركز التنسيق</button>
     </div>
   </div>
 
@@ -241,13 +241,18 @@ function updateRoleBadge() {
 function refreshResumeActions() {
   var box = document.getElementById('resume-box');
   var meta = document.getElementById('resume-meta');
+  var careBtn = document.getElementById('resume-care-center-btn');
   var session = SmartClinicSecurity.getSession();
   if (!session) {
     box.style.display = 'none';
+    if (careBtn) careBtn.style.display = 'none';
     return;
   }
   var roleLabel = SmartClinicSecurity.roles[session.role] || session.role;
   meta.textContent = 'جلسة محفوظة للدور: ' + roleLabel + ' • يمكنك المتابعة مباشرة.';
+  if (careBtn) {
+    careBtn.style.display = session.role === 'student' ? 'none' : 'inline-flex';
+  }
   box.style.display = 'flex';
 }
 
@@ -264,6 +269,11 @@ function openCareCenter() {
   var session = SmartClinicSecurity.getSession();
   if (!session) {
     window.alert('سجّل دخولك أولًا ثم افتح مركز التنسيق.');
+    return;
+  }
+  if (session.role === 'student') {
+    window.alert('مركز التنسيق مخصص للأطباء وولي الأمر والإدارة. تم توجيهك للملف الصحي.');
+    window.location.href = 'src/pages/student-profile.html';
     return;
   }
   window.location.href = 'src/pages/care-center.html';
