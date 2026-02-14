@@ -417,6 +417,145 @@
   font-size: 12px;
 }
 
+.analytics-kpi-grid {
+  display: grid;
+  gap: var(--sc-space-2);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: var(--sc-space-3);
+}
+
+.analytics-kpi-card {
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-md);
+  padding: 10px 12px;
+  background:
+    radial-gradient(120px 80px at 82% 0%, rgba(56, 189, 248, 0.18), transparent 72%),
+    linear-gradient(155deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 8px 18px rgba(2, 12, 24, 0.34);
+  position: relative;
+  overflow: hidden;
+}
+
+.analytics-kpi-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.1), rgba(56, 189, 248, 0.85), rgba(250, 140, 22, 0.6));
+}
+
+.analytics-kpi-title {
+  color: var(--sc-text-soft);
+  font-size: 12px;
+}
+
+.analytics-kpi-value {
+  margin-top: 7px;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.analytics-kpi-sub {
+  margin-top: 6px;
+  color: var(--sc-text-soft);
+  font-size: 12px;
+}
+
+.analytics-good {
+  color: var(--sc-low);
+}
+
+.analytics-warn {
+  color: var(--sc-medium);
+}
+
+.analytics-critical {
+  color: var(--sc-critical);
+}
+
+.analytics-layout {
+  display: grid;
+  gap: var(--sc-space-2);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.analytics-panel {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--sc-radius-md);
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  padding: 10px 12px;
+}
+
+.analytics-panel h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.risk-timeline {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 126px;
+}
+
+.risk-point {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.risk-bar {
+  width: 100%;
+  min-width: 20px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.risk-bar.risk-critical {
+  background: rgba(255, 77, 79, 0.4);
+  border-color: rgba(255, 77, 79, 0.55);
+}
+
+.risk-bar.risk-warning {
+  background: rgba(250, 140, 22, 0.36);
+  border-color: rgba(250, 140, 22, 0.55);
+}
+
+.risk-bar.risk-stable {
+  background: rgba(82, 196, 26, 0.3);
+  border-color: rgba(82, 196, 26, 0.5);
+}
+
+.risk-point-day {
+  color: var(--sc-text-soft);
+  font-size: 11px;
+}
+
+.risk-point-value {
+  font-size: 11px;
+}
+
+.adherence-progress {
+  width: 100%;
+  height: 9px;
+  border-radius: 999px;
+  border: 1px solid var(--sc-border);
+  background: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  margin: 8px 0;
+}
+
+.adherence-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(255, 77, 79, 0.9), rgba(250, 140, 22, 0.85), rgba(82, 196, 26, 0.9));
+  transition: width .35s ease;
+}
+
 .empty-hint {
   margin-top: 10px;
   border: 1px dashed rgba(255, 255, 255, 0.2);
@@ -449,6 +588,14 @@
   .sensor-grid {
     grid-template-columns: 1fr;
   }
+
+  .analytics-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analytics-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 780px) {
@@ -466,6 +613,10 @@
 
   .vital-card-hero .vital-value {
     font-size: 28px;
+  }
+
+  .analytics-kpi-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
@@ -499,6 +650,7 @@
       </div>
     </div>
     <div class="section-nav sc-section-nav">
+      <button class="section-btn sc-action-btn" onclick="scrollStudentSection('insights-zone')">رحلة التعافي</button>
       <button class="section-btn sc-action-btn" onclick="scrollStudentSection('vitals-zone')">الحساسات والحيوية</button>
       <button class="section-btn sc-action-btn" onclick="scrollStudentSection('support-zone')">المستشار الذكي</button>
       <button class="section-btn sc-action-btn" onclick="scrollStudentSection('visit-zone')">طلب زيارة</button>
@@ -547,6 +699,22 @@
   </section>
 
   <section id="stats" class="sc-grid-3 sc-kpi-grid sc-mb-24"></section>
+
+  <section id="insights-zone" class="sc-panel sc-mb-24">
+    <h2 class="sc-panel-title">غرفة قيادة الطالب الصحية</h2>
+    <p class="sc-panel-subtitle">قراءة سريعة تساعدك تعرف الإجراء الأنسب اليوم: متابعة، طلب زيارة، أو تصعيد فوري.</p>
+    <div id="student-analytics-kpis" class="analytics-kpi-grid"></div>
+    <div class="analytics-layout">
+      <article class="analytics-panel">
+        <h3>خريطة الضغط الصحي (7 أيام)</h3>
+        <div id="student-risk-timeline" class="risk-timeline"></div>
+      </article>
+      <article class="analytics-panel">
+        <h3>انضباط الخطة اليومية</h3>
+        <div id="student-adherence-summary"></div>
+      </article>
+    </div>
+  </section>
 
   <h2 id="vitals-zone" class="sc-section-title">العلامات الحيوية والحساسات</h2>
   <section class="sc-grid-3 sc-mb-24">
@@ -778,6 +946,130 @@ function riskLabel(risk) {
   return map[risk] || map.unknown;
 }
 
+function trendTone(direction) {
+  if (direction === 'improving') return 'analytics-good';
+  if (direction === 'deteriorating') return 'analytics-critical';
+  return 'analytics-warn';
+}
+
+function adherenceTone(status) {
+  if (status === 'excellent' || status === 'good') return 'analytics-good';
+  if (status === 'warning') return 'analytics-critical';
+  return 'analytics-warn';
+}
+
+function riskBarClass(risk) {
+  if (risk === 'critical') return 'risk-critical';
+  if (risk === 'warning') return 'risk-warning';
+  return 'risk-stable';
+}
+
+function dayLabelAr(value) {
+  var parsed = new Date(String(value || '') + 'T12:00:00Z');
+  if (!Number.isFinite(parsed.getTime())) return '-';
+  return parsed.toLocaleDateString('ar-SA', { weekday: 'short' });
+}
+
+function renderStudentRiskTimeline(points) {
+  var wrap = document.getElementById('student-risk-timeline');
+  if (!Array.isArray(points) || !points.length) {
+    wrap.innerHTML = '<div class="sc-muted">لا توجد بيانات زمنية كافية بعد.</div>';
+    return;
+  }
+  wrap.innerHTML = points.slice(-7).map(function (point) {
+    var score = Math.max(0, Math.min(100, Number(point.score || 0)));
+    var height = Math.max(18, Math.round((score / 100) * 92));
+    var risk = String(point.risk || 'stable');
+    return '<div class="risk-point">' +
+      '<div class="risk-bar ' + riskBarClass(risk) + '" style="height:' + height + 'px"></div>' +
+      '<div class="risk-point-day">' + dayLabelAr(point.date) + '</div>' +
+      '<div class="risk-point-value">' + score + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderStudentAdherenceSummary(adherence, visits) {
+  var wrap = document.getElementById('student-adherence-summary');
+  var hasPercent = adherence && adherence.percent !== null && adherence.percent !== undefined && Number.isFinite(Number(adherence.percent));
+  var percent = hasPercent ? Number(adherence.percent) : null;
+  var barWidth = percent === null ? 8 : Math.max(4, Math.min(100, Math.round(percent)));
+  var html = '';
+  html += '<div class="item">';
+  html += '<strong>انضباط الدواء:</strong> ' + (percent === null ? 'غير مفعّل' : (Math.round(percent) + '%'));
+  html += '<div class="adherence-progress"><div class="adherence-progress-fill" style="width:' + barWidth + '%"></div></div>';
+  html += '<div class="item-meta">المتوقع: ' + Number((adherence && adherence.expectedDoses) || 0) + ' • المأخوذ: ' + Number((adherence && adherence.takenDoses) || 0) + ' • المتجاوز: ' + Number((adherence && adherence.skippedDoses) || 0) + '</div>';
+  html += '</div>';
+  html += '<div class="item"><strong>آخر مراجعة مكتملة:</strong> ' + fmtDate(visits && visits.lastVisitAt) + '</div>';
+  html += '<div class="item"><strong>الموعد القادم:</strong> ' + fmtDate(visits && visits.nextVisitAt) + '</div>';
+  if (adherence && adherence.alert) {
+    html += '<div class="item"><strong>تنبيه دوائي:</strong> ' + escapeHtml(adherence.alert) + '</div>';
+  }
+  wrap.innerHTML = html;
+}
+
+function studentNextAction(condition, adherence, risk) {
+  var direction = String((condition && condition.direction) || '');
+  var highDays = Number((risk && risk.highDays) || 0);
+  var adherenceStatus = String((adherence && adherence.status) || '');
+  if (direction === 'deteriorating' || highDays >= 2) {
+    return 'الإجراء الآن: اطلب زيارة مستعجلة ثم أبلغ العيادة برسالة مختصرة.';
+  }
+  if (adherenceStatus === 'warning') {
+    return 'الإجراء الآن: ثبّت مواعيد الجرعات اليوم وفعّل تذكير قبل الجرعة القادمة.';
+  }
+  return 'الإجراء الآن: استمر بالمراقبة الدورية ولاحظ أي تغير غير معتاد.';
+}
+
+function renderStudentAnalytics(payload) {
+  var analytics = (payload && payload.parentAnalytics) || {};
+  var visits = analytics.visits || {};
+  var condition = analytics.condition || {};
+  var adherence = analytics.adherence || {};
+  var risk = analytics.riskIndicators || {};
+  var hasPercent = adherence && adherence.percent !== null && adherence.percent !== undefined && Number.isFinite(Number(adherence.percent));
+  var adherencePercent = hasPercent ? Number(adherence.percent) : null;
+  var cards = [
+    {
+      title: 'إيقاع المتابعة',
+      value: String(Number(visits.total || 0)),
+      subtitle: 'مكتمل: ' + Number(visits.completed || 0) + ' • قيد المتابعة: ' + Number(visits.pending || 0),
+      tone: ''
+    },
+    {
+      title: 'اتجاه التعافي',
+      value: escapeHtml(condition.label || 'غير متوفر'),
+      subtitle: escapeHtml(condition.summary || 'لا توجد بيانات كافية'),
+      tone: trendTone(condition.direction)
+    },
+    {
+      title: 'انضباط الخطة',
+      value: adherencePercent === null ? 'غير مفعّل' : (String(Math.round(adherencePercent)) + '%'),
+      subtitle: 'التقييم: ' + escapeHtml(adherence.statusLabel || 'غير متوفر'),
+      tone: adherenceTone(adherence.status)
+    },
+    {
+      title: 'ضغط أسبوعي مرتفع',
+      value: String(Number(risk.highDays || 0)) + ' يوم',
+      subtitle: 'متوسط الضغط: ' + Number(risk.averageScore || 0),
+      tone: Number(risk.highDays || 0) > 0 ? 'analytics-critical' : 'analytics-good'
+    }
+  ];
+  document.getElementById('student-analytics-kpis').innerHTML = cards.map(function (card) {
+    var tone = card.tone ? ' ' + card.tone : '';
+    return '<article class="analytics-kpi-card">' +
+      '<div class="analytics-kpi-title">' + card.title + '</div>' +
+      '<div class="analytics-kpi-value' + tone + '">' + card.value + '</div>' +
+      '<div class="analytics-kpi-sub">' + card.subtitle + '</div>' +
+    '</article>';
+  }).join('');
+  renderStudentRiskTimeline(analytics.riskTimeline || []);
+  renderStudentAdherenceSummary(adherence, visits);
+  var summaryWrap = document.getElementById('student-adherence-summary');
+  if (summaryWrap) {
+    summaryWrap.innerHTML += '<div class="item"><strong>' + studentNextAction(condition, adherence, risk) + '</strong></div>';
+  }
+}
+
 function refreshHeroMeta(overview) {
   var risk = (((overview || {}).snapshot || {}).latestVitalsRisk) || 'unknown';
   var liveMode = document.getElementById('live-mode');
@@ -789,11 +1081,20 @@ function refreshHeroMeta(overview) {
   }
 }
 
-function updateCurrentStatus(snapshot) {
+function updateCurrentStatus(snapshot, analytics) {
   var s = snapshot || {};
+  var a = analytics || {};
+  var condition = a.condition || {};
   var pending = Number(s.pendingVisits || 0);
   var chip = document.getElementById('current-request-status');
   var help = document.getElementById('current-status-help');
+
+  if (condition.direction === 'deteriorating' && pending === 0) {
+    chip.className = 'status-chip pending';
+    chip.textContent = 'اتجاه الحالة يحتاج تدخلًا أسرع';
+    help.textContent = 'يوصى باستخدام طلب زيارة مستعجل أو التواصل الفوري مع العيادة.';
+    return;
+  }
 
   if (pending > 0) {
     chip.className = 'status-chip pending';
@@ -949,8 +1250,9 @@ async function loadOverview() {
   lastOverview = result.data;
   renderStats(result.data.snapshot || {});
   renderLatestCase(result.data.latestCase || null);
+  renderStudentAnalytics(result.data || {});
   refreshHeroMeta(result.data);
-  updateCurrentStatus(result.data.snapshot || {});
+  updateCurrentStatus(result.data.snapshot || {}, result.data.parentAnalytics || {});
   renderVitals(result.data || {});
   alertsCache = result.data.alerts || [];
   applyAlertFilter();
@@ -1040,6 +1342,11 @@ async function exportStudentReport() {
   }
   var snapshot = (lastOverview && lastOverview.snapshot) || {};
   var latestCase = (lastOverview && lastOverview.latestCase) || {};
+  var analytics = (lastOverview && lastOverview.parentAnalytics) || {};
+  var visits = analytics.visits || {};
+  var condition = analytics.condition || {};
+  var adherence = analytics.adherence || {};
+  var risk = analytics.riskIndicators || {};
   var filename = String((result.data.filename || 'student-report').replace(/\.pdf$/i, ''));
   var body = [
     'Smart Clinic Student Portal Export',
@@ -1048,6 +1355,11 @@ async function exportStudentReport() {
     'Critical Cases: ' + Number(snapshot.criticalCases || 0),
     'Pending Visits: ' + Number(snapshot.pendingVisits || 0),
     'Alerts: ' + Number(snapshot.alerts || 0),
+    'Follow-up Rhythm: ' + Number(visits.total || 0),
+    'Recovery Trend: ' + String(condition.label || '-'),
+    'Recovery Summary: ' + String(condition.summary || '-'),
+    'Plan Discipline: ' + (adherence && adherence.percent !== null && adherence.percent !== undefined && Number.isFinite(Number(adherence.percent)) ? (Math.round(Number(adherence.percent)) + '%') : 'inactive'),
+    'High Pressure Days (7d): ' + Number(risk.highDays || 0),
     'Latest Case: ' + (latestCase.title || '-') + ' | ' + (latestCase.severity || '-') + ' | ' + (latestCase.updatedAt ? new Date(latestCase.updatedAt).toLocaleString('ar-SA') : '-')
   ].join('\n');
   downloadTextFile(filename + '-portal.txt', body);
