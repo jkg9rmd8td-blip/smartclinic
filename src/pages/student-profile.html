@@ -118,6 +118,195 @@
   margin-bottom: 14px;
 }
 
+.doc-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.doc-meta-item {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--sc-radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px 12px;
+}
+
+.doc-meta-label {
+  color: var(--sc-text-soft);
+  font-size: 12px;
+}
+
+.doc-meta-value {
+  margin-top: 5px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.doc-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.doc-card {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--sc-radius-md);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+  padding: 10px 12px;
+}
+
+.doc-card h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.doc-risk-bars {
+  margin-top: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.doc-risk-row {
+  display: grid;
+  grid-template-columns: 70px 1fr 42px;
+  gap: 8px;
+  align-items: center;
+}
+
+.doc-risk-label {
+  color: var(--sc-text-soft);
+  font-size: 11px;
+}
+
+.doc-risk-track {
+  height: 9px;
+  border-radius: 999px;
+  border: 1px solid var(--sc-border);
+  background: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.doc-risk-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(82, 196, 26, 0.9), rgba(250, 140, 22, 0.85), rgba(255, 77, 79, 0.9));
+}
+
+.doc-risk-value {
+  font-size: 11px;
+  color: var(--sc-text-soft);
+  text-align: left;
+}
+
+.doc-compliance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.doc-compliance-item {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--sc-radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px;
+}
+
+.doc-compliance-label {
+  color: var(--sc-text-soft);
+  font-size: 12px;
+}
+
+.doc-compliance-value {
+  margin-top: 6px;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.doc-value-good {
+  color: var(--sc-low);
+}
+
+.doc-value-warn {
+  color: var(--sc-medium);
+}
+
+.doc-value-critical {
+  color: var(--sc-critical);
+}
+
+.timeline-toolbar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.timeline-list {
+  display: grid;
+  gap: 8px;
+}
+
+.timeline-item {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--sc-radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px 12px;
+}
+
+.timeline-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.timeline-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.timeline-meta {
+  margin-top: 4px;
+  color: var(--sc-text-soft);
+  font-size: 12px;
+}
+
+.timeline-tags {
+  margin-top: 6px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.timeline-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  font-size: 11px;
+}
+
+.tag-critical {
+  border-color: rgba(255, 77, 79, 0.5);
+  color: var(--sc-critical);
+  background: rgba(255, 77, 79, 0.14);
+}
+
+.tag-warning {
+  border-color: rgba(250, 140, 22, 0.5);
+  color: var(--sc-medium);
+  background: rgba(250, 140, 22, 0.14);
+}
+
+.tag-info {
+  border-color: rgba(56, 189, 248, 0.45);
+  color: #8fd4ff;
+  background: rgba(56, 189, 248, 0.12);
+}
+
 #alerts-list {
   margin-bottom: 12px;
 }
@@ -137,6 +326,10 @@
 }
 
 @media (max-width: 780px) {
+  .doc-meta-grid,
+  .doc-grid,
+  .doc-compliance-grid,
+  .timeline-toolbar,
   .profile-overview-grid,
   .vitals-grid,
   .vitals-trend-grid,
@@ -163,6 +356,8 @@
   </header>
 
   <section class="section-nav sc-section-nav">
+    <button class="section-btn sc-action-btn" onclick="scrollProfileSection('documentation')">ملخص التوثيق</button>
+    <button class="section-btn sc-action-btn" onclick="scrollProfileSection('timeline')">الخط الزمني</button>
     <button class="section-btn sc-action-btn" onclick="scrollProfileSection('cases')">سجل الحالات</button>
     <button class="section-btn sc-action-btn" onclick="scrollProfileSection('reports')">التقارير</button>
     <button class="section-btn sc-action-btn" onclick="scrollProfileSection('medication')">الالتزام الدوائي</button>
@@ -184,7 +379,58 @@
     </article>
   </section>
 
+  <section id="documentation" class="sc-panel sc-mb-24">
+    <h2 class="sc-panel-title">ملخص التوثيق السريري</h2>
+    <p class="sc-panel-subtitle">نسخة مخصصة للاعتماد: حالة الطالب، الامتثال العلاجي، ومؤشرات المراقبة في شاشة واحدة.</p>
+    <div class="doc-meta-grid">
+      <div class="doc-meta-item"><div class="doc-meta-label">النمط</div><div id="doc-mode" class="doc-meta-value">-</div></div>
+      <div class="doc-meta-item"><div class="doc-meta-label">آخر مزامنة</div><div id="doc-sync" class="doc-meta-value">-</div></div>
+      <div class="doc-meta-item"><div class="doc-meta-label">نطاق السجل</div><div id="doc-scope" class="doc-meta-value">-</div></div>
+      <div class="doc-meta-item"><div class="doc-meta-label">اتجاه الحالة</div><div id="doc-trend" class="doc-meta-value">-</div></div>
+      <div class="doc-meta-item"><div class="doc-meta-label">نسخة التوثيق</div><div id="doc-version" class="doc-meta-value">SC-CLN-2026.02</div></div>
+    </div>
+    <div class="doc-grid">
+      <article class="doc-card">
+        <h3>ملخص المسار العلاجي</h3>
+        <div id="doc-summary-text" class="sc-muted">جاري بناء الملخص الطبي...</div>
+        <div id="doc-next-action" class="item" style="margin-top:8px;">-</div>
+        <div id="doc-risk-bars" class="doc-risk-bars"></div>
+      </article>
+      <article class="doc-card">
+        <h3>مؤشرات الامتثال والمتابعة</h3>
+        <div class="doc-compliance-grid">
+          <div class="doc-compliance-item"><div class="doc-compliance-label">الالتزام الدوائي</div><div id="doc-kpi-adherence" class="doc-compliance-value">-</div></div>
+          <div class="doc-compliance-item"><div class="doc-compliance-label">الأيام عالية الخطورة</div><div id="doc-kpi-riskdays" class="doc-compliance-value">-</div></div>
+          <div class="doc-compliance-item"><div class="doc-compliance-label">زيارات مكتملة</div><div id="doc-kpi-visits" class="doc-compliance-value">-</div></div>
+          <div class="doc-compliance-item"><div class="doc-compliance-label">التنبيهات الحرجة</div><div id="doc-kpi-alerts" class="doc-compliance-value">-</div></div>
+        </div>
+      </article>
+    </div>
+  </section>
+
   <section class="sc-grid-3">
+    <section class="sc-panel sc-col-span-3" id="timeline">
+      <h2 class="sc-panel-title">الخط الزمني السريري</h2>
+      <p class="sc-panel-subtitle">تسلسل موحد للأحداث: قراءات، حالات، زيارات، تقارير، التزام دوائي، وتنبيهات.</p>
+      <div class="timeline-toolbar">
+        <select id="timeline-type-filter" onchange="applyTimelineFilters()">
+          <option value="all">كل الأحداث</option>
+          <option value="clinical">سريرية</option>
+          <option value="operations">تشغيلية</option>
+          <option value="communication">تواصل وتنبيهات</option>
+        </select>
+        <select id="timeline-window-filter" onchange="applyTimelineFilters()">
+          <option value="7">آخر 7 أيام</option>
+          <option value="30">آخر 30 يوم</option>
+          <option value="90">آخر 90 يوم</option>
+          <option value="all">كل المدة</option>
+        </select>
+        <button class="btn-muted" type="button" onclick="loadProfile()">تحديث الخط الزمني</button>
+      </div>
+      <div id="timeline-summary" class="sc-muted sc-mb-16">جاري تجهيز السجل الزمني...</div>
+      <div id="clinical-timeline" class="timeline-list"></div>
+    </section>
+
     <section class="sc-panel">
       <h2 class="sc-panel-title">الملف الصحي الأساسي</h2>
       <p class="sc-panel-subtitle">مرجع الملف الصحي للبيانات والتاريخ الطبي، بينما التنفيذ اليومي يتم عبر البوابة الحية لكل دور.</p>
@@ -315,6 +561,9 @@ var latestTelemedSessionId = '';
 var profileStudentId = '';
 var linkedCaseId = '';
 var medPlansCache = [];
+var medicationSummaryCache = null;
+var messagesCache = [];
+var timelineCache = [];
 
 function qs(name) {
   var params = new URLSearchParams(window.location.search || '');
@@ -399,6 +648,304 @@ function severityTone(value) {
   if (level === 'medium' || level === 'moderate' || level === 'warning' || level === 'متوسطة') return 'sc-severity-medium';
   if (level === 'low' || level === 'stable' || level === 'منخفضة' || level === 'مستقرة') return 'sc-severity-low';
   return '';
+}
+
+function severityLevel(value) {
+  var level = String(value || '').toLowerCase();
+  if (level === 'critical' || level === 'high') return 'critical';
+  if (level === 'medium' || level === 'warning') return 'warning';
+  return 'info';
+}
+
+function timelineTypeLabel(type) {
+  if (type === 'clinical') return 'سريري';
+  if (type === 'operations') return 'تشغيلي';
+  if (type === 'communication') return 'تواصل';
+  return 'عام';
+}
+
+function timelineSourceLabel(source) {
+  if (source === 'case') return 'الحالات';
+  if (source === 'vitals') return 'العلامات الحيوية';
+  if (source === 'visit_request') return 'طلبات الزيارة';
+  if (source === 'report') return 'التقارير';
+  if (source === 'medication') return 'الالتزام الدوائي';
+  if (source === 'alert') return 'التنبيهات';
+  if (source === 'message') return 'الرسائل';
+  return 'النظام';
+}
+
+function levelTagClass(level) {
+  if (level === 'critical') return 'tag-critical';
+  if (level === 'warning') return 'tag-warning';
+  return 'tag-info';
+}
+
+function normalizeEventTime(value) {
+  var parsed = new Date(value || 0).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function hasMedicationSignal(summary) {
+  if (!summary) return false;
+  return Number(summary.expectedDoses || 0) > 0 || Number(summary.takenDoses || 0) > 0 || Number(summary.skippedDoses || 0) > 0;
+}
+
+function effectiveAdherencePercent(analytics, medSummary) {
+  var a = analytics && analytics.adherence ? analytics.adherence : {};
+  if (a.percent !== null && a.percent !== undefined && Number.isFinite(Number(a.percent))) {
+    return Number(a.percent);
+  }
+  if (medSummary && hasMedicationSignal(medSummary)) {
+    return Number(medSummary.adherencePercent || 0);
+  }
+  return null;
+}
+
+function nextClinicalAction(data, medSummary) {
+  var analytics = (data && data.parentAnalytics) || {};
+  var condition = analytics.condition || {};
+  var adherence = analytics.adherence || {};
+  var risk = analytics.riskIndicators || {};
+  var adherencePercent = effectiveAdherencePercent(analytics, medSummary);
+  var highDays = Number(risk.highDays || 0);
+  if (condition.direction === 'deteriorating' || highDays >= 2) {
+    return 'يوصى بتصعيد المتابعة: تحديد مراجعة عاجلة مع تحديث العلامات الحيوية خلال نفس اليوم.';
+  }
+  if (adherence.status === 'warning' || (adherencePercent !== null && adherencePercent < 80)) {
+    return 'يوصى بتثبيت جرعات الدواء بمنبهات منتظمة وإعادة تقييم الالتزام خلال 48 ساعة.';
+  }
+  if (Number((analytics.visits || {}).pending || 0) > 0) {
+    return 'يوصى بمتابعة طلبات الزيارة المفتوحة حتى الإغلاق مع توثيق أي أعراض جديدة.';
+  }
+  return 'المسار مستقر حاليًا: الاستمرار على الخطة العلاجية والمراجعة الدورية الأسبوعية.';
+}
+
+function renderDocumentationSummary(data, medSummary) {
+  var payload = data || {};
+  var analytics = payload.parentAnalytics || {};
+  var condition = analytics.condition || {};
+  var risk = analytics.riskIndicators || {};
+  var visits = analytics.visits || {};
+  var adherence = analytics.adherence || {};
+  var latestCase = payload.latestCase || {};
+  var alerts = Array.isArray(payload.alerts) ? payload.alerts : [];
+  var riskTimeline = Array.isArray(analytics.riskTimeline) ? analytics.riskTimeline.slice(-7) : [];
+  var adherencePercent = effectiveAdherencePercent(analytics, medSummary);
+
+  document.getElementById('doc-mode').textContent = SmartClinicSecurity.isDemoMode() ? 'Demo' : 'Live';
+  document.getElementById('doc-sync').textContent = new Date().toLocaleTimeString('ar-SA');
+  document.getElementById('doc-scope').textContent = payload.student && payload.student.id ? payload.student.id : (profileStudentId || 'u_student_1');
+  document.getElementById('doc-trend').textContent = condition.label || riskLabel((payload.snapshot || {}).latestVitalsRisk || 'unknown');
+
+  var summaryText = condition.summary || 'لا توجد خلاصة علاجية كافية بعد.';
+  if (latestCase && latestCase.title) {
+    summaryText += ' | آخر حالة موثقة: ' + latestCase.title + '.';
+  }
+  document.getElementById('doc-summary-text').textContent = summaryText;
+  document.getElementById('doc-next-action').textContent = nextClinicalAction(payload, medSummary);
+
+  var riskBarsWrap = document.getElementById('doc-risk-bars');
+  if (!riskTimeline.length) {
+    riskBarsWrap.innerHTML = '<div class="item">لا تتوفر نقاط زمنية كافية حتى الآن.</div>';
+  } else {
+    riskBarsWrap.innerHTML = riskTimeline.map(function (point) {
+      var score = Math.max(0, Math.min(100, Number(point.score || 0)));
+      var date = new Date(String(point.date || '') + 'T12:00:00Z');
+      var day = Number.isFinite(date.getTime()) ? date.toLocaleDateString('ar-SA', { weekday: 'short' }) : '-';
+      return '<div class="doc-risk-row">' +
+        '<div class="doc-risk-label">' + day + '</div>' +
+        '<div class="doc-risk-track"><div class="doc-risk-fill" style="width:' + score + '%"></div></div>' +
+        '<div class="doc-risk-value">' + score + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  var adherenceText = adherencePercent === null ? 'غير مفعل' : (Math.round(adherencePercent) + '%');
+  var adherenceTone = adherencePercent === null ? 'doc-value-warn' : (adherencePercent < 80 ? 'doc-value-critical' : 'doc-value-good');
+  var highRiskDays = Number(risk.highDays || 0);
+  var riskTone = highRiskDays > 1 ? 'doc-value-critical' : (highRiskDays > 0 ? 'doc-value-warn' : 'doc-value-good');
+  var visitsDone = Number(visits.completed || 0);
+  var visitsTone = visitsDone > 0 ? 'doc-value-good' : 'doc-value-warn';
+  var criticalAlerts = alerts.filter(function (item) { return String(item.type || 'info') === 'critical'; }).length;
+  var alertTone = criticalAlerts > 0 ? 'doc-value-critical' : 'doc-value-good';
+
+  var adherenceEl = document.getElementById('doc-kpi-adherence');
+  var riskEl = document.getElementById('doc-kpi-riskdays');
+  var visitsEl = document.getElementById('doc-kpi-visits');
+  var alertsEl = document.getElementById('doc-kpi-alerts');
+  adherenceEl.className = 'doc-compliance-value ' + adherenceTone;
+  riskEl.className = 'doc-compliance-value ' + riskTone;
+  visitsEl.className = 'doc-compliance-value ' + visitsTone;
+  alertsEl.className = 'doc-compliance-value ' + alertTone;
+  adherenceEl.textContent = adherenceText;
+  riskEl.textContent = String(highRiskDays);
+  visitsEl.textContent = String(visitsDone);
+  alertsEl.textContent = String(criticalAlerts);
+}
+
+function buildClinicalTimeline(data, medSummary, messages) {
+  var payload = data || {};
+  var events = [];
+
+  (payload.cases || []).forEach(function (item) {
+    events.push({
+      id: 'case_' + String(item.id || Math.random()),
+      at: item.updatedAt || '',
+      type: 'clinical',
+      source: 'case',
+      level: severityLevel(item.severity),
+      title: 'تحديث حالة: ' + (item.title || 'حالة صحية'),
+      meta: 'الشدة: ' + (item.severity || '-') + ' • الحالة: ' + (item.status || '-'),
+      details: item.notes ? ('ملاحظة: ' + item.notes) : ''
+    });
+  });
+
+  (payload.vitalsHistory || []).slice(0, 30).forEach(function (reading) {
+    events.push({
+      id: 'vit_' + String(reading.id || Math.random()),
+      at: reading.measuredAt || '',
+      type: 'clinical',
+      source: 'vitals',
+      level: severityLevel(reading.risk || 'stable'),
+      title: 'قراءة حيوية ' + riskLabel(reading.risk || 'unknown'),
+      meta: 'Temp ' + fmtNum(reading.temp, 1, '°C') + ' • SpO2 ' + fmtNum(reading.spo2, 0, '%') + ' • HR ' + fmtNum(reading.hr, 0, ' bpm'),
+      details: 'ضغط الدم: ' + fmtNum(reading.bpSys, 0) + '/' + fmtNum(reading.bpDia, 0) + ' • المصدر: ' + (reading.source || 'manual')
+    });
+  });
+
+  (payload.visitRequests || []).forEach(function (visit) {
+    var status = String(visit.status || 'pending');
+    var level = status === 'pending' ? 'warning' : 'info';
+    events.push({
+      id: 'visit_' + String(visit.id || Math.random()),
+      at: visit.createdAt || '',
+      type: 'operations',
+      source: 'visit_request',
+      level: level,
+      title: 'طلب زيارة (' + status + ')',
+      meta: visit.reason || '-',
+      details: ''
+    });
+  });
+
+  (payload.reports || []).forEach(function (report) {
+    events.push({
+      id: 'report_' + String(report.id || Math.random()),
+      at: report.createdAt || '',
+      type: 'operations',
+      source: 'report',
+      level: 'info',
+      title: 'إصدار تقرير: ' + (report.title || 'تقرير صحي'),
+      meta: 'مؤرشف في ملف الطالب',
+      details: ''
+    });
+  });
+
+  (payload.alerts || []).forEach(function (alert) {
+    var alertType = String(alert.type || 'info');
+    var level = alertType === 'critical' ? 'critical' : (alertType === 'operational' ? 'warning' : 'info');
+    events.push({
+      id: 'alert_' + String(alert.id || Math.random()),
+      at: alert.createdAt || '',
+      type: 'communication',
+      source: 'alert',
+      level: level,
+      title: 'تنبيه: ' + (alert.text || 'تنبيه'),
+      meta: 'النوع: ' + alertType,
+      details: ''
+    });
+  });
+
+  if (medSummary) {
+    (medSummary.recentLogs || []).forEach(function (entry) {
+      var skipped = String(entry.status || '') === 'skipped';
+      events.push({
+        id: 'med_' + String(entry.id || Math.random()),
+        at: entry.takenAt || entry.createdAt || '',
+        type: 'clinical',
+        source: 'medication',
+        level: skipped ? 'warning' : 'info',
+        title: skipped ? 'تجاوز جرعة دوائية' : 'تسجيل جرعة دوائية',
+        meta: (entry.planName || 'خطة دوائية') + ' • ' + (skipped ? 'Skipped' : 'Taken'),
+        details: entry.note || ''
+      });
+    });
+    if (hasMedicationSignal(medSummary) && Number(medSummary.adherencePercent || 100) < 80) {
+      events.push({
+        id: 'med_adherence_' + String(medSummary.weekEnd || new Date().toISOString()),
+        at: medSummary.weekEnd || new Date().toISOString(),
+        type: 'clinical',
+        source: 'medication',
+        level: 'warning',
+        title: 'انخفاض الالتزام الدوائي',
+        meta: 'نسبة الالتزام الأسبوعية: ' + Number(medSummary.adherencePercent || 0) + '%',
+        details: medSummary.alert || 'الالتزام أقل من الحد الآمن 80%'
+      });
+    }
+  }
+
+  (messages || []).forEach(function (message) {
+    events.push({
+      id: 'msg_' + String(message.id || Math.random()),
+      at: message.createdAt || '',
+      type: 'communication',
+      source: 'message',
+      level: 'info',
+      title: 'رسالة: ' + (message.text ? message.text.slice(0, 60) : 'تواصل جديد'),
+      meta: 'المرسل: ' + (message.fromRole || '-'),
+      details: message.text && message.text.length > 60 ? message.text : ''
+    });
+  });
+
+  return events
+    .filter(function (event) { return normalizeEventTime(event.at) > 0; })
+    .sort(function (a, b) { return normalizeEventTime(b.at) - normalizeEventTime(a.at); });
+}
+
+function renderTimelineItems(items) {
+  var wrap = document.getElementById('clinical-timeline');
+  if (!items.length) {
+    wrap.innerHTML = '<div class="timeline-item">لا توجد أحداث مطابقة للفلاتر الحالية.</div>';
+    return;
+  }
+  wrap.innerHTML = items.map(function (event) {
+    return '<article class="timeline-item">' +
+      '<div class="timeline-head">' +
+        '<div class="timeline-title">' + escapeHtml(event.title || 'حدث') + '</div>' +
+        '<span class="timeline-tag ' + levelTagClass(event.level) + '">' + escapeHtml(fmtDate(event.at)) + '</span>' +
+      '</div>' +
+      '<div class="timeline-meta">' + escapeHtml(event.meta || '-') + '</div>' +
+      (event.details ? ('<div class="timeline-meta">' + escapeHtml(event.details) + '</div>') : '') +
+      '<div class="timeline-tags">' +
+        '<span class="timeline-tag tag-info">' + timelineTypeLabel(event.type) + '</span>' +
+        '<span class="timeline-tag tag-info">' + timelineSourceLabel(event.source) + '</span>' +
+      '</div>' +
+    '</article>';
+  }).join('');
+}
+
+function applyTimelineFilters() {
+  var typeFilter = document.getElementById('timeline-type-filter').value || 'all';
+  var windowFilter = document.getElementById('timeline-window-filter').value || '7';
+  var filtered = timelineCache.slice();
+  if (typeFilter !== 'all') {
+    filtered = filtered.filter(function (event) { return event.type === typeFilter; });
+  }
+  if (windowFilter !== 'all') {
+    var days = Number(windowFilter || 7);
+    var from = Date.now() - (days * 24 * 60 * 60 * 1000);
+    filtered = filtered.filter(function (event) { return normalizeEventTime(event.at) >= from; });
+  }
+  renderTimelineItems(filtered);
+  document.getElementById('timeline-summary').textContent =
+    'الأحداث المعروضة: ' + filtered.length + ' من أصل ' + timelineCache.length + ' حدث.';
+}
+
+function renderDocumentationPanels() {
+  renderDocumentationSummary(latestData || {}, medicationSummaryCache);
+  timelineCache = buildClinicalTimeline(latestData || {}, medicationSummaryCache, messagesCache || []);
+  applyTimelineFilters();
 }
 
 function renderCasesTable(items) {
@@ -584,6 +1131,7 @@ function renderProfile(data) {
   });
 
   renderVitals(latestData);
+  renderDocumentationPanels();
 }
 
 function openLinkedCase() {
@@ -682,6 +1230,13 @@ async function exportProfileReport(reportId) {
   var snapshot = (latestData && latestData.snapshot) || {};
   var latestCase = (latestData && latestData.latestCase) || {};
   var latestVitals = (latestData && latestData.latestVitals) || {};
+  var analytics = (latestData && latestData.parentAnalytics) || {};
+  var condition = analytics.condition || {};
+  var risk = analytics.riskIndicators || {};
+  var adherencePercent = effectiveAdherencePercent(analytics, medicationSummaryCache);
+  var timelineLines = (timelineCache || []).slice(0, 8).map(function (event) {
+    return fmtDate(event.at) + ' | ' + event.title + ' | ' + timelineTypeLabel(event.type);
+  });
   var fileBase = String((exportResult.data.filename || 'student-report').replace(/\.pdf$/i, ''));
   var body = [
     'Smart Clinic Student Profile Export',
@@ -694,6 +1249,10 @@ async function exportProfileReport(reportId) {
     'Pending Visits: ' + Number(snapshot.pendingVisits || 0),
     'Reports: ' + Number(snapshot.reports || 0),
     'Alerts: ' + Number(snapshot.alerts || 0),
+    'Condition Trend: ' + (condition.label || '-'),
+    'Condition Summary: ' + (condition.summary || '-'),
+    'Medication Adherence: ' + (adherencePercent === null ? 'inactive' : (Math.round(adherencePercent) + '%')),
+    'High Risk Days (7d): ' + Number(risk.highDays || 0),
     '--- Latest Case ---',
     (latestCase.title || '-') + ' | ' + (latestCase.severity || '-') + ' | ' + fmtDate(latestCase.updatedAt),
     '--- Latest Vitals ---',
@@ -701,8 +1260,9 @@ async function exportProfileReport(reportId) {
     'SpO2: ' + fmtNum(latestVitals.spo2, 0, '%'),
     'HR: ' + fmtNum(latestVitals.hr, 0, ' bpm'),
     'BP: ' + fmtNum(latestVitals.bpSys, 0) + '/' + fmtNum(latestVitals.bpDia, 0),
-    'Risk: ' + riskLabel(latestVitals.risk || 'unknown')
-  ].join('\n');
+    'Risk: ' + riskLabel(latestVitals.risk || 'unknown'),
+    '--- Clinical Timeline (Top 8) ---'
+  ].concat(timelineLines.length ? timelineLines : ['-']).join('\n');
   downloadTextFile(fileBase + '-snapshot.txt', body);
   notify(exportResult.data.message || 'تم تجهيز التقرير للتنزيل.');
 }
@@ -739,12 +1299,17 @@ function renderMedicationAdherence(data) {
 async function loadMedicationAdherence() {
   var result = await SmartClinicSecurity.apiJson('/medications/adherence' + buildStudentScopeQuery());
   if (!result.ok || !result.data) {
+    medicationSummaryCache = null;
     renderList('med-recent-logs', [], 'تعذر تحميل بيانات الالتزام الدوائي.', function () { return ''; });
     document.getElementById('med-adherence-stats').innerHTML = '<div class="stat"><div class="stat-label">الالتزام</div><div class="stat-value">-</div></div>';
     document.getElementById('med-plan-select').innerHTML = '<option value="">غير متوفر</option>';
-    return;
+    renderDocumentationPanels();
+    return null;
   }
+  medicationSummaryCache = result.data;
   renderMedicationAdherence(result.data);
+  renderDocumentationPanels();
+  return medicationSummaryCache;
 }
 
 async function logMedicationFromProfile(status) {
@@ -813,6 +1378,7 @@ async function loadProfile() {
   try {
     var query = getScopedStudentId();
     var endpoint = '/student/overview' + (query ? ('?studentId=' + encodeURIComponent(query)) : '');
+    var messagesPromise = SmartClinicSecurity.apiJson('/messages');
     var response = await SmartClinicSecurity.apiRequest(endpoint);
     var payload = await response.json();
     if (!response.ok) {
@@ -820,6 +1386,16 @@ async function loadProfile() {
       return;
     }
     renderProfile(payload);
+    var msgResult = await messagesPromise;
+    if (msgResult.ok && msgResult.data && Array.isArray(msgResult.data.items)) {
+      messagesCache = msgResult.data.items
+        .slice()
+        .sort(function (a, b) { return normalizeEventTime(b.createdAt) - normalizeEventTime(a.createdAt); })
+        .slice(0, 40);
+    } else {
+      messagesCache = [];
+    }
+    renderDocumentationPanels();
     await loadMedicationAdherence();
     await refreshProfileTelemed();
   } catch (err) {
@@ -844,6 +1420,11 @@ async function sendMessage() {
       return;
     }
     document.getElementById('msg-box').value = '';
+    if (payload && payload.item) {
+      messagesCache.unshift(payload.item);
+      messagesCache = messagesCache.slice(0, 40);
+      renderDocumentationPanels();
+    }
     notify('تم إرسال الرسالة للفريق الصحي.');
   } catch (err) {
     notify('تعذر الاتصال بالخادم.');
