@@ -50,9 +50,70 @@
   margin-top: 6px;
 }
 
+.hero-cta .btn-muted[disabled] {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .primary-cta {
   min-width: 180px;
   box-shadow: 0 10px 24px rgba(56, 189, 248, 0.28);
+}
+
+.quick-actions {
+  margin-top: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--sc-radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 12px;
+}
+
+.quick-actions-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.quick-actions-grid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.quick-action-btn {
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--sc-text);
+  padding: 10px;
+  text-align: right;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.quick-action-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.quick-action-btn .qa-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.quick-action-btn .qa-sub {
+  display: block;
+  font-size: 11px;
+  color: var(--sc-text-soft);
+}
+
+.message-templates {
+  margin: 8px 0 4px;
 }
 
 .status-banner {
@@ -407,8 +468,8 @@
     </div>
     <div class="inline-row hero-cta">
       <button class="btn-primary primary-cta" onclick="focusVisitReason()">طلب زيارة الآن</button>
-      <button class="btn-muted" onclick="openStudentProfile()">فتح الملف الصحي</button>
-      <button class="btn-muted" onclick="loadOverview()">تحديث فوري</button>
+      <button class="btn-muted" onclick="focusAiPanel()">استشارة سريعة</button>
+      <button class="btn-muted" id="hero-telemed-btn" onclick="joinStudentTelemed()" disabled>الجلسة المرئية غير متاحة</button>
     </div>
     <div class="status-banner">
       <div class="status-line">
@@ -421,6 +482,34 @@
       <div class="status-foot">
         <span id="current-request-status" class="status-chip">جاري التحقق من طلبات الزيارة...</span>
         <span id="current-status-help" class="sc-muted">سنعرض هنا ماذا تفعل الآن حسب الحالة.</span>
+      </div>
+    </div>
+    <div class="quick-actions">
+      <div class="quick-actions-head">
+        <strong>مركز الإجراءات السريعة</strong>
+        <span class="sc-muted">كل الإجراءات العامة من مكان واحد بدون تكرار.</span>
+      </div>
+      <div class="quick-actions-grid">
+        <button class="quick-action-btn" onclick="openStudentProfile()">
+          <span class="qa-title">الملف الصحي</span>
+          <span class="qa-sub">عرض الحالات والتقارير</span>
+        </button>
+        <button class="quick-action-btn" onclick="focusMessageComposer()">
+          <span class="qa-title">إرسال رسالة</span>
+          <span class="qa-sub">التواصل المباشر مع العيادة</span>
+        </button>
+        <button class="quick-action-btn" onclick="window.location.href='notifications-center.html'">
+          <span class="qa-title">مركز الإشعارات</span>
+          <span class="qa-sub">متابعة التنبيهات الكاملة</span>
+        </button>
+        <button class="quick-action-btn" onclick="window.location.href='care-center.html'">
+          <span class="qa-title">مركز التنسيق</span>
+          <span class="qa-sub">التواصل مع الجهات الداعمة</span>
+        </button>
+        <button class="quick-action-btn" onclick="loadOverview()">
+          <span class="qa-title">تحديث البيانات</span>
+          <span class="qa-sub">مزامنة الحالة والقراءات</span>
+        </button>
       </div>
     </div>
   </section>
@@ -489,7 +578,7 @@
         <button class="btn-muted" type="button" onclick="useVisitTemplate('ضيق تنفس متكرر')">ضيق تنفس</button>
         <button class="btn-muted" type="button" onclick="useVisitTemplate('ألم في الصدر أثناء النشاط')">ألم صدر</button>
       </div>
-      <textarea id="visit-reason" rows="3" placeholder="اكتب سبب الطلب..." oninput="updateVisitReasonMeta()"></textarea>
+      <textarea id="visit-reason" rows="3" maxlength="220" placeholder="اكتب سبب الطلب..." oninput="updateVisitReasonMeta()"></textarea>
       <div class="inline-help">تفاصيل السبب: <span id="visit-reason-count">0</span>/220</div>
       <button class="btn-primary primary-cta" onclick="requestVisit()">إرسال الطلب</button>
     </article>
@@ -503,19 +592,22 @@
         <button class="btn-muted" onclick="refreshStudentTelemed()">تحديث حالة الجلسة</button>
       </div>
       <div class="empty-hint">إذا لم توجد جلسة نشطة، ارسل طلب زيارة مستعجل أو تواصل مع العيادة.</div>
-      <div class="inline-row" style="margin-top:10px;">
-        <button class="btn-muted" onclick="window.location.href='care-center.html'">فتح مركز التنسيق</button>
-        <button class="btn-muted" onclick="openStudentProfile()">الملف الصحي الكامل</button>
-      </div>
+      <div class="inline-help">تم نقل أزرار الملف الصحي ومركز التنسيق إلى مركز الإجراءات السريعة أعلى الصفحة.</div>
     </article>
 
     <article class="sc-panel" id="communication-zone" data-permission="send.message">
       <h3 class="sc-panel-title">المراسلة والتنبيهات</h3>
       <p class="sc-panel-subtitle">أرسل رسالة للفريق الصحي وراجع آخر التنبيهات من نفس البطاقة.</p>
-      <textarea id="message-text" rows="3" placeholder="اكتب رسالتك..." data-permission="send.message"></textarea>
+      <textarea id="message-text" rows="3" maxlength="280" placeholder="اكتب رسالتك..." data-permission="send.message" oninput="updateMessageMeta()"></textarea>
+      <div class="inline-row message-templates">
+        <button class="btn-muted" type="button" onclick="useMessageTemplate('أحتاج مراجعة قراءات اليوم.')">مراجعة قراءات</button>
+        <button class="btn-muted" type="button" onclick="useMessageTemplate('أطلب متابعة حالة الزيارة الحالية.')">متابعة الزيارة</button>
+        <button class="btn-muted" type="button" onclick="useMessageTemplate('أحتاج تواصلًا عاجلًا مع الطبيب.')">تواصل عاجل</button>
+      </div>
+      <div class="inline-help">طول الرسالة: <span id="message-count">0</span>/280</div>
       <div class="inline-row">
         <button class="btn-primary" data-permission="send.message" onclick="sendClinicMessage()">إرسال الرسالة</button>
-        <button class="btn-muted" data-permission="view.alerts" onclick="loadOverview()">تحديث</button>
+        <button class="btn-muted" type="button" onclick="focusVisitReason()">طلب زيارة سريع</button>
       </div>
       <select id="alert-filter" onchange="applyAlertFilter()">
         <option value="all">كل التنبيهات</option>
@@ -524,9 +616,6 @@
         <option value="info">معلوماتي</option>
       </select>
       <div id="alerts-list" class="list"></div>
-      <div class="inline-row">
-        <button class="btn-muted" data-permission="view.notifications" onclick="window.location.href='notifications-center.html'">فتح مركز الإشعارات</button>
-      </div>
     </article>
 
     <article class="sc-panel sc-col-span-3" data-permission="view.reports">
@@ -545,7 +634,6 @@
           <p id="tip-text" class="sc-panel-subtitle">جاري اختيار نصيحة مناسبة...</p>
           <div class="inline-row">
             <button class="btn-primary" onclick="nextTip()">نصيحة جديدة</button>
-            <button class="btn-muted" onclick="focusAiPanel()">تحليل AI</button>
           </div>
           <div class="empty-hint">ماذا أفعل الآن؟ ابدأ بالحساسات، ثم طبق نصيحة اليوم، ثم تابع الطلبات أو الرسائل.</div>
         </div>
@@ -620,6 +708,12 @@ function focusVisitReason() {
 function focusAiPanel() {
   scrollStudentSection('support-zone');
   var input = document.getElementById('ai-student-input');
+  if (input) input.focus();
+}
+
+function focusMessageComposer() {
+  scrollStudentSection('communication-zone');
+  var input = document.getElementById('message-text');
   if (input) input.focus();
 }
 
@@ -821,6 +915,7 @@ async function refreshStudentTelemed() {
   });
   var status = document.getElementById('telemed-student-status');
   var joinBtn = document.getElementById('telemed-student-join');
+  var heroBtn = document.getElementById('hero-telemed-btn');
 
   if (!session) {
     studentTelemedSessionId = null;
@@ -828,6 +923,10 @@ async function refreshStudentTelemed() {
     document.getElementById('telemed-student-badge').className = 'badge b-warn';
     document.getElementById('telemed-student-badge').textContent = 'غير نشطة';
     joinBtn.disabled = true;
+    if (heroBtn) {
+      heroBtn.disabled = true;
+      heroBtn.textContent = 'الجلسة المرئية غير متاحة';
+    }
     return;
   }
 
@@ -837,6 +936,10 @@ async function refreshStudentTelemed() {
   document.getElementById('telemed-student-badge').className = 'badge b-ok';
   document.getElementById('telemed-student-badge').textContent = 'نشطة الآن';
   joinBtn.disabled = false;
+  if (heroBtn) {
+    heroBtn.disabled = false;
+    heroBtn.textContent = 'انضم للجلسة المرئية';
+  }
 }
 
 async function joinStudentTelemed() {
@@ -911,6 +1014,16 @@ function updateVisitReasonMeta() {
 function useVisitTemplate(text) {
   document.getElementById('visit-reason').value = text || '';
   updateVisitReasonMeta();
+}
+
+function updateMessageMeta() {
+  var text = document.getElementById('message-text').value || '';
+  document.getElementById('message-count').textContent = String(text.trim().length);
+}
+
+function useMessageTemplate(text) {
+  document.getElementById('message-text').value = text || '';
+  updateMessageMeta();
 }
 
 function localStudentAiFallback(text) {
@@ -1003,6 +1116,7 @@ async function sendClinicMessage() {
     return;
   }
   document.getElementById('message-text').value = '';
+  updateMessageMeta();
   notify('تم إرسال الرسالة للفريق الصحي.');
 }
 
@@ -1016,11 +1130,13 @@ window.addEventListener('DOMContentLoaded', function () {
         { label: 'الملف الصحي', href: 'student-profile.html' },
         { label: 'مركز التنسيق', href: 'care-center.html' },
         { label: 'الإشعارات', href: 'notifications-center.html' }
-      ]
+      ],
+      hideShellActions: true
     });
   }
   document.getElementById('tip-text').textContent = tips[tipIndex];
   updateVisitReasonMeta();
+  updateMessageMeta();
   refreshStudentTelemed();
   SmartClinicSecurity.createAutoRefresh(loadOverview, 20000, { immediate: true });
 });
