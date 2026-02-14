@@ -36,6 +36,177 @@
   display: none;
   z-index: 40;
 }
+
+.analytics-kpi-grid {
+  display: grid;
+  gap: var(--sc-space-2);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: var(--sc-space-3);
+}
+
+.analytics-kpi-card {
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-md);
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.analytics-kpi-title {
+  color: var(--sc-text-soft);
+  font-size: 12px;
+}
+
+.analytics-kpi-value {
+  margin-top: 8px;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.analytics-value-good {
+  color: var(--sc-low);
+}
+
+.analytics-value-warn {
+  color: var(--sc-medium);
+}
+
+.analytics-value-critical {
+  color: var(--sc-critical);
+}
+
+.analytics-kpi-sub {
+  margin-top: 6px;
+  color: var(--sc-text-soft);
+  font-size: 12px;
+}
+
+.analytics-layout {
+  display: grid;
+  gap: var(--sc-space-2);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.analytics-card {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--sc-radius-md);
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.analytics-card h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.risk-timeline {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 128px;
+}
+
+.risk-point {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.risk-bar {
+  width: 100%;
+  min-width: 22px;
+  border-radius: 8px 8px 4px 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(82, 196, 26, 0.3);
+}
+
+.risk-bar.risk-critical {
+  background: rgba(255, 77, 79, 0.4);
+  border-color: rgba(255, 77, 79, 0.55);
+}
+
+.risk-bar.risk-warning {
+  background: rgba(250, 140, 22, 0.36);
+  border-color: rgba(250, 140, 22, 0.55);
+}
+
+.risk-bar.risk-stable {
+  background: rgba(82, 196, 26, 0.3);
+  border-color: rgba(82, 196, 26, 0.5);
+}
+
+.risk-point-day {
+  color: var(--sc-text-soft);
+  font-size: 11px;
+}
+
+.risk-point-value {
+  font-size: 11px;
+}
+
+.adherence-progress {
+  width: 100%;
+  height: 9px;
+  border-radius: 999px;
+  border: 1px solid var(--sc-border);
+  background: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  margin: 8px 0;
+}
+
+.adherence-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(250, 140, 22, 0.8), rgba(82, 196, 26, 0.9));
+  transition: width .35s ease;
+}
+
+.guidance-list {
+  display: grid;
+  gap: var(--sc-space-2);
+}
+
+.guidance-item {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--sc-radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px 12px;
+}
+
+.guidance-item-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.guidance-item-subtitle {
+  color: var(--sc-text-soft);
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.guidance-steps {
+  margin: 0;
+  padding-right: 16px;
+  color: var(--sc-text-soft);
+  font-size: 12px;
+}
+
+@media (max-width: 960px) {
+  .analytics-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .analytics-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .analytics-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>
 </head>
 <body class="sc-page">
@@ -67,12 +238,30 @@
     </div>
     <div class="sc-section-nav">
       <button class="sc-action-btn" onclick="scrollParentSection('parent-care')">متابعة الطالب</button>
+      <button class="sc-action-btn" onclick="scrollParentSection('parent-insights')">مؤشرات الأداء</button>
       <button class="sc-action-btn" onclick="scrollParentSection('parent-comm')">التواصل والتنبيهات</button>
+      <button class="sc-action-btn" onclick="scrollParentSection('parent-guidance')">التوعية والإرشاد</button>
       <button class="sc-action-btn" onclick="scrollParentSection('parent-reports')">التقارير</button>
     </div>
   </section>
 
   <section id="stats" class="sc-grid-3 sc-kpi-grid sc-mb-24"></section>
+
+  <section id="parent-insights" class="sc-panel sc-mb-24">
+    <h2 class="sc-panel-title">لوحة مؤشرات ولي الأمر</h2>
+    <p class="sc-panel-subtitle">عرض حي لعدد الزيارات، تطور الحالة، الالتزام العلاجي، ومؤشرات الخطر عبر الزمن.</p>
+    <div id="parent-analytics-kpis" class="analytics-kpi-grid"></div>
+    <div class="analytics-layout">
+      <article class="analytics-card">
+        <h3>مؤشرات الخطر عبر الزمن (7 أيام)</h3>
+        <div id="risk-timeline" class="risk-timeline"></div>
+      </article>
+      <article class="analytics-card">
+        <h3>متابعة الالتزام العلاجي</h3>
+        <div id="adherence-summary"></div>
+      </article>
+    </div>
+  </section>
 
   <h2 id="parent-care" class="sc-section-title">متابعة الطالب</h2>
   <section class="sc-grid-3 sc-mb-24">
@@ -135,6 +324,20 @@
       <h3 class="sc-panel-title">مركز الإشعارات الموحد</h3>
       <p class="sc-panel-subtitle">فلترة الإشعارات حسب النوع: حرج، إجرائي، معلومة.</p>
       <button class="btn-primary" onclick="window.location.href='notifications-center.html'">فتح المركز</button>
+    </article>
+  </section>
+
+  <h2 id="parent-guidance" class="sc-section-title">التوعية والإرشاد</h2>
+  <section class="sc-grid-3 sc-mb-24">
+    <article class="sc-panel sc-col-span-2">
+      <h3 class="sc-panel-title">نصائح صحية مخصصة للحالة</h3>
+      <p class="sc-panel-subtitle">توصيات سريعة مبنية على آخر حالة وعلامات الطالب الحيوية.</p>
+      <div id="guidance-tips" class="guidance-list"></div>
+    </article>
+    <article class="sc-panel">
+      <h3 class="sc-panel-title">بروتوكولات المدرسة</h3>
+      <p class="sc-panel-subtitle">إجراءات معيارية للتعامل مع الحالات داخل المدرسة.</p>
+      <div id="guidance-protocols" class="guidance-list"></div>
     </article>
   </section>
 
@@ -216,6 +419,162 @@ function statusBadgeClass(severity) {
   return 'b-ok';
 }
 
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatDateAr(value) {
+  if (!value) return '-';
+  var parsed = new Date(value);
+  if (!Number.isFinite(parsed.getTime())) return '-';
+  return parsed.toLocaleString('ar-SA');
+}
+
+function dayLabelAr(value) {
+  var parsed = new Date(value + 'T12:00:00Z');
+  if (!Number.isFinite(parsed.getTime())) return '-';
+  return parsed.toLocaleDateString('ar-SA', { weekday: 'short' });
+}
+
+function conditionTone(direction) {
+  if (direction === 'improving') return 'analytics-value-good';
+  if (direction === 'deteriorating') return 'analytics-value-critical';
+  return 'analytics-value-warn';
+}
+
+function adherenceTone(status) {
+  if (status === 'excellent' || status === 'good') return 'analytics-value-good';
+  if (status === 'warning') return 'analytics-value-critical';
+  return 'analytics-value-warn';
+}
+
+function riskBarClass(risk) {
+  if (risk === 'critical') return 'risk-critical';
+  if (risk === 'warning') return 'risk-warning';
+  return 'risk-stable';
+}
+
+function renderParentAnalytics(payload) {
+  var analytics = (payload && payload.parentAnalytics) || {};
+  var visits = analytics.visits || {};
+  var condition = analytics.condition || {};
+  var adherence = analytics.adherence || {};
+  var risk = analytics.riskIndicators || {};
+  var adherencePercent = Number(adherence.percent);
+  if (!Number.isFinite(adherencePercent)) adherencePercent = null;
+
+  var cards = [
+    {
+      title: 'عدد الزيارات',
+      value: String(Number(visits.total || 0)),
+      subtitle: 'مكتمل: ' + Number(visits.completed || 0) + ' • قيد المتابعة: ' + Number(visits.pending || 0),
+      tone: ''
+    },
+    {
+      title: 'تطور الحالة',
+      value: escapeHtml(condition.label || 'غير متوفر'),
+      subtitle: escapeHtml(condition.summary || 'لا توجد بيانات كافية'),
+      tone: conditionTone(condition.direction)
+    },
+    {
+      title: 'الالتزام العلاجي',
+      value: adherencePercent === null ? 'غير مفعل' : (String(Math.round(adherencePercent)) + '%'),
+      subtitle: 'الحالة: ' + escapeHtml(adherence.statusLabel || 'غير متوفر'),
+      tone: adherenceTone(adherence.status)
+    },
+    {
+      title: 'مؤشر الخطر الأسبوعي',
+      value: String(Number(risk.highDays || 0)) + ' يوم مرتفع',
+      subtitle: 'متوسط: ' + Number(risk.averageScore || 0) + ' • متوسط الخطورة: ' + Number(risk.warningDays || 0),
+      tone: Number(risk.highDays || 0) > 0 ? 'analytics-value-critical' : 'analytics-value-good'
+    }
+  ];
+  var wrap = document.getElementById('parent-analytics-kpis');
+  wrap.innerHTML = cards.map(function (card) {
+    var tone = card.tone ? ' ' + card.tone : '';
+    return '<article class="analytics-kpi-card">' +
+      '<div class="analytics-kpi-title">' + card.title + '</div>' +
+      '<div class="analytics-kpi-value' + tone + '">' + card.value + '</div>' +
+      '<div class="analytics-kpi-sub">' + card.subtitle + '</div>' +
+    '</article>';
+  }).join('');
+
+  renderRiskTimeline(analytics.riskTimeline || []);
+  renderAdherenceSummary(adherence, visits);
+}
+
+function renderRiskTimeline(points) {
+  var wrap = document.getElementById('risk-timeline');
+  if (!Array.isArray(points) || !points.length) {
+    wrap.innerHTML = '<div class="sc-muted">لا توجد بيانات زمنية كافية بعد.</div>';
+    return;
+  }
+  wrap.innerHTML = points.slice(-7).map(function (point) {
+    var score = Math.max(0, Math.min(100, Number(point.score || 0)));
+    var height = Math.max(18, Math.round((score / 100) * 94));
+    var risk = String(point.risk || 'stable');
+    return '<div class="risk-point">' +
+      '<div class="risk-bar ' + riskBarClass(risk) + '" style="height:' + height + 'px"></div>' +
+      '<div class="risk-point-day">' + dayLabelAr(String(point.date || '')) + '</div>' +
+      '<div class="risk-point-value">' + score + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderAdherenceSummary(adherence, visits) {
+  var wrap = document.getElementById('adherence-summary');
+  var percent = Number(adherence && adherence.percent);
+  if (!Number.isFinite(percent)) percent = null;
+  var barWidth = percent === null ? 8 : Math.max(4, Math.min(100, Math.round(percent)));
+  var summary = '';
+  summary += '<div class="item">';
+  summary += '<strong>نسبة الالتزام:</strong> ' + (percent === null ? 'غير مفعلة' : (Math.round(percent) + '%'));
+  summary += '<div class="adherence-progress"><div class="adherence-progress-fill" style="width:' + barWidth + '%"></div></div>';
+  summary += '<div class="item-meta">المتوقع: ' + Number((adherence && adherence.expectedDoses) || 0) + ' • المأخوذ: ' + Number((adherence && adherence.takenDoses) || 0) + ' • المتجاوز: ' + Number((adherence && adherence.skippedDoses) || 0) + '</div>';
+  summary += '</div>';
+  summary += '<div class="item"><strong>آخر زيارة مكتملة:</strong> ' + formatDateAr(visits && visits.lastVisitAt) + '</div>';
+  summary += '<div class="item"><strong>الزيارة القادمة:</strong> ' + formatDateAr(visits && visits.nextVisitAt) + '</div>';
+  if (adherence && adherence.alert) {
+    summary += '<div class="item"><strong>تنبيه علاجي:</strong> ' + escapeHtml(adherence.alert) + '</div>';
+  }
+  wrap.innerHTML = summary;
+}
+
+function renderParentGuidance(payload) {
+  var guidance = (payload && payload.parentGuidance) || {};
+  var tips = Array.isArray(guidance.tips) ? guidance.tips : [];
+  var protocols = Array.isArray(guidance.protocols) ? guidance.protocols : [];
+  var tipsWrap = document.getElementById('guidance-tips');
+  var protocolsWrap = document.getElementById('guidance-protocols');
+
+  if (!tips.length) {
+    tipsWrap.innerHTML = '<article class="guidance-item">لا توجد توصيات مخصصة حاليًا.</article>';
+  } else {
+    tipsWrap.innerHTML = tips.map(function (tip) {
+      return '<article class="guidance-item">' + escapeHtml(tip) + '</article>';
+    }).join('');
+  }
+
+  if (!protocols.length) {
+    protocolsWrap.innerHTML = '<article class="guidance-item">لا توجد بروتوكولات متاحة حاليًا.</article>';
+    return;
+  }
+
+  protocolsWrap.innerHTML = protocols.map(function (protocol) {
+    var steps = Array.isArray(protocol.steps) ? protocol.steps.slice(0, 4) : [];
+    return '<article class="guidance-item">' +
+      '<div class="guidance-item-title">' + escapeHtml(protocol.title || 'بروتوكول') + '</div>' +
+      '<div class="guidance-item-subtitle">' + escapeHtml(protocol.summary || '') + '</div>' +
+      '<ol class="guidance-steps">' + steps.map(function (step) { return '<li>' + escapeHtml(step) + '</li>'; }).join('') + '</ol>' +
+    '</article>';
+  }).join('');
+}
+
 function refreshHeroMeta(payload) {
   var snapshot = (payload && payload.snapshot) || {};
   document.getElementById('status-mode').textContent = SmartClinicSecurity.isDemoMode() ? 'Demo' : 'Live';
@@ -266,6 +625,8 @@ async function loadOverview() {
     var result = await SmartClinicSecurity.apiJson('/student/overview');
     if (!result.ok || !result.data) {
       notifyParent(result.error || 'تعذر تحميل بيانات ولي الأمر.');
+      renderParentAnalytics(null);
+      renderParentGuidance(null);
       await refreshParentTelemed();
       return;
     }
@@ -274,11 +635,15 @@ async function loadOverview() {
     refreshHeroMeta(payload);
     renderStats(payload.snapshot || {});
     renderLatestCase(payload.latestCase || null);
+    renderParentAnalytics(payload);
+    renderParentGuidance(payload);
     alertsCache = payload.alerts || [];
     applyAlertFilter();
     await refreshParentTelemed();
   } catch (err) {
     notifyParent('تعذر الاتصال بالخادم.');
+    renderParentAnalytics(null);
+    renderParentGuidance(null);
     await refreshParentTelemed();
   }
 }
@@ -360,6 +725,11 @@ async function exportParentReport() {
   }
   var snapshot = (parentOverview && parentOverview.snapshot) || {};
   var latestCase = (parentOverview && parentOverview.latestCase) || {};
+  var analytics = (parentOverview && parentOverview.parentAnalytics) || {};
+  var visits = analytics.visits || {};
+  var condition = analytics.condition || {};
+  var adherence = analytics.adherence || {};
+  var risk = analytics.riskIndicators || {};
   var filename = String((result.data.filename || 'parent-report').replace(/\.pdf$/i, ''));
   var body = [
     'Smart Clinic Parent Portal Export',
@@ -368,6 +738,12 @@ async function exportParentReport() {
     'Critical Cases: ' + Number(snapshot.criticalCases || 0),
     'Reports: ' + Number(snapshot.reports || 0),
     'Alerts: ' + Number(snapshot.alerts || 0),
+    'Visits Total: ' + Number(visits.total || 0),
+    'Visits Completed: ' + Number(visits.completed || 0),
+    'Condition Trend: ' + String(condition.label || '-'),
+    'Condition Summary: ' + String(condition.summary || '-'),
+    'Treatment Adherence: ' + (Number.isFinite(Number(adherence.percent)) ? (Math.round(Number(adherence.percent)) + '%') : 'inactive'),
+    'Risk High Days (7d): ' + Number(risk.highDays || 0),
     'Latest Case: ' + (latestCase.title || '-') + ' | ' + (latestCase.severity || '-') + ' | ' + (latestCase.updatedAt ? new Date(latestCase.updatedAt).toLocaleString('ar-SA') : '-')
   ].join('\n');
   downloadTextFile(filename + '-parent.txt', body);

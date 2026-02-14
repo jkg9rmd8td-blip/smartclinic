@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
 body{margin:0;font-family:"Tajawal",sans-serif;background:linear-gradient(140deg,#07142a,#0d2d4d);color:#ecf8ff;padding:18px 14px}
-.shell{max-width:1180px;margin:0 auto}
+.shell{max-width:1220px;margin:0 auto}
 .top{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
 .chip{border:1px solid rgba(125,211,252,.35);border-radius:999px;background:rgba(255,255,255,.04);padding:8px 14px;color:#bcd9ec;font-size:13px}
 .btn{border:1px solid rgba(125,211,252,.35);background:transparent;color:#ecf8ff;border-radius:10px;padding:8px 12px;font:inherit;cursor:pointer}
@@ -19,23 +19,36 @@ body{margin:0;font-family:"Tajawal",sans-serif;background:linear-gradient(140deg
 .hero,.panel{background:rgba(9,34,56,.84);border:1px solid rgba(125,211,252,.28);border-radius:16px;padding:14px}
 .hero h1{margin:0;font-size:30px}
 .hero p{margin:6px 0 0;color:#bcd9ec}
-.meta{margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.meta{margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
 .m{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px}
 .l{font-size:12px;color:#bcd9ec}
 .v{font-size:16px;font-weight:700;margin-top:3px}
+.quality-good{color:#86efac}
+.quality-warn{color:#fcd34d}
+.quality-bad{color:#fca5a5}
 .row{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
-.grid{margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid{margin-top:12px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.deep-grid{margin-top:10px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .hint{font-size:13px;color:#bcd9ec;margin-top:8px}
+.list{margin-top:8px;display:grid;gap:8px;max-height:260px;overflow:auto}
+.item{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px 10px}
+.item strong{font-size:13px}
+.item-meta{font-size:12px;color:#bcd9ec;margin-top:4px}
+.alert-badge{display:inline-block;border-radius:999px;padding:2px 8px;font-size:11px;margin-left:6px}
+.al-critical{background:rgba(239,68,68,.22);color:#fecaca}
+.al-warning{background:rgba(245,158,11,.24);color:#fde68a}
+.al-info{background:rgba(56,189,248,.2);color:#bae6fd}
 .frame-wrap{margin-top:10px;border-radius:14px;overflow:hidden;border:1px solid rgba(125,211,252,.32);background:#020817;min-height:560px}
 iframe{width:100%;height:560px;border:none;display:block}
-.toast{position:fixed;left:16px;bottom:16px;background:rgba(9,34,56,.95);border:1px solid rgba(125,211,252,.35);border-radius:10px;padding:9px 12px;font-size:12px;display:none}
-@media (max-width:900px){.grid{grid-template-columns:1fr}.frame-wrap,iframe{min-height:430px;height:430px}}
+.toast{position:fixed;left:16px;bottom:16px;background:rgba(9,34,56,.95);border:1px solid rgba(125,211,252,.35);border-radius:10px;padding:9px 12px;font-size:12px;display:none;z-index:30}
+@media (max-width:1080px){.grid,.deep-grid{grid-template-columns:1fr 1fr}}
+@media (max-width:900px){.grid,.deep-grid{grid-template-columns:1fr}.frame-wrap,iframe{min-height:430px;height:430px}}
 </style>
 </head>
 <body>
 <div class="shell">
   <div class="top">
-    <div class="chip">العيادة الافتراضية • صوت وصورة</div>
+    <div class="chip">العيادة الافتراضية • متابعة مرئية فورية</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn" onclick="SmartClinicSecurity.goToRoleHome()">العودة</button>
       <button class="btn" data-action="logout">تسجيل الخروج</button>
@@ -48,12 +61,15 @@ iframe{width:100%;height:560px;border:none;display:block}
     <div class="meta">
       <div class="m"><div class="l">معرف الجلسة</div><div class="v" id="session-id">-</div></div>
       <div class="m"><div class="l">رقم الحالة</div><div class="v" id="case-id">-</div></div>
-      <div class="m"><div class="l">وضع مشاركة ولي الأمر</div><div class="v" id="guardian-status">-</div></div>
       <div class="m"><div class="l">حالة الجلسة</div><div class="v" id="session-status">-</div></div>
+      <div class="m"><div class="l">مشاركة ولي الأمر</div><div class="v" id="guardian-status">-</div></div>
+      <div class="m"><div class="l">جودة الاتصال</div><div class="v" id="net-quality">-</div></div>
+      <div class="m"><div class="l">زمن الاستجابة</div><div class="v" id="net-latency">-</div></div>
     </div>
     <div class="row">
       <button class="btn primary" id="join-btn" onclick="joinCall()" disabled>الدخول للصوت والصورة</button>
       <button class="btn" onclick="refreshSession()">تحديث</button>
+      <button class="btn" onclick="probeConnectionQuality()">فحص الاتصال</button>
     </div>
     <div id="status-hint" class="hint">تحضير الجلسة...</div>
   </section>
@@ -61,7 +77,7 @@ iframe{width:100%;height:560px;border:none;display:block}
   <section class="grid">
     <section class="panel">
       <h3 style="margin:0">مشاركة الروابط</h3>
-      <p class="hint">يستطيع الطالب الانضمام مباشرة. ولي الأمر ينضم فقط عند تفعيل المشاركة.</p>
+      <p class="hint">الطالب ينضم دائمًا، وولي الأمر حسب التفعيل.</p>
       <div class="row">
         <button class="btn" id="copy-student-link" onclick="copyLink('student')" disabled>نسخ رابط الطالب</button>
         <button class="btn" id="copy-parent-link" onclick="copyLink('parent')" disabled>نسخ رابط ولي الأمر</button>
@@ -71,7 +87,7 @@ iframe{width:100%;height:560px;border:none;display:block}
 
     <section class="panel" id="doctor-controls" hidden>
       <h3 style="margin:0">تحكم الطبيب</h3>
-      <p class="hint">يمكنك تفعيل مشاركة ولي الأمر اختياريًا أثناء الجلسة.</p>
+      <p class="hint">ضبط مشاركة ولي الأمر وإنهاء الجلسة عند الحاجة.</p>
       <label style="display:flex;gap:8px;align-items:center;margin-top:8px">
         <input type="checkbox" id="allow-guardian-check" onchange="toggleGuardian(this.checked)">
         <span>السماح بمشاركة ولي الأمر</span>
@@ -79,6 +95,40 @@ iframe{width:100%;height:560px;border:none;display:block}
       <div class="row">
         <button class="btn warn" onclick="endSession()">إنهاء الجلسة</button>
       </div>
+    </section>
+
+    <section class="panel">
+      <h3 style="margin:0">أدوات التفاعل</h3>
+      <p class="hint">إجراءات تشغيلية مباشرة أثناء الاستشارة.</p>
+      <div class="row">
+        <button class="btn" id="open-case-btn" onclick="openCaseFile()" disabled>فتح ملف الحالة</button>
+        <button class="btn" id="open-student-btn" onclick="openStudentProfile()" disabled>فتح ملف الطالب</button>
+      </div>
+      <div class="row">
+        <button class="btn" id="vitals-btn" onclick="captureVitalsUpdate()" disabled>تحديث العلامات الحيوية</button>
+        <button class="btn" id="ticket-btn" onclick="createFollowupTicket()" disabled>إنشاء تذكرة متابعة</button>
+      </div>
+      <div id="tools-hint" class="hint">اختر جلسة فعالة أولًا.</div>
+    </section>
+  </section>
+
+  <section class="deep-grid">
+    <section class="panel">
+      <h3 style="margin:0">تنبيهات ذكية</h3>
+      <p class="hint">تنبيهات لحظية للجودة والحالة السريرية ومسار الجلسة.</p>
+      <div id="smart-alerts" class="list"></div>
+    </section>
+
+    <section class="panel">
+      <h3 style="margin:0">ربط ملف الحالة</h3>
+      <p class="hint">ملخص الحالة والعلامات الحيوية الأخيرة من ملف الطالب.</p>
+      <div id="case-context" class="list"></div>
+    </section>
+
+    <section class="panel">
+      <h3 style="margin:0">السجل التشغيلي للجلسة</h3>
+      <p class="hint">أحداث الانضمام والتحديثات والإجراءات المنفذة.</p>
+      <div id="session-log" class="list"></div>
     </section>
   </section>
 
@@ -95,6 +145,20 @@ var currentSession = null;
 var currentRole = null;
 var sessionId = null;
 var inviteToken = null;
+var caseContext = null;
+var sessionLog = [];
+var previousSessionSnapshot = null;
+var qualityTimer = null;
+var lastQualityAlertAt = 0;
+var lastSmartAlertSignature = '';
+var connectionStats = {
+  score: null,
+  latencyMs: null,
+  jitterMs: null,
+  packetLoss: null,
+  effectiveType: '-',
+  samples: []
+};
 
 function qs(name) {
   return new URLSearchParams(window.location.search).get(name);
@@ -104,24 +168,238 @@ function notify(text) {
   var el = document.getElementById('toast');
   el.textContent = text;
   el.style.display = 'block';
-  window.setTimeout(function () { el.style.display = 'none'; }, 2200);
+  window.setTimeout(function () { el.style.display = 'none'; }, 2400);
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function roleLabel(role) {
+  if (role === 'doctor') return 'الطبيب';
+  if (role === 'admin') return 'الإدارة';
+  if (role === 'student') return 'الطالب';
+  if (role === 'parent') return 'ولي الأمر';
+  return role || 'مستخدم';
+}
+
+function severityLabel(level) {
+  if (level === 'critical' || level === 'high') return 'حرج';
+  if (level === 'warning' || level === 'medium') return 'متابعة';
+  if (level === 'stable' || level === 'low') return 'مستقر';
+  return 'غير متوفر';
 }
 
 function canControlSession(role) {
   return role === 'doctor' || role === 'admin';
 }
 
+function canRunClinicalTools(role) {
+  return role === 'doctor' || role === 'admin' || role === 'student' || role === 'parent';
+}
+
+function sessionLogKey() {
+  return 'smartclinic.telemed.log.' + String(sessionId || 'general');
+}
+
+function loadSessionLog() {
+  if (!sessionId) {
+    sessionLog = [];
+    return;
+  }
+  try {
+    var raw = localStorage.getItem(sessionLogKey());
+    if (!raw) {
+      sessionLog = [];
+      return;
+    }
+    var parsed = JSON.parse(raw);
+    sessionLog = Array.isArray(parsed) ? parsed.slice(0, 40) : [];
+  } catch (err) {
+    sessionLog = [];
+  }
+}
+
+function saveSessionLog() {
+  if (!sessionId) return;
+  try {
+    localStorage.setItem(sessionLogKey(), JSON.stringify(sessionLog.slice(0, 40)));
+  } catch (err) {
+    // Ignore storage errors.
+  }
+}
+
+function logEvent(kind, text, level) {
+  sessionLog.unshift({
+    id: String(Date.now()) + '_' + Math.random().toString(36).slice(2, 7),
+    kind: kind || 'info',
+    text: String(text || ''),
+    level: level || 'info',
+    at: new Date().toISOString()
+  });
+  sessionLog = sessionLog.slice(0, 40);
+  saveSessionLog();
+  renderSessionLog();
+}
+
+function renderSessionLog() {
+  var wrap = document.getElementById('session-log');
+  if (!sessionLog.length) {
+    wrap.innerHTML = '<div class="item">لا يوجد سجل تشغيلي بعد.</div>';
+    return;
+  }
+  wrap.innerHTML = sessionLog.map(function (entry) {
+    var labelClass = entry.level === 'critical' ? 'al-critical' : (entry.level === 'warning' ? 'al-warning' : 'al-info');
+    return '<div class="item">' +
+      '<div><span class="alert-badge ' + labelClass + '">' + escapeHtml(entry.kind || 'حدث') + '</span><strong>' + escapeHtml(entry.text || '') + '</strong></div>' +
+      '<div class="item-meta">' + new Date(entry.at || Date.now()).toLocaleTimeString('ar-SA') + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function connectionQualityLabel(score) {
+  var safe = Number(score || 0);
+  if (safe >= 80) return { text: 'ممتاز', tone: 'quality-good' };
+  if (safe >= 60) return { text: 'جيد', tone: 'quality-good' };
+  if (safe >= 45) return { text: 'متوسط', tone: 'quality-warn' };
+  return { text: 'ضعيف', tone: 'quality-bad' };
+}
+
+function renderConnectionStatus() {
+  var qualityEl = document.getElementById('net-quality');
+  var latencyEl = document.getElementById('net-latency');
+  if (!Number.isFinite(connectionStats.score)) {
+    qualityEl.className = 'v';
+    qualityEl.textContent = '-';
+    latencyEl.textContent = '-';
+    return;
+  }
+  var quality = connectionQualityLabel(connectionStats.score);
+  qualityEl.className = 'v ' + quality.tone;
+  qualityEl.textContent = quality.text + ' (' + Math.round(connectionStats.score) + '/100)';
+  latencyEl.textContent = Math.round(connectionStats.latencyMs || 0) + 'ms • loss ' + Math.round(connectionStats.packetLoss || 0) + '%';
+}
+
+async function probeConnectionQuality() {
+  var started = (window.performance && performance.now) ? performance.now() : Date.now();
+  var latency = 0;
+  try {
+    var response = await fetch('/api/health?ts=' + Date.now(), { cache: 'no-store' });
+    latency = ((window.performance && performance.now) ? performance.now() : Date.now()) - started;
+    if (!response.ok) {
+      throw new Error('health endpoint failed');
+    }
+  } catch (err) {
+    latency = 1200;
+  }
+
+  connectionStats.samples.push(latency);
+  if (connectionStats.samples.length > 6) {
+    connectionStats.samples = connectionStats.samples.slice(connectionStats.samples.length - 6);
+  }
+
+  var diffs = [];
+  for (var i = 1; i < connectionStats.samples.length; i += 1) {
+    diffs.push(Math.abs(connectionStats.samples[i] - connectionStats.samples[i - 1]));
+  }
+  var jitter = diffs.length ? (diffs.reduce(function (sum, value) { return sum + value; }, 0) / diffs.length) : 0;
+  var packetLoss = Math.max(0, Math.min(18, Math.round((jitter / 12) + (latency > 550 ? 4 : 1))));
+
+  var effectiveType = '-';
+  if (navigator.connection && navigator.connection.effectiveType) {
+    effectiveType = navigator.connection.effectiveType;
+  }
+
+  var score = 100 - (latency / 8) - (jitter / 2.2) - (packetLoss * 2.1);
+  if (effectiveType === '2g' || effectiveType === 'slow-2g') score -= 20;
+  if (effectiveType === '3g') score -= 8;
+  score = Math.max(5, Math.min(99, Math.round(score)));
+
+  connectionStats.score = score;
+  connectionStats.latencyMs = latency;
+  connectionStats.jitterMs = jitter;
+  connectionStats.packetLoss = packetLoss;
+  connectionStats.effectiveType = effectiveType;
+  renderConnectionStatus();
+
+  if (score < 45 && Date.now() - lastQualityAlertAt > 45000) {
+    lastQualityAlertAt = Date.now();
+    logEvent('network', 'انخفاض جودة الاتصال. يفضّل إيقاف التطبيقات الخلفية أو تغيير الشبكة.', 'warning');
+  }
+
+  renderSmartAlerts();
+}
+
+function startConnectionMonitor() {
+  if (qualityTimer) {
+    window.clearInterval(qualityTimer);
+    qualityTimer = null;
+  }
+  probeConnectionQuality();
+  qualityTimer = window.setInterval(probeConnectionQuality, 15000);
+}
+
 function refreshButtons() {
   var joinBtn = document.getElementById('join-btn');
   var copyStudent = document.getElementById('copy-student-link');
   var copyParent = document.getElementById('copy-parent-link');
+  var openCaseBtn = document.getElementById('open-case-btn');
+  var openStudentBtn = document.getElementById('open-student-btn');
+  var vitalsBtn = document.getElementById('vitals-btn');
+  var ticketBtn = document.getElementById('ticket-btn');
+
   var allowParent = Boolean(currentSession && currentSession.allowGuardian);
   var ended = !currentSession || currentSession.status === 'ended';
   var canJoin = currentSession && SmartClinicSecurity.canJoinTelemedSession(currentSession, currentRole);
+  var hasCase = Boolean(currentSession && currentSession.caseId);
+  var hasStudent = Boolean(currentSession && currentSession.studentId);
 
   joinBtn.disabled = !canJoin || ended;
   copyStudent.disabled = !currentSession;
   copyParent.disabled = !currentSession || !allowParent;
+  openCaseBtn.disabled = !hasCase;
+  openStudentBtn.disabled = !hasStudent;
+  vitalsBtn.disabled = !hasStudent || !canRunClinicalTools(currentRole) || ended;
+  ticketBtn.disabled = !hasStudent || !canRunClinicalTools(currentRole);
+
+  document.getElementById('tools-hint').textContent = ended
+    ? 'الجلسة منتهية. يمكن مراجعة الملف أو إنشاء تذكرة متابعة.'
+    : 'متاح: تحديث الحيويات، فتح ملف الحالة، وتسجيل تذكرة متابعة.';
+}
+
+function trackSessionChanges(session) {
+  if (!session) {
+    previousSessionSnapshot = null;
+    return;
+  }
+  if (!previousSessionSnapshot) {
+    logEvent('session', 'تم تحميل الجلسة بنجاح.', 'info');
+    previousSessionSnapshot = JSON.parse(JSON.stringify(session));
+    return;
+  }
+
+  if (previousSessionSnapshot.status !== session.status) {
+    logEvent('session', 'تغيرت حالة الجلسة إلى: ' + (session.status === 'ended' ? 'منتهية' : 'نشطة'), session.status === 'ended' ? 'warning' : 'info');
+  }
+  if (Boolean(previousSessionSnapshot.allowGuardian) !== Boolean(session.allowGuardian)) {
+    logEvent('session', session.allowGuardian ? 'تم تفعيل مشاركة ولي الأمر.' : 'تم إيقاف مشاركة ولي الأمر.', 'info');
+  }
+
+  var prevParticipants = Array.isArray(previousSessionSnapshot.participants) ? previousSessionSnapshot.participants : [];
+  var nextParticipants = Array.isArray(session.participants) ? session.participants : [];
+  var prevIds = prevParticipants.map(function (p) { return p.id; });
+  nextParticipants.forEach(function (item) {
+    if (prevIds.indexOf(item.id) === -1) {
+      logEvent('join', 'انضم ' + roleLabel(item.role) + ' إلى الجلسة.', 'info');
+    }
+  });
+
+  previousSessionSnapshot = JSON.parse(JSON.stringify(session));
 }
 
 function renderSession(session) {
@@ -139,22 +417,26 @@ function renderSession(session) {
     document.getElementById('guardian-status').textContent = '-';
     document.getElementById('session-status').textContent = '-';
     refreshButtons();
+    renderSmartAlerts();
+    renderCaseContext();
     return;
   }
+
+  trackSessionChanges(session);
 
   var canJoin = SmartClinicSecurity.canJoinTelemedSession(session, currentRole);
   if (!canJoin) {
     heroSub.textContent = 'صلاحيتك لا تسمح بالانضمام لهذه الجلسة.';
-    statusHint.textContent = 'يمكن للطبيب/الإدارة الانضمام دائمًا، وولي الأمر عند تفعيل المشاركة.';
+    statusHint.textContent = 'الانضمام متاح للطبيب/الإدارة دائمًا، وولي الأمر عند تفعيل المشاركة.';
   } else {
     heroSub.textContent = session.title || 'جلسة متابعة مباشرة';
     statusHint.textContent = session.status === 'ended'
-      ? 'تم إنهاء هذه الجلسة. يمكنك العودة للوحة الرئيسية.'
-      : 'اضغط "الدخول للصوت والصورة" لبدء التواصل المباشر.';
+      ? 'تم إنهاء هذه الجلسة. يمكنك مراجعة ملف الحالة أو إنشاء تذكرة متابعة.'
+      : 'يمكنك الانضمام الآن، مع متابعة جودة الاتصال والتنبيهات الذكية أدناه.';
   }
 
   linksHint.textContent = session.allowGuardian
-    ? 'تم تفعيل مشاركة ولي الأمر.'
+    ? 'مشاركة ولي الأمر مفعّلة.'
     : 'مشاركة ولي الأمر غير مفعلة حاليًا.';
   document.getElementById('session-id').textContent = session.id || '-';
   document.getElementById('case-id').textContent = session.caseId || '-';
@@ -168,6 +450,146 @@ function renderSession(session) {
   }
 
   refreshButtons();
+  renderSmartAlerts();
+}
+
+function safeCopy(text) {
+  if (!text) return Promise.reject(new Error('empty'));
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  var input = document.createElement('textarea');
+  input.value = text;
+  document.body.appendChild(input);
+  input.select();
+  document.execCommand('copy');
+  input.remove();
+  return Promise.resolve();
+}
+
+function renderCaseContext() {
+  var wrap = document.getElementById('case-context');
+  if (!currentSession) {
+    wrap.innerHTML = '<div class="item">لا توجد جلسة نشطة لعرض الملف المرتبط.</div>';
+    return;
+  }
+
+  var caseItem = caseContext && caseContext.caseItem ? caseContext.caseItem : null;
+  var overview = caseContext && caseContext.overview ? caseContext.overview : null;
+  var latestVitals = overview && overview.latestVitals ? overview.latestVitals : null;
+
+  var html = '';
+  if (caseItem) {
+    html += '<div class="item"><strong>' + escapeHtml(caseItem.title || 'حالة بدون عنوان') + '</strong>' +
+      '<div class="item-meta">الشدة: ' + escapeHtml(severityLabel(caseItem.severity || 'low')) + ' • الحالة: ' + escapeHtml(caseItem.status || '-') + '</div>' +
+      '<div class="item-meta">آخر تحديث: ' + new Date(caseItem.updatedAt || Date.now()).toLocaleString('ar-SA') + '</div></div>';
+  } else {
+    html += '<div class="item">لم يتم العثور على ملف الحالة المرتبط بعد.</div>';
+  }
+
+  if (latestVitals) {
+    html += '<div class="item"><strong>العلامات الحيوية الحالية</strong>' +
+      '<div class="item-meta">Temp: ' + Number(latestVitals.temp || 0).toFixed(1) + '°C • SpO2: ' + Number(latestVitals.spo2 || 0) + '%</div>' +
+      '<div class="item-meta">HR: ' + Number(latestVitals.hr || 0) + ' • BP: ' + Number(latestVitals.bpSys || 0) + '/' + Number(latestVitals.bpDia || 0) + '</div>' +
+      '<div class="item-meta">تصنيف الخطر: ' + severityLabel(latestVitals.risk || 'unknown') + '</div>' +
+    '</div>';
+  } else {
+    html += '<div class="item">لا توجد قراءة حيوية محدثة حاليًا.</div>';
+  }
+
+  wrap.innerHTML = html;
+}
+
+function renderSmartAlerts() {
+  var wrap = document.getElementById('smart-alerts');
+  var alerts = [];
+  var caseItem = caseContext && caseContext.caseItem ? caseContext.caseItem : null;
+  var overview = caseContext && caseContext.overview ? caseContext.overview : null;
+  var latestVitals = overview && overview.latestVitals ? overview.latestVitals : null;
+
+  if (Number.isFinite(connectionStats.score)) {
+    if (connectionStats.score < 45) {
+      alerts.push({ level: 'critical', text: 'جودة الاتصال منخفضة جدًا وقد تؤثر على وضوح التقييم الطبي.' });
+    } else if (connectionStats.score < 60) {
+      alerts.push({ level: 'warning', text: 'جودة الاتصال متوسطة، يفضّل تفعيل الكاميرا بدقة أقل.' });
+    } else {
+      alerts.push({ level: 'info', text: 'جودة الاتصال ضمن النطاق الآمن للجلسة.' });
+    }
+  }
+
+  if (caseItem && (caseItem.severity === 'critical' || caseItem.severity === 'high')) {
+    alerts.push({ level: 'warning', text: 'الحالة عالية الخطورة: يفضّل توثيق حيويات متكرر أثناء الجلسة.' });
+  }
+
+  if (latestVitals && latestVitals.risk === 'critical') {
+    alerts.push({ level: 'critical', text: 'آخر قراءة حيوية حرجة، ينصح بالتصعيد الفوري إن لم يحدث تحسن.' });
+  } else if (latestVitals && latestVitals.risk === 'warning') {
+    alerts.push({ level: 'warning', text: 'آخر قراءة حيوية تحتاج متابعة لصيقة كل 10 دقائق.' });
+  }
+
+  if (currentSession && !currentSession.allowGuardian && canControlSession(currentRole) && caseItem && caseItem.severity === 'critical') {
+    alerts.push({ level: 'info', text: 'مشاركة ولي الأمر غير مفعلة رغم شدة الحالة، راجع قرار الإتاحة.' });
+  }
+
+  if (currentSession && currentSession.status === 'active') {
+    var minutes = Math.max(0, Math.round((Date.now() - new Date(currentSession.createdAt || Date.now()).getTime()) / 60000));
+    if (minutes >= 30) {
+      alerts.push({ level: 'info', text: 'الجلسة مستمرة منذ ' + minutes + ' دقيقة. يفضّل تحديث السجل التشغيلي.' });
+    }
+  }
+
+  if (!alerts.length) {
+    wrap.innerHTML = '<div class="item">لا توجد تنبيهات ذكية حالية.</div>';
+    return;
+  }
+
+  var signature = alerts.map(function (a) { return a.level + ':' + a.text; }).join('|');
+  if (signature !== lastSmartAlertSignature) {
+    lastSmartAlertSignature = signature;
+    var hasCritical = alerts.some(function (a) { return a.level === 'critical'; });
+    if (hasCritical) {
+      logEvent('alert', 'تم توليد تنبيه ذكي حرج أثناء الجلسة.', 'critical');
+    }
+  }
+
+  wrap.innerHTML = alerts.map(function (alert) {
+    var tone = alert.level === 'critical' ? 'al-critical' : (alert.level === 'warning' ? 'al-warning' : 'al-info');
+    var label = alert.level === 'critical' ? 'حرج' : (alert.level === 'warning' ? 'تنبيه' : 'معلومة');
+    return '<div class="item"><span class="alert-badge ' + tone + '">' + label + '</span><strong>' + escapeHtml(alert.text) + '</strong></div>';
+  }).join('');
+}
+
+async function loadCaseContext() {
+  if (!currentSession) {
+    caseContext = null;
+    renderCaseContext();
+    renderSmartAlerts();
+    return;
+  }
+
+  var caseItem = null;
+  var overviewData = null;
+
+  var casesRes = await SmartClinicSecurity.apiJson('/cases');
+  if (casesRes.ok && casesRes.data && Array.isArray(casesRes.data.items)) {
+    caseItem = casesRes.data.items.find(function (item) { return item.id === currentSession.caseId; }) || null;
+  }
+
+  var overviewPath = '/student/overview';
+  if ((currentRole === 'doctor' || currentRole === 'admin') && currentSession.studentId) {
+    overviewPath += '?studentId=' + encodeURIComponent(currentSession.studentId);
+  }
+  var overviewRes = await SmartClinicSecurity.apiJson(overviewPath);
+  if (overviewRes.ok && overviewRes.data) {
+    overviewData = overviewRes.data;
+  }
+
+  caseContext = {
+    caseItem: caseItem,
+    overview: overviewData
+  };
+  renderCaseContext();
+  renderSmartAlerts();
 }
 
 async function refreshSession() {
@@ -177,6 +599,7 @@ async function refreshSession() {
   }
   var session = await SmartClinicSecurity.getTelemedSessionById(sessionId);
   renderSession(session);
+  await loadCaseContext();
 }
 
 function joinCall() {
@@ -194,21 +617,8 @@ function joinCall() {
   }
   var frame = document.getElementById('call-frame');
   frame.src = SmartClinicSecurity.getTelemedEmbedUrl(currentSession.roomName);
+  logEvent('media', 'تم فتح الاتصال المرئي والصوتي.', 'info');
   notify('تم فتح الاتصال المرئي.');
-}
-
-function safeCopy(text) {
-  if (!text) return Promise.reject(new Error('empty'));
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    return navigator.clipboard.writeText(text);
-  }
-  var input = document.createElement('textarea');
-  input.value = text;
-  document.body.appendChild(input);
-  input.select();
-  document.execCommand('copy');
-  input.remove();
-  return Promise.resolve();
 }
 
 async function copyLink(type) {
@@ -225,10 +635,12 @@ async function copyLink(type) {
   var link = SmartClinicSecurity.getTelemedRoomUrl(currentSession.id, invite.item.token);
   var label = type === 'parent' ? 'ولي الأمر' : 'الطالب';
   safeCopy(link).then(function () {
+    logEvent('invite', 'تم إنشاء ونسخ رابط دعوة لـ ' + label + '.', 'info');
     notify('تم نسخ رابط ' + label + '.');
   }).catch(function () {
     notify('تعذر نسخ الرابط، انسخه يدويًا: ' + link);
   });
+  refreshSession();
 }
 
 async function toggleGuardian(checked) {
@@ -242,6 +654,7 @@ async function toggleGuardian(checked) {
   }
   currentSession = result.item;
   renderSession(currentSession);
+  logEvent('policy', checked ? 'تم تفعيل مشاركة ولي الأمر.' : 'تم إيقاف مشاركة ولي الأمر.', 'info');
   notify(checked ? 'تم السماح بمشاركة ولي الأمر.' : 'تم إيقاف مشاركة ولي الأمر.');
 }
 
@@ -256,7 +669,73 @@ async function endSession() {
   currentSession = result.item;
   renderSession(currentSession);
   document.getElementById('call-frame').src = '';
+  logEvent('session', 'تم إنهاء الجلسة بنجاح.', 'warning');
   notify('تم إنهاء الجلسة.');
+}
+
+function openCaseFile() {
+  if (!currentSession || !currentSession.caseId) return;
+  window.location.href = 'case-details.html?caseId=' + encodeURIComponent(currentSession.caseId);
+}
+
+function openStudentProfile() {
+  if (!currentSession || !currentSession.studentId) return;
+  var target = 'student-profile.html?studentId=' + encodeURIComponent(currentSession.studentId);
+  if (currentSession.caseId) {
+    target += '&caseId=' + encodeURIComponent(currentSession.caseId);
+  }
+  window.location.href = target;
+}
+
+async function captureVitalsUpdate() {
+  if (!currentSession || !currentSession.studentId) return;
+  var severity = caseContext && caseContext.caseItem ? String(caseContext.caseItem.severity || '') : '';
+  var profile = (severity === 'critical' || severity === 'high') ? 'watch' : 'normal';
+  var result = await SmartClinicSecurity.apiJson('/vitals/generate', {
+    method: 'POST',
+    body: JSON.stringify({
+      studentId: currentSession.studentId,
+      profile: profile,
+      source: 'telemed_room'
+    })
+  });
+  if (!result.ok) {
+    notify(result.error || 'تعذر تحديث العلامات الحيوية.');
+    return;
+  }
+  logEvent('vitals', 'تم تحديث العلامات الحيوية أثناء الجلسة.', 'info');
+  notify('تم تسجيل قراءة حيوية جديدة.');
+  await loadCaseContext();
+}
+
+async function createFollowupTicket() {
+  if (!currentSession || !currentSession.studentId) return;
+  var note = window.prompt('اكتب ملخص متابعة الجلسة:', 'متابعة بعد الجلسة الافتراضية');
+  if (note === null) return;
+  note = String(note || '').trim();
+  if (!note) {
+    notify('نص التذكرة مطلوب.');
+    return;
+  }
+  var priority = 'normal';
+  var caseSeverity = caseContext && caseContext.caseItem ? String(caseContext.caseItem.severity || '') : '';
+  if (caseSeverity === 'critical' || caseSeverity === 'high') priority = 'high';
+
+  var result = await SmartClinicSecurity.apiJson('/tickets', {
+    method: 'POST',
+    body: JSON.stringify({
+      studentId: currentSession.studentId,
+      subject: 'متابعة جلسة افتراضية ' + (currentSession.caseId || ''),
+      text: note,
+      priority: priority
+    })
+  });
+  if (!result.ok) {
+    notify(result.error || 'تعذر إنشاء تذكرة المتابعة.');
+    return;
+  }
+  logEvent('ticket', 'تم إنشاء تذكرة متابعة للجلسة.', 'info');
+  notify('تم إنشاء التذكرة بنجاح.');
 }
 
 window.addEventListener('DOMContentLoaded', function () {
@@ -264,10 +743,18 @@ window.addEventListener('DOMContentLoaded', function () {
   currentRole = auth ? auth.role : null;
   sessionId = qs('sid');
   inviteToken = qs('invite');
+
+  loadSessionLog();
+  renderSessionLog();
+  renderConnectionStatus();
+  startConnectionMonitor();
+
   if (inviteToken) {
     SmartClinicSecurity.redeemTelemedInvite(inviteToken).then(function (res) {
       if (res && res.ok && res.item) {
         sessionId = res.item.id || sessionId;
+        loadSessionLog();
+        logEvent('invite', 'تم تفعيل رابط الدعوة بنجاح.', 'info');
         renderSession(res.item);
       } else {
         notify('رابط الدعوة غير صالح أو منتهي.');
@@ -277,7 +764,14 @@ window.addEventListener('DOMContentLoaded', function () {
   } else {
     refreshSession();
   }
+
   SmartClinicSecurity.createAutoRefresh(refreshSession, 10000, { immediate: false });
+});
+
+window.addEventListener('beforeunload', function () {
+  if (qualityTimer) {
+    window.clearInterval(qualityTimer);
+  }
 });
 </script>
 </body>

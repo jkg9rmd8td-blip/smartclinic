@@ -35,7 +35,8 @@ const ROLE_PERMISSIONS = {
   emergency: [
     'view.emergency', 'view.case', 'view.student', 'view.cases',
     'view.alerts', 'view.notifications', 'update.vitals', 'edit.careplan',
-    'contact.guardian', 'send.report', 'approve.referral', 'close.case'
+    'contact.guardian', 'send.report', 'approve.referral', 'close.case',
+    'use.ai.assistant'
   ],
   parent: ['view.parent', 'view.student', 'contact.guardian', 'export.report', 'view.alerts', 'send.message', 'view.notifications', 'use.ai.assistant'],
   admin: [
@@ -838,6 +839,172 @@ function schoolHealthIndexOverview(data, options = {}) {
   };
 }
 
+function emergencyClinicalSnapshot(data, target, logs) {
+  const vitals = vitalsPayloadForStudent(data, target.studentId, 6);
+  const latest = vitals.latest || null;
+  const previous = vitals.items && vitals.items.length > 1 ? vitals.items[1] : null;
+  if (!latest) {
+    return {
+      latestVitals: null,
+      oxygenLevel: null,
+      oxygenStatus: 'غير متوفر',
+      measuredAt: null,
+      trend: { spo2Delta: null, hrDelta: null, tempDelta: null },
+      treatmentResponse: { score: 0, status: 'unknown', label: 'لا توجد بيانات كافية' },
+      summary: 'لا توجد قراءات حيوية حديثة للحكم على الاستجابة.',
+      observations: ['يتطلب المسار قياسًا حيويًا مباشرًا للحالة.']
+    };
+  }
+
+  const trend = {
+    spo2Delta: previous ? Number((latest.spo2 - previous.spo2).toFixed(1)) : null,
+    hrDelta: previous ? Number((latest.hr - previous.hr).toFixed(1)) : null,
+    tempDelta: previous ? Number((latest.temp - previous.temp).toFixed(1)) : null
+  };
+  const observations = [];
+  let score = 50;
+
+  if (latest.spo2 >= 95) {
+    score += 18;
+  } else if (latest.spo2 >= 92) {
+    score += 8;
+    observations.push(`الأكسجين على الحد الأدنى (${latest.spo2}%).`);
+  } else {
+    score -= 22;
+    observations.push(`انخفاض تشبع الأكسجين (${latest.spo2}%) يتطلب تدخلًا فوريًا.`);
+  }
+
+  if (latest.hr >= 60 && latest.hr <= 110) {
+    score += 10;
+  } else if (latest.hr > 130 || latest.hr < 50) {
+    score -= 14;
+    observations.push(`نبض غير مستقر (${latest.hr} نبضة/دقيقة).`);
+  } else {
+    score -= 4;
+  }
+
+  if (latest.temp <= 37.8) {
+    score += 8;
+  } else if (latest.temp >= 39) {
+    score -= 10;
+    observations.push(`حرارة مرتفعة (${latest.temp}°C).`);
+  } else {
+    score -= 4;
+  }
+
+  if (latest.risk === 'critical') {
+    score -= 18;
+    observations.push('تصنيف الخطر الحيوي الحالي = critical.');
+  } else if (latest.risk === 'warning') {
+    score -= 8;
+  } else if (latest.risk === 'stable') {
+    score += 8;
+  }
+
+  if (Number.isFinite(trend.spo2Delta)) {
+    if (trend.spo2Delta >= 2) {
+      score += 10;
+      observations.push(`تحسن ملحوظ في SpO2 (+${trend.spo2Delta}).`);
+    } else if (trend.spo2Delta <= -2) {
+      score -= 10;
+      observations.push(`تراجع في SpO2 (${trend.spo2Delta}).`);
+    }
+  }
+  if (Number.isFinite(trend.hrDelta)) {
+    if (trend.hrDelta <= -10) score += 6;
+    if (trend.hrDelta >= 12) {
+      score -= 8;
+      observations.push(`ارتفاع النبض مقارنة بآخر قراءة (+${trend.hrDelta}).`);
+    }
+  }
+  if (Number.isFinite(trend.tempDelta)) {
+    if (trend.tempDelta <= -0.4) score += 4;
+    if (trend.tempDelta >= 0.4) score -= 5;
+  }
+
+  const stabilized = logs.some((l) => l.action === 'case.action.stabilized_case' || l.action === 'case.action.handover_complete');
+  const escalated = logs.some((l) => l.action === 'case.action.external_referral' || l.action === 'case.action.ambulance_dispatch');
+  if (stabilized) score += 10;
+  if (escalated && target.status !== 'closed') score -= 6;
+
+  score = Math.round(clampNumber(score, 0, 100));
+  let response = { status: 'poor', label: 'استجابة ضعيفة' };
+  if (score >= 70) {
+    response = { status: 'improving', label: 'استجابة إيجابية' };
+  } else if (score >= 45) {
+    response = { status: 'fluctuating', label: 'استجابة متذبذبة' };
+  }
+
+  let oxygenStatus = 'مستقر';
+  if (latest.spo2 < 92) oxygenStatus = 'حرج';
+  else if (latest.spo2 < 95) oxygenStatus = 'قابل للتدهور';
+
+  return {
+    latestVitals: {
+      temp: latest.temp,
+      spo2: latest.spo2,
+      hr: latest.hr,
+      bpSys: latest.bpSys,
+      bpDia: latest.bpDia,
+      risk: latest.risk || 'unknown'
+    },
+    oxygenLevel: latest.spo2,
+    oxygenStatus,
+    measuredAt: latest.measuredAt || null,
+    trend,
+    treatmentResponse: {
+      score,
+      status: response.status,
+      label: response.label
+    },
+    summary: `${response.label} - مستوى الأكسجين الحالي ${latest.spo2}% (${oxygenStatus}).`,
+    observations: observations.slice(0, 5)
+  };
+}
+
+function emergencyAiInsights(data, target, urgency, steps, fallbackRecommendation) {
+  const triageDecision = smartTriageDecisionForCase(data, target, { caseId: target.id });
+  const missingSteps = (steps || []).filter((step) => step.status !== 'done').map((step) => step.label);
+  const referralDone = (steps || []).some((step) => step.id === 'referral_decision' && step.status === 'done');
+
+  let priority = 'standard';
+  if (urgency && urgency.breached) {
+    priority = 'immediate';
+  } else if (triageDecision.classification === 'immediate') {
+    priority = 'immediate';
+  } else if (triageDecision.classification === 'follow_up') {
+    priority = 'urgent';
+  }
+
+  const actions = [];
+  if (priority === 'immediate') {
+    actions.push('تفعيل مسار RED وتثبيت ABC دون تأخير.');
+  }
+  (triageDecision.recommendation.actions || []).slice(0, 3).forEach((item) => actions.push(item));
+  if (urgency && urgency.breached && !referralDone) {
+    actions.push('تجاوز SLA: يوصى بطلب إسعاف/تحويل خارجي فوري.');
+  }
+  missingSteps.slice(0, 2).forEach((item) => {
+    actions.push('إغلاق فجوة المسار: ' + item);
+  });
+
+  let recommendation = triageDecision.recommendation.primary || 'استمر في بروتوكول الطوارئ.';
+  if (fallbackRecommendation && fallbackRecommendation !== recommendation) {
+    recommendation += ' • ' + fallbackRecommendation;
+  }
+
+  return {
+    generatedAt: nowIso(),
+    priority,
+    confidence: Number(triageDecision.confidence || 0.8),
+    triageCode: triageDecision.triageCode || (urgency && urgency.triage) || 'YELLOW',
+    protocol: triageDecision.protocol || null,
+    recommendation,
+    actions: Array.from(new Set(actions)).slice(0, 6),
+    rationale: (triageDecision.rationale || []).slice(0, 6)
+  };
+}
+
 function emergencyFlowForCase(data, caseId) {
   const target = getCaseByAnyId(data, caseId);
   if (!target) {
@@ -905,6 +1072,7 @@ function emergencyFlowForCase(data, caseId) {
   return {
     case: {
       id: target.id,
+      studentId: target.studentId,
       studentName: target.studentName,
       title: target.title,
       severity: target.severity,
@@ -921,7 +1089,20 @@ function emergencyFlowForCase(data, caseId) {
     progress,
     startedAt,
     steps,
-    timeline: logs.slice(-12).reverse()
+    timeline: logs.slice(-12).reverse(),
+    clinical: emergencyClinicalSnapshot(data, target, logs),
+    aiInsights: emergencyAiInsights(
+      data,
+      target,
+      {
+        triage: target.severity === 'critical' ? 'RED' : (target.severity === 'high' ? 'ORANGE' : 'YELLOW'),
+        elapsedMin,
+        allowedMin,
+        breached
+      },
+      steps,
+      recommendation
+    )
   };
 }
 
@@ -929,7 +1110,7 @@ function resolveStudentIdForScope(auth, urlObj) {
   if (!auth) return null;
   if (auth.user.role === 'student') return auth.user.id;
   if (auth.user.role === 'parent') return 'u_student_1';
-  if (auth.user.role === 'doctor' || auth.user.role === 'admin') {
+  if (auth.user.role === 'doctor' || auth.user.role === 'admin' || auth.user.role === 'emergency') {
     return urlObj.searchParams.get('studentId') || 'u_student_1';
   }
   return null;
@@ -1472,17 +1653,307 @@ function aiDoctorSupport(data, caseId, input) {
   };
 }
 
+function parentRiskScore(value) {
+  const level = String(value || '').toLowerCase();
+  if (level === 'critical') return 96;
+  if (level === 'high') return 84;
+  if (level === 'warning' || level === 'medium') return 64;
+  if (level === 'stable' || level === 'low') return 28;
+  return 44;
+}
+
+function parentRiskLabel(score) {
+  const value = Number(score || 0);
+  if (value >= 80) return 'critical';
+  if (value >= 55) return 'warning';
+  return 'stable';
+}
+
+function parentRiskLabelAr(level) {
+  if (level === 'critical') return 'مرتفع';
+  if (level === 'warning') return 'متوسط';
+  if (level === 'stable') return 'منخفض';
+  return 'غير متوفر';
+}
+
+function caseSeverityToRisk(caseItem) {
+  return parentRiskScore(caseItem && caseItem.severity ? caseItem.severity : 'warning');
+}
+
+function isoDayKey(value) {
+  const date = new Date(value || 0);
+  if (!Number.isFinite(date.getTime())) return '';
+  return date.toISOString().slice(0, 10);
+}
+
+function buildParentRiskTimeline(cases, vitalsHistory, alerts) {
+  const days = [];
+  for (let idx = 6; idx >= 0; idx -= 1) {
+    const date = new Date();
+    date.setUTCHours(0, 0, 0, 0);
+    date.setUTCDate(date.getUTCDate() - idx);
+    days.push(date.toISOString().slice(0, 10));
+  }
+
+  const buckets = new Map(days.map((day) => [day, []]));
+  (vitalsHistory || []).forEach((reading) => {
+    const day = isoDayKey(reading && reading.measuredAt);
+    if (!day || !buckets.has(day)) return;
+    buckets.get(day).push(parentRiskScore(reading.risk || 'stable'));
+  });
+  (cases || []).forEach((item) => {
+    const day = isoDayKey(item && item.updatedAt);
+    if (!day || !buckets.has(day)) return;
+    buckets.get(day).push(caseSeverityToRisk(item));
+  });
+  (alerts || []).forEach((item) => {
+    const day = isoDayKey(item && item.createdAt);
+    if (!day || !buckets.has(day)) return;
+    const type = normalizeAlert(item).type;
+    const score = type === 'critical' ? 90 : (type === 'operational' ? 62 : 36);
+    buckets.get(day).push(score);
+  });
+
+  const latestSignals = []
+    .concat((vitalsHistory || []).slice(0, 2).map((reading) => parentRiskScore(reading.risk || 'stable')))
+    .concat((cases || []).slice(0, 1).map((item) => caseSeverityToRisk(item)));
+  const baselineScore = latestSignals.length
+    ? Math.round(latestSignals.reduce((sum, value) => sum + value, 0) / latestSignals.length)
+    : 42;
+
+  let previous = baselineScore;
+  const points = days.map((day) => {
+    const values = buckets.get(day) || [];
+    let score;
+    if (values.length) {
+      score = Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
+      previous = score;
+    } else {
+      score = Math.round(clampNumber(previous * 0.94, 24, 98));
+      previous = score;
+    }
+    const risk = parentRiskLabel(score);
+    return {
+      date: day,
+      score,
+      risk,
+      label: parentRiskLabelAr(risk)
+    };
+  });
+  return points;
+}
+
+function buildParentConditionSummary(cases, vitalsHistory, riskTimeline) {
+  const currentCaseScore = cases.length ? caseSeverityToRisk(cases[0]) : null;
+  const previousCaseScore = cases.length > 1 ? caseSeverityToRisk(cases[1]) : null;
+  const currentVitalsScore = vitalsHistory.length ? parentRiskScore(vitalsHistory[0].risk || 'stable') : null;
+  const previousVitalsScore = vitalsHistory.length > 1 ? parentRiskScore(vitalsHistory[1].risk || 'stable') : null;
+  const timelineCurrent = riskTimeline.length ? riskTimeline[riskTimeline.length - 1].score : null;
+  const timelinePrevious = riskTimeline.length > 1 ? riskTimeline[riskTimeline.length - 2].score : null;
+
+  const currentCandidates = [currentCaseScore, currentVitalsScore, timelineCurrent].filter((value) => Number.isFinite(value));
+  const previousCandidates = [previousCaseScore, previousVitalsScore, timelinePrevious].filter((value) => Number.isFinite(value));
+  const currentScore = currentCandidates.length
+    ? Math.round(currentCandidates.reduce((sum, value) => sum + value, 0) / currentCandidates.length)
+    : 42;
+  const previousScore = previousCandidates.length
+    ? Math.round(previousCandidates.reduce((sum, value) => sum + value, 0) / previousCandidates.length)
+    : currentScore;
+
+  const delta = currentScore - previousScore;
+  let direction = 'stable';
+  let label = 'استقرار نسبي';
+  let summary = 'الحالة مستقرة نسبيًا مع الحاجة للاستمرار على خطة المتابعة.';
+  if (delta <= -8) {
+    direction = 'improving';
+    label = 'تحسن';
+    summary = 'مؤشرات الطالب تميل للتحسن مقارنة بآخر قراءة.';
+  } else if (delta >= 8) {
+    direction = 'deteriorating';
+    label = 'تراجع';
+    summary = 'يوجد ارتفاع في مؤشرات الخطر ويحتاج متابعة أسرع.';
+  }
+
+  return {
+    direction,
+    label,
+    deltaScore: delta,
+    currentRisk: parentRiskLabel(currentScore),
+    previousRisk: parentRiskLabel(previousScore),
+    currentScore,
+    previousScore,
+    summary
+  };
+}
+
+function buildParentGuidance(latestCase, latestVitals, adherence, riskTimeline) {
+  const tips = [];
+  if (latestVitals && Number(latestVitals.spo2 || 0) < 95) {
+    tips.push('راقب مستوى الأكسجين كل 2-3 ساعات وتواصل مع العيادة إذا انخفض عن 94%.');
+  }
+  if (latestVitals && Number(latestVitals.temp || 0) >= 38) {
+    tips.push('قدّم سوائل بشكل منتظم ودوّن درجة الحرارة قبل المدرسة وبعدها.');
+  }
+  if (adherence && adherence.status === 'warning') {
+    tips.push('الالتزام الدوائي منخفض هذا الأسبوع، يفضل تثبيت منبه للأدوية صباحًا ومساءً.');
+  }
+  if (Array.isArray(riskTimeline) && riskTimeline.some((point) => point.risk === 'critical')) {
+    tips.push('تم تسجيل يوم عالي الخطورة خلال الأسبوع، يفضل تقليل الجهد الرياضي مؤقتًا.');
+  }
+  if (!tips.length) {
+    tips.push('استمر على نفس الخطة العلاجية مع مراجعة يومية سريعة للأعراض.');
+    tips.push('شارك ملاحظات الحالة مع المرشد الصحي في المدرسة عند أي تغيّر غير معتاد.');
+  }
+
+  const protocols = [
+    {
+      id: 'school-contact',
+      title: 'بروتوكول التواصل المدرسي',
+      summary: 'تسلسل التواصل الرسمي عند ظهور أعراض متوسطة أو عالية.',
+      steps: [
+        'إبلاغ الممرضة المدرسية بالأعراض المسجلة في نفس اليوم.',
+        'تأكيد قرار العودة للفصل أو البقاء بالملاحظة الصحية.',
+        'تحديث ولي الأمر برسالة موحدة تتضمن الإجراء الطبي.'
+      ]
+    },
+    {
+      id: 'medication-safety',
+      title: 'بروتوكول الالتزام العلاجي',
+      summary: 'ضبط الجرعات اليومية وربطها بروتين المنزل والمدرسة.',
+      steps: [
+        'توثيق وقت الجرعة في نفس لحظة الإعطاء.',
+        'عند نسيان الجرعة يتم إشعار العيادة عبر التذاكر فورًا.',
+        'مراجعة أسبوعية لنسبة الالتزام وتحديث الخطة إذا هبطت عن 80%.'
+      ]
+    }
+  ];
+
+  const caseText = `${(latestCase && latestCase.title) || ''} ${(latestCase && latestCase.notes) || ''}`.toLowerCase();
+  if (caseText.includes('ربو') || caseText.includes('تنفس') || Number((latestVitals || {}).spo2 || 98) < 95) {
+    protocols.unshift({
+      id: 'asthma-response',
+      title: 'بروتوكول نوبات التنفس في المدرسة',
+      summary: 'إجراءات سريعة للتعامل مع أي ضيق تنفس داخل المدرسة.',
+      steps: [
+        'إيقاف النشاط البدني فورًا وإبقاء الطالب بوضعية جلوس مريحة.',
+        'متابعة SpO2 والنبض كل 10 دقائق حتى الاستقرار.',
+        'تصعيد فوري للطوارئ إذا استمر انخفاض الأكسجين أو ساءت الأعراض.'
+      ]
+    });
+  } else {
+    protocols.unshift({
+      id: 'general-symptoms',
+      title: 'بروتوكول الأعراض العامة',
+      summary: 'التعامل مع الصداع والحمى والأعراض اليومية المتكررة.',
+      steps: [
+        'راحة 20 دقيقة مع قياس أولي للعلامات الحيوية.',
+        'إعادة القياس بعد الراحة وتحديد الحاجة للمراجعة الطبية.',
+        'إشعار ولي الأمر عند تكرار الأعراض لنفس اليوم الدراسي.'
+      ]
+    });
+  }
+
+  return {
+    lastUpdatedAt: nowIso(),
+    tips: tips.slice(0, 6),
+    protocols: protocols.slice(0, 4)
+  };
+}
+
 function studentOverview(data, studentId) {
   const user = data.users.find(u => u.id === studentId) || null;
-  const cases = data.cases.filter(c => c.studentId === studentId);
-  const reports = data.reports.filter(r => r.studentId === studentId);
-  const visitRequests = data.visitRequests.filter(v => v.studentId === studentId);
-  const alerts = data.alerts.filter(a => Array.isArray(a.roles) && a.roles.includes('student'));
-  const vitals = vitalsPayloadForStudent(data, studentId, 8);
-
-  const latestCase = cases
+  const cases = data.cases
+    .filter(c => c.studentId === studentId)
     .slice()
-    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0] || null;
+    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  const reports = data.reports
+    .filter(r => r.studentId === studentId)
+    .slice()
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const visitRequests = data.visitRequests
+    .filter(v => v.studentId === studentId)
+    .slice()
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const alerts = data.alerts
+    .filter(a => Array.isArray(a.roles) && (a.roles.includes('student') || a.roles.includes('parent')))
+    .slice()
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const appointments = data.appointments
+    .filter(item => item.studentId === studentId)
+    .slice()
+    .sort((a, b) => new Date(b.slotAt || b.createdAt || 0) - new Date(a.slotAt || a.createdAt || 0));
+  const vitals = vitalsPayloadForStudent(data, studentId, 8);
+  const latestCase = cases[0] || null;
+  const adherence = medicationAdherenceSummary(data, studentId);
+  const riskTimeline = buildParentRiskTimeline(cases, vitals.items || [], alerts);
+  const condition = buildParentConditionSummary(cases, vitals.items || [], riskTimeline);
+
+  const hasAdherenceSignal = Number(adherence.expectedDoses || 0) > 0 || Number(adherence.takenDoses || 0) > 0 || Number(adherence.skippedDoses || 0) > 0;
+  const adherencePercent = hasAdherenceSignal ? Number(adherence.adherencePercent || 0) : null;
+  let adherenceStatus = 'inactive';
+  let adherenceLabel = 'غير مفعل';
+  if (Number.isFinite(adherencePercent)) {
+    if (adherencePercent >= 90) {
+      adherenceStatus = 'excellent';
+      adherenceLabel = 'ممتاز';
+    } else if (adherencePercent >= 80) {
+      adherenceStatus = 'good';
+      adherenceLabel = 'مقبول';
+    } else {
+      adherenceStatus = 'warning';
+      adherenceLabel = 'منخفض';
+    }
+  }
+
+  const riskScores = riskTimeline.map((point) => Number(point.score || 0));
+  const riskAverage = riskScores.length
+    ? Math.round(riskScores.reduce((sum, value) => sum + value, 0) / riskScores.length)
+    : 0;
+  const appointmentsByStatus = {
+    pending: appointments.filter(item => item.status === 'pending').length,
+    confirmed: appointments.filter(item => item.status === 'confirmed').length,
+    completed: appointments.filter(item => item.status === 'completed').length,
+    cancelled: appointments.filter(item => item.status === 'cancelled').length
+  };
+  const latestCompletedAppointment = appointments.find((item) => item.status === 'completed') || null;
+  const nextAppointment = appointments
+    .filter((item) => ['pending', 'confirmed'].includes(item.status))
+    .sort((a, b) => new Date(a.slotAt || a.createdAt || 0) - new Date(b.slotAt || b.createdAt || 0))[0] || null;
+
+  const parentAnalytics = {
+    generatedAt: nowIso(),
+    visits: {
+      total: visitRequests.length + appointments.length,
+      visitRequests: visitRequests.length,
+      appointmentsTotal: appointments.length,
+      pending: Number((visitRequests.filter(v => v.status === 'pending').length || 0) + appointmentsByStatus.pending),
+      confirmed: appointmentsByStatus.confirmed,
+      completed: appointmentsByStatus.completed,
+      cancelled: appointmentsByStatus.cancelled,
+      lastVisitAt: latestCompletedAppointment ? (latestCompletedAppointment.completedAt || latestCompletedAppointment.updatedAt || latestCompletedAppointment.slotAt || null) : null,
+      nextVisitAt: nextAppointment ? (nextAppointment.slotAt || nextAppointment.createdAt || null) : null
+    },
+    condition,
+    adherence: {
+      status: adherenceStatus,
+      statusLabel: adherenceLabel,
+      percent: Number.isFinite(adherencePercent) ? adherencePercent : null,
+      expectedDoses: Number(adherence.expectedDoses || 0),
+      takenDoses: Number(adherence.takenDoses || 0),
+      skippedDoses: Number(adherence.skippedDoses || 0),
+      alert: adherence.alert || null
+    },
+    riskIndicators: {
+      averageScore: riskAverage,
+      peakScore: riskScores.length ? Math.max(...riskScores) : 0,
+      highDays: riskTimeline.filter((point) => point.risk === 'critical').length,
+      warningDays: riskTimeline.filter((point) => point.risk === 'warning').length,
+      stableDays: riskTimeline.filter((point) => point.risk === 'stable').length,
+      currentRisk: riskTimeline.length ? riskTimeline[riskTimeline.length - 1].risk : 'unknown'
+    },
+    riskTimeline
+  };
+  const parentGuidance = buildParentGuidance(latestCase, vitals.latest || null, parentAnalytics.adherence, riskTimeline);
 
   return {
     student: user,
@@ -1499,10 +1970,13 @@ function studentOverview(data, studentId) {
     latestVitals: vitals.latest,
     vitalsHistory: vitals.items,
     sensors: vitals.sensors,
-    cases: cases.slice().sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)),
-    reports: reports.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
-    visitRequests: visitRequests.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
-    alerts: alerts.slice(-20).reverse()
+    cases,
+    reports,
+    visitRequests,
+    appointments,
+    alerts: alerts.slice(0, 20),
+    parentAnalytics,
+    parentGuidance
   };
 }
 
@@ -2156,13 +2630,16 @@ const server = http.createServer(async (req, res) => {
           target.notes = String(body.plan);
         }
         if (actionType === 'vitals_update') {
-          const rawVitals = body && typeof body.vitals === 'object' ? body.vitals : body;
-          const reading = normalizeVitalsReading(target.studentId, Object.assign({}, rawVitals || {}, {
-            measuredAt: nowIso(),
-            source: ensureString((rawVitals || {}).source, 0, 30, 'case_action')
-          }), 'case_action');
-          persistVitalsReading(data, reading);
-          updateSensorAfterReading(data, target.studentId, reading);
+          const skipPersist = Boolean(body && body.skipPersist);
+          if (!skipPersist) {
+            const rawVitals = body && typeof body.vitals === 'object' ? body.vitals : body;
+            const reading = normalizeVitalsReading(target.studentId, Object.assign({}, rawVitals || {}, {
+              measuredAt: nowIso(),
+              source: ensureString((rawVitals || {}).source, 0, 30, 'case_action')
+            }), 'case_action');
+            persistVitalsReading(data, reading);
+            updateSensorAfterReading(data, target.studentId, reading);
+          }
         }
         logAction(data, auth, 'case.action.' + actionType, target.id, { note: actionNote });
 
@@ -3115,13 +3592,13 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (pathname === '/api/sla/monitor' && req.method === 'GET') {
-        if (!requireRole(res, auth, ['doctor', 'admin'])) return;
+        if (!requireRole(res, auth, ['doctor', 'admin', 'emergency'])) return;
         json(res, 200, slaMonitor(data));
         return;
       }
 
       if (pathname === '/api/vitals' && req.method === 'GET') {
-        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin'])) return;
+        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin', 'emergency'])) return;
         const studentId = resolveStudentIdForScope(auth, urlObj);
         if (!studentId) {
           json(res, 400, { error: 'Student scope is invalid' });
@@ -3135,7 +3612,7 @@ const server = http.createServer(async (req, res) => {
 
       if (pathname === '/api/vitals/generate' && req.method === 'POST') {
         if (!enforceRateLimit(req, res, 'vitals.generate', 120, 60 * 1000)) return;
-        if (!requireRole(res, auth, ['doctor', 'admin'])) return;
+        if (!requireRole(res, auth, ['doctor', 'admin', 'emergency'])) return;
         if (!hasPermission(auth.user.role, 'update.vitals')) {
           json(res, 403, { error: 'Permission denied for vitals generation' });
           return;
@@ -3171,7 +3648,7 @@ const server = http.createServer(async (req, res) => {
 
       if (pathname === '/api/vitals/ingest' && req.method === 'POST') {
         if (!enforceRateLimit(req, res, 'vitals.ingest', 150, 60 * 1000)) return;
-        if (!requireRole(res, auth, ['doctor', 'admin'])) return;
+        if (!requireRole(res, auth, ['doctor', 'admin', 'emergency'])) return;
         if (!hasPermission(auth.user.role, 'update.vitals')) {
           json(res, 403, { error: 'Permission denied for vitals ingest' });
           return;
@@ -3212,7 +3689,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (pathname === '/api/student/overview' && req.method === 'GET') {
-        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin'])) return;
+        if (!requireRole(res, auth, ['student', 'parent', 'doctor', 'admin', 'emergency'])) return;
         const studentId = resolveStudentIdForScope(auth, urlObj);
         if (!studentId) {
           json(res, 400, { error: 'Student scope is invalid' });
@@ -3244,7 +3721,7 @@ const server = http.createServer(async (req, res) => {
 
       if (pathname === '/api/ai/doctor-support' && req.method === 'POST') {
         if (!enforceRateLimit(req, res, 'ai.doctor', 50, 60 * 1000)) return;
-        if (!requireRole(res, auth, ['doctor', 'admin'])) return;
+        if (!requireRole(res, auth, ['doctor', 'admin', 'emergency'])) return;
         if (!hasPermission(auth.user.role, 'use.ai.assistant')) {
           json(res, 403, { error: 'Permission denied for AI assistant' });
           return;
@@ -3273,7 +3750,7 @@ const server = http.createServer(async (req, res) => {
 
       if (pathname === '/api/ai/triage' && req.method === 'POST') {
         if (!enforceRateLimit(req, res, 'ai.triage', 60, 60 * 1000)) return;
-        if (!requireRole(res, auth, ['doctor', 'admin'])) return;
+        if (!requireRole(res, auth, ['doctor', 'admin', 'emergency'])) return;
         if (!hasPermission(auth.user.role, 'use.ai.assistant')) {
           json(res, 403, { error: 'Permission denied for AI assistant' });
           return;

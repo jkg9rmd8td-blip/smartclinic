@@ -70,7 +70,8 @@
       'contact.guardian',
       'send.report',
       'approve.referral',
-      'close.case'
+      'close.case',
+      'use.ai.assistant'
     ],
     parent: [
       'view.parent',
@@ -1391,18 +1392,312 @@
     };
   }
 
+  function demoParentRiskScore(value) {
+    var level = demoText(value, '', 20).toLowerCase();
+    if (level === 'critical') return 96;
+    if (level === 'high') return 84;
+    if (level === 'warning' || level === 'medium') return 64;
+    if (level === 'stable' || level === 'low') return 28;
+    return 44;
+  }
+
+  function demoParentRiskLabel(score) {
+    var safeScore = Number(score || 0);
+    if (safeScore >= 80) return 'critical';
+    if (safeScore >= 55) return 'warning';
+    return 'stable';
+  }
+
+  function demoParentRiskLabelAr(level) {
+    if (level === 'critical') return 'مرتفع';
+    if (level === 'warning') return 'متوسط';
+    if (level === 'stable') return 'منخفض';
+    return 'غير متوفر';
+  }
+
+  function demoCaseSeverityToRisk(caseItem) {
+    return demoParentRiskScore(caseItem && caseItem.severity ? caseItem.severity : 'warning');
+  }
+
+  function demoIsoDayKey(value) {
+    var date = new Date(value || 0);
+    if (!Number.isFinite(date.getTime())) return '';
+    return date.toISOString().slice(0, 10);
+  }
+
+  function demoBuildParentRiskTimeline(cases, vitalsHistory, alerts) {
+    var days = [];
+    for (var idx = 6; idx >= 0; idx -= 1) {
+      var date = new Date();
+      date.setUTCHours(0, 0, 0, 0);
+      date.setUTCDate(date.getUTCDate() - idx);
+      days.push(date.toISOString().slice(0, 10));
+    }
+    var buckets = {};
+    days.forEach(function (day) { buckets[day] = []; });
+
+    (vitalsHistory || []).forEach(function (reading) {
+      var day = demoIsoDayKey(reading && reading.measuredAt);
+      if (!day || !buckets[day]) return;
+      buckets[day].push(demoParentRiskScore(reading.risk || 'stable'));
+    });
+    (cases || []).forEach(function (item) {
+      var day = demoIsoDayKey(item && item.updatedAt);
+      if (!day || !buckets[day]) return;
+      buckets[day].push(demoCaseSeverityToRisk(item));
+    });
+    (alerts || []).forEach(function (item) {
+      var day = demoIsoDayKey(item && item.createdAt);
+      if (!day || !buckets[day]) return;
+      var type = demoText(item.type, 'info', 30);
+      var score = type === 'critical' ? 90 : (type === 'operational' ? 62 : 36);
+      buckets[day].push(score);
+    });
+
+    var latestSignals = [];
+    (vitalsHistory || []).slice(0, 2).forEach(function (reading) {
+      latestSignals.push(demoParentRiskScore(reading.risk || 'stable'));
+    });
+    (cases || []).slice(0, 1).forEach(function (item) {
+      latestSignals.push(demoCaseSeverityToRisk(item));
+    });
+    var baselineScore = latestSignals.length
+      ? Math.round(latestSignals.reduce(function (sum, value) { return sum + value; }, 0) / latestSignals.length)
+      : 42;
+
+    var previous = baselineScore;
+    return days.map(function (day) {
+      var values = buckets[day] || [];
+      var score;
+      if (values.length) {
+        score = Math.round(values.reduce(function (sum, value) { return sum + value; }, 0) / values.length);
+        previous = score;
+      } else {
+        score = Math.round(Math.max(24, Math.min(98, previous * 0.94)));
+        previous = score;
+      }
+      var risk = demoParentRiskLabel(score);
+      return {
+        date: day,
+        score: score,
+        risk: risk,
+        label: demoParentRiskLabelAr(risk)
+      };
+    });
+  }
+
+  function demoBuildParentConditionSummary(cases, vitalsHistory, riskTimeline) {
+    var currentCaseScore = cases.length ? demoCaseSeverityToRisk(cases[0]) : null;
+    var previousCaseScore = cases.length > 1 ? demoCaseSeverityToRisk(cases[1]) : null;
+    var currentVitalsScore = vitalsHistory.length ? demoParentRiskScore(vitalsHistory[0].risk || 'stable') : null;
+    var previousVitalsScore = vitalsHistory.length > 1 ? demoParentRiskScore(vitalsHistory[1].risk || 'stable') : null;
+    var timelineCurrent = riskTimeline.length ? riskTimeline[riskTimeline.length - 1].score : null;
+    var timelinePrevious = riskTimeline.length > 1 ? riskTimeline[riskTimeline.length - 2].score : null;
+
+    var currentCandidates = [currentCaseScore, currentVitalsScore, timelineCurrent].filter(function (value) { return Number.isFinite(value); });
+    var previousCandidates = [previousCaseScore, previousVitalsScore, timelinePrevious].filter(function (value) { return Number.isFinite(value); });
+    var currentScore = currentCandidates.length
+      ? Math.round(currentCandidates.reduce(function (sum, value) { return sum + value; }, 0) / currentCandidates.length)
+      : 42;
+    var previousScore = previousCandidates.length
+      ? Math.round(previousCandidates.reduce(function (sum, value) { return sum + value; }, 0) / previousCandidates.length)
+      : currentScore;
+    var delta = currentScore - previousScore;
+
+    var direction = 'stable';
+    var label = 'استقرار نسبي';
+    var summary = 'الحالة مستقرة نسبيًا مع الحاجة للاستمرار على خطة المتابعة.';
+    if (delta <= -8) {
+      direction = 'improving';
+      label = 'تحسن';
+      summary = 'مؤشرات الطالب تميل للتحسن مقارنة بآخر قراءة.';
+    } else if (delta >= 8) {
+      direction = 'deteriorating';
+      label = 'تراجع';
+      summary = 'يوجد ارتفاع في مؤشرات الخطر ويحتاج متابعة أسرع.';
+    }
+
+    return {
+      direction: direction,
+      label: label,
+      deltaScore: delta,
+      currentRisk: demoParentRiskLabel(currentScore),
+      previousRisk: demoParentRiskLabel(previousScore),
+      currentScore: currentScore,
+      previousScore: previousScore,
+      summary: summary
+    };
+  }
+
+  function demoBuildParentGuidance(latestCase, latestVitals, adherence, riskTimeline) {
+    var tips = [];
+    if (latestVitals && Number(latestVitals.spo2 || 0) < 95) {
+      tips.push('راقب مستوى الأكسجين كل 2-3 ساعات وتواصل مع العيادة إذا انخفض عن 94%.');
+    }
+    if (latestVitals && Number(latestVitals.temp || 0) >= 38) {
+      tips.push('قدّم سوائل بشكل منتظم ودوّن درجة الحرارة قبل المدرسة وبعدها.');
+    }
+    if (adherence && adherence.status === 'warning') {
+      tips.push('الالتزام الدوائي منخفض هذا الأسبوع، يفضل تثبيت منبه للأدوية صباحًا ومساءً.');
+    }
+    if (Array.isArray(riskTimeline) && riskTimeline.some(function (point) { return point.risk === 'critical'; })) {
+      tips.push('تم تسجيل يوم عالي الخطورة خلال الأسبوع، يفضل تقليل الجهد الرياضي مؤقتًا.');
+    }
+    if (!tips.length) {
+      tips.push('استمر على نفس الخطة العلاجية مع مراجعة يومية سريعة للأعراض.');
+      tips.push('شارك ملاحظات الحالة مع المرشد الصحي في المدرسة عند أي تغيّر غير معتاد.');
+    }
+
+    var protocols = [
+      {
+        id: 'school-contact',
+        title: 'بروتوكول التواصل المدرسي',
+        summary: 'تسلسل التواصل الرسمي عند ظهور أعراض متوسطة أو عالية.',
+        steps: [
+          'إبلاغ الممرضة المدرسية بالأعراض المسجلة في نفس اليوم.',
+          'تأكيد قرار العودة للفصل أو البقاء بالملاحظة الصحية.',
+          'تحديث ولي الأمر برسالة موحدة تتضمن الإجراء الطبي.'
+        ]
+      },
+      {
+        id: 'medication-safety',
+        title: 'بروتوكول الالتزام العلاجي',
+        summary: 'ضبط الجرعات اليومية وربطها بروتين المنزل والمدرسة.',
+        steps: [
+          'توثيق وقت الجرعة في نفس لحظة الإعطاء.',
+          'عند نسيان الجرعة يتم إشعار العيادة عبر التذاكر فورًا.',
+          'مراجعة أسبوعية لنسبة الالتزام وتحديث الخطة إذا هبطت عن 80%.'
+        ]
+      }
+    ];
+
+    var caseText = ((latestCase && latestCase.title) || '') + ' ' + ((latestCase && latestCase.notes) || '');
+    caseText = caseText.toLowerCase();
+    if (caseText.indexOf('ربو') !== -1 || caseText.indexOf('تنفس') !== -1 || Number((latestVitals || {}).spo2 || 98) < 95) {
+      protocols.unshift({
+        id: 'asthma-response',
+        title: 'بروتوكول نوبات التنفس في المدرسة',
+        summary: 'إجراءات سريعة للتعامل مع أي ضيق تنفس داخل المدرسة.',
+        steps: [
+          'إيقاف النشاط البدني فورًا وإبقاء الطالب بوضعية جلوس مريحة.',
+          'متابعة SpO2 والنبض كل 10 دقائق حتى الاستقرار.',
+          'تصعيد فوري للطوارئ إذا استمر انخفاض الأكسجين أو ساءت الأعراض.'
+        ]
+      });
+    } else {
+      protocols.unshift({
+        id: 'general-symptoms',
+        title: 'بروتوكول الأعراض العامة',
+        summary: 'التعامل مع الصداع والحمى والأعراض اليومية المتكررة.',
+        steps: [
+          'راحة 20 دقيقة مع قياس أولي للعلامات الحيوية.',
+          'إعادة القياس بعد الراحة وتحديد الحاجة للمراجعة الطبية.',
+          'إشعار ولي الأمر عند تكرار الأعراض لنفس اليوم الدراسي.'
+        ]
+      });
+    }
+
+    return {
+      lastUpdatedAt: demoNowIso(),
+      tips: tips.slice(0, 6),
+      protocols: protocols.slice(0, 4)
+    };
+  }
+
   function demoStudentOverview(data, studentId) {
     var user = (data.users || []).find(function (u) { return u.id === studentId; }) || null;
-    var cases = (data.cases || []).filter(function (c) { return c.studentId === studentId; });
-    var reports = (data.reports || []).filter(function (r) { return r.studentId === studentId; });
-    var visits = (data.visitRequests || []).filter(function (v) { return v.studentId === studentId; });
-    var alerts = (data.alerts || []).filter(function (a) {
-      return Array.isArray(a.roles) && a.roles.indexOf('student') !== -1;
-    });
-    var latestCase = cases.slice().sort(function (a, b) {
+    var cases = (data.cases || []).filter(function (c) { return c.studentId === studentId; }).slice().sort(function (a, b) {
       return new Date(b.updatedAt) - new Date(a.updatedAt);
-    })[0] || null;
+    });
+    var reports = (data.reports || []).filter(function (r) { return r.studentId === studentId; }).slice().sort(function (a, b) {
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+    var visits = (data.visitRequests || []).filter(function (v) { return v.studentId === studentId; }).slice().sort(function (a, b) {
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+    var alerts = (data.alerts || []).filter(function (a) {
+      return Array.isArray(a.roles) && (a.roles.indexOf('student') !== -1 || a.roles.indexOf('parent') !== -1);
+    }).slice().sort(function (a, b) {
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+    var appointments = (data.appointments || []).filter(function (item) { return item.studentId === studentId; }).slice().sort(function (a, b) {
+      return new Date(b.slotAt || b.createdAt || 0) - new Date(a.slotAt || a.createdAt || 0);
+    });
+    var latestCase = cases[0] || null;
     var vitals = demoVitalsPayloadForStudent(data, studentId, 8);
+    var adherence = demoMedicationAdherenceSummary(data, studentId);
+    var riskTimeline = demoBuildParentRiskTimeline(cases, vitals.items || [], alerts);
+    var condition = demoBuildParentConditionSummary(cases, vitals.items || [], riskTimeline);
+
+    var hasAdherenceSignal = Number(adherence.expectedDoses || 0) > 0 || Number(adherence.takenDoses || 0) > 0 || Number(adherence.skippedDoses || 0) > 0;
+    var adherencePercent = hasAdherenceSignal ? Number(adherence.adherencePercent || 0) : null;
+    var adherenceStatus = 'inactive';
+    var adherenceLabel = 'غير مفعل';
+    if (Number.isFinite(adherencePercent)) {
+      if (adherencePercent >= 90) {
+        adherenceStatus = 'excellent';
+        adherenceLabel = 'ممتاز';
+      } else if (adherencePercent >= 80) {
+        adherenceStatus = 'good';
+        adherenceLabel = 'مقبول';
+      } else {
+        adherenceStatus = 'warning';
+        adherenceLabel = 'منخفض';
+      }
+    }
+
+    var riskScores = riskTimeline.map(function (point) { return Number(point.score || 0); });
+    var riskAverage = riskScores.length
+      ? Math.round(riskScores.reduce(function (sum, value) { return sum + value; }, 0) / riskScores.length)
+      : 0;
+    var appointmentsByStatus = {
+      pending: appointments.filter(function (item) { return item.status === 'pending'; }).length,
+      confirmed: appointments.filter(function (item) { return item.status === 'confirmed'; }).length,
+      completed: appointments.filter(function (item) { return item.status === 'completed'; }).length,
+      cancelled: appointments.filter(function (item) { return item.status === 'cancelled'; }).length
+    };
+    var latestCompleted = appointments.find(function (item) { return item.status === 'completed'; }) || null;
+    var nextAppointment = appointments.filter(function (item) {
+      return item.status === 'pending' || item.status === 'confirmed';
+    }).slice().sort(function (a, b) {
+      return new Date(a.slotAt || a.createdAt || 0) - new Date(b.slotAt || b.createdAt || 0);
+    })[0] || null;
+
+    var parentAnalytics = {
+      generatedAt: demoNowIso(),
+      visits: {
+        total: visits.length + appointments.length,
+        visitRequests: visits.length,
+        appointmentsTotal: appointments.length,
+        pending: Number((visits.filter(function (item) { return item.status === 'pending'; }).length || 0) + appointmentsByStatus.pending),
+        confirmed: appointmentsByStatus.confirmed,
+        completed: appointmentsByStatus.completed,
+        cancelled: appointmentsByStatus.cancelled,
+        lastVisitAt: latestCompleted ? (latestCompleted.completedAt || latestCompleted.updatedAt || latestCompleted.slotAt || null) : null,
+        nextVisitAt: nextAppointment ? (nextAppointment.slotAt || nextAppointment.createdAt || null) : null
+      },
+      condition: condition,
+      adherence: {
+        status: adherenceStatus,
+        statusLabel: adherenceLabel,
+        percent: Number.isFinite(adherencePercent) ? adherencePercent : null,
+        expectedDoses: Number(adherence.expectedDoses || 0),
+        takenDoses: Number(adherence.takenDoses || 0),
+        skippedDoses: Number(adherence.skippedDoses || 0),
+        alert: adherence.alert || null
+      },
+      riskIndicators: {
+        averageScore: riskAverage,
+        peakScore: riskScores.length ? Math.max.apply(Math, riskScores) : 0,
+        highDays: riskTimeline.filter(function (point) { return point.risk === 'critical'; }).length,
+        warningDays: riskTimeline.filter(function (point) { return point.risk === 'warning'; }).length,
+        stableDays: riskTimeline.filter(function (point) { return point.risk === 'stable'; }).length,
+        currentRisk: riskTimeline.length ? riskTimeline[riskTimeline.length - 1].risk : 'unknown'
+      },
+      riskTimeline: riskTimeline
+    };
+    var parentGuidance = demoBuildParentGuidance(latestCase, vitals.latest || null, parentAnalytics.adherence, riskTimeline);
+
     return {
       student: user,
       snapshot: {
@@ -1418,10 +1713,13 @@
       latestVitals: vitals.latest,
       vitalsHistory: vitals.items,
       sensors: vitals.sensors,
-      cases: cases.slice().sort(function (a, b) { return new Date(b.updatedAt) - new Date(a.updatedAt); }),
-      reports: reports.slice().sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); }),
-      visitRequests: visits.slice().sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); }),
-      alerts: alerts.slice(-20).reverse()
+      cases: cases,
+      reports: reports,
+      visitRequests: visits,
+      appointments: appointments,
+      alerts: alerts.slice(0, 20),
+      parentAnalytics: parentAnalytics,
+      parentGuidance: parentGuidance
     };
   }
 
@@ -1505,6 +1803,173 @@
     };
   }
 
+  function demoEmergencyClinicalSnapshot(data, target, logs) {
+    var vitals = demoVitalsPayloadForStudent(data, target.studentId, 6);
+    var latest = vitals.latest || null;
+    var previous = vitals.items && vitals.items.length > 1 ? vitals.items[1] : null;
+    if (!latest) {
+      return {
+        latestVitals: null,
+        oxygenLevel: null,
+        oxygenStatus: 'غير متوفر',
+        measuredAt: null,
+        trend: { spo2Delta: null, hrDelta: null, tempDelta: null },
+        treatmentResponse: { score: 0, status: 'unknown', label: 'لا توجد بيانات كافية' },
+        summary: 'لا توجد قراءات حيوية حديثة للحكم على الاستجابة.',
+        observations: ['يتطلب المسار قياسًا حيويًا مباشرًا للحالة.']
+      };
+    }
+
+    var trend = {
+      spo2Delta: previous ? Number((latest.spo2 - previous.spo2).toFixed(1)) : null,
+      hrDelta: previous ? Number((latest.hr - previous.hr).toFixed(1)) : null,
+      tempDelta: previous ? Number((latest.temp - previous.temp).toFixed(1)) : null
+    };
+    var observations = [];
+    var score = 50;
+
+    if (latest.spo2 >= 95) {
+      score += 18;
+    } else if (latest.spo2 >= 92) {
+      score += 8;
+      observations.push('الأكسجين على الحد الأدنى (' + latest.spo2 + '%).');
+    } else {
+      score -= 22;
+      observations.push('انخفاض تشبع الأكسجين (' + latest.spo2 + '%) يتطلب تدخلًا فوريًا.');
+    }
+
+    if (latest.hr >= 60 && latest.hr <= 110) {
+      score += 10;
+    } else if (latest.hr > 130 || latest.hr < 50) {
+      score -= 14;
+      observations.push('نبض غير مستقر (' + latest.hr + ' نبضة/دقيقة).');
+    } else {
+      score -= 4;
+    }
+
+    if (latest.temp <= 37.8) {
+      score += 8;
+    } else if (latest.temp >= 39) {
+      score -= 10;
+      observations.push('حرارة مرتفعة (' + latest.temp + '°C).');
+    } else {
+      score -= 4;
+    }
+
+    if (latest.risk === 'critical') {
+      score -= 18;
+      observations.push('تصنيف الخطر الحيوي الحالي = critical.');
+    } else if (latest.risk === 'warning') {
+      score -= 8;
+    } else if (latest.risk === 'stable') {
+      score += 8;
+    }
+
+    if (Number.isFinite(trend.spo2Delta)) {
+      if (trend.spo2Delta >= 2) {
+        score += 10;
+        observations.push('تحسن ملحوظ في SpO2 (+' + trend.spo2Delta + ').');
+      } else if (trend.spo2Delta <= -2) {
+        score -= 10;
+        observations.push('تراجع في SpO2 (' + trend.spo2Delta + ').');
+      }
+    }
+    if (Number.isFinite(trend.hrDelta)) {
+      if (trend.hrDelta <= -10) score += 6;
+      if (trend.hrDelta >= 12) {
+        score -= 8;
+        observations.push('ارتفاع النبض مقارنة بآخر قراءة (+' + trend.hrDelta + ').');
+      }
+    }
+    if (Number.isFinite(trend.tempDelta)) {
+      if (trend.tempDelta <= -0.4) score += 4;
+      if (trend.tempDelta >= 0.4) score -= 5;
+    }
+
+    var stabilized = logs.some(function (item) {
+      return item.action === 'case.action.stabilized_case' || item.action === 'case.action.handover_complete';
+    });
+    var escalated = logs.some(function (item) {
+      return item.action === 'case.action.external_referral' || item.action === 'case.action.ambulance_dispatch';
+    });
+    if (stabilized) score += 10;
+    if (escalated && target.status !== 'closed') score -= 6;
+
+    score = Math.round(Math.max(0, Math.min(100, score)));
+    var response = { status: 'poor', label: 'استجابة ضعيفة' };
+    if (score >= 70) {
+      response = { status: 'improving', label: 'استجابة إيجابية' };
+    } else if (score >= 45) {
+      response = { status: 'fluctuating', label: 'استجابة متذبذبة' };
+    }
+
+    var oxygenStatus = 'مستقر';
+    if (latest.spo2 < 92) oxygenStatus = 'حرج';
+    else if (latest.spo2 < 95) oxygenStatus = 'قابل للتدهور';
+
+    return {
+      latestVitals: {
+        temp: latest.temp,
+        spo2: latest.spo2,
+        hr: latest.hr,
+        bpSys: latest.bpSys,
+        bpDia: latest.bpDia,
+        risk: latest.risk || 'unknown'
+      },
+      oxygenLevel: latest.spo2,
+      oxygenStatus: oxygenStatus,
+      measuredAt: latest.measuredAt || null,
+      trend: trend,
+      treatmentResponse: {
+        score: score,
+        status: response.status,
+        label: response.label
+      },
+      summary: response.label + ' - مستوى الأكسجين الحالي ' + latest.spo2 + '% (' + oxygenStatus + ').',
+      observations: observations.slice(0, 5)
+    };
+  }
+
+  function demoEmergencyAiInsights(target, urgency, steps, recommendation) {
+    var missingSteps = (steps || []).filter(function (step) { return step.status !== 'done'; }).map(function (step) { return step.label; });
+    var referralDone = (steps || []).some(function (step) { return step.id === 'referral_decision' && step.status === 'done'; });
+    var priority = urgency && urgency.breached ? 'immediate' : (target.severity === 'critical' ? 'immediate' : (target.severity === 'high' ? 'urgent' : 'standard'));
+    var confidence = priority === 'immediate' ? 0.93 : (priority === 'urgent' ? 0.84 : 0.76);
+
+    var actions = [];
+    if (priority === 'immediate') {
+      actions.push('تفعيل مسار RED وتثبيت ABC دون تأخير.');
+    }
+    actions.push('مراقبة SpO2 والنبض والضغط كل 10 دقائق.');
+    actions.push('تحديث ولي الأمر بالحالة والإجراءات المنفذة.');
+    if (urgency && urgency.breached && !referralDone) {
+      actions.push('تجاوز SLA: يوصى بطلب إسعاف/تحويل خارجي فوري.');
+    }
+    missingSteps.slice(0, 2).forEach(function (item) {
+      actions.push('إغلاق فجوة المسار: ' + item);
+    });
+
+    var rationale = [];
+    rationale.push('تصنيف الفرز الحالي: ' + (urgency && urgency.triage ? urgency.triage : 'YELLOW'));
+    if (urgency && urgency.breached) rationale.push('تم رصد تجاوز SLA للحالة الحالية.');
+    if (target.severity === 'critical') rationale.push('الحالة موسومة كحرجة (critical).');
+
+    return {
+      generatedAt: demoNowIso(),
+      priority: priority,
+      confidence: confidence,
+      triageCode: urgency && urgency.triage ? urgency.triage : 'YELLOW',
+      protocol: {
+        id: priority === 'immediate' ? 'SC-TRIAGE-01' : 'SC-TRIAGE-02',
+        title: priority === 'immediate' ? 'بروتوكول الاستجابة الفورية' : 'بروتوكول المتابعة العاجلة',
+        version: '2026.02'
+      },
+      recommendation: recommendation || 'استمر في بروتوكول الطوارئ.',
+      actions: Array.from(new Set(actions)).slice(0, 6),
+      rationale: rationale
+    };
+  }
+
   function demoEmergencyFlowForCase(data, caseId) {
     var target = demoGetCaseByAnyId(data, caseId);
     if (!target) {
@@ -1545,6 +2010,7 @@
     return {
       case: {
         id: target.id,
+        studentId: target.studentId,
         studentName: target.studentName,
         title: target.title,
         severity: target.severity,
@@ -1561,7 +2027,14 @@
       progress: Math.round((doneCount / steps.length) * 100),
       startedAt: logs.length ? logs[0].createdAt : target.updatedAt,
       steps: steps,
-      timeline: logs.slice(-12).reverse()
+      timeline: logs.slice(-12).reverse(),
+      clinical: demoEmergencyClinicalSnapshot(data, target, logs),
+      aiInsights: demoEmergencyAiInsights(target, {
+        triage: target.severity === 'critical' ? 'RED' : (target.severity === 'high' ? 'ORANGE' : 'YELLOW'),
+        elapsedMin: elapsedMin,
+        allowedMin: allowedMin,
+        breached: breached
+      }, steps, recommendation)
     };
   }
 
@@ -1569,7 +2042,7 @@
     if (!auth || !auth.user) return null;
     if (auth.user.role === 'student') return auth.user.id;
     if (auth.user.role === 'parent') return 'u_student_1';
-    if (auth.user.role === 'doctor' || auth.user.role === 'admin') {
+    if (auth.user.role === 'doctor' || auth.user.role === 'admin' || auth.user.role === 'emergency') {
       return urlObj.searchParams.get('studentId') || 'u_student_1';
     }
     return null;
@@ -2913,13 +3386,13 @@
     }
 
     if (pathname === '/sla/monitor' && method === 'GET') {
-      var slaGate = demoRequireRole(data, ['doctor', 'admin']);
+      var slaGate = demoRequireRole(data, ['doctor', 'admin', 'emergency']);
       if (!slaGate.ok) return slaGate.response;
       return demoJsonResponse(200, demoSlaMonitor(data));
     }
 
     if (pathname === '/vitals' && method === 'GET') {
-      var vitalsGate = demoRequireRole(data, ['student', 'parent', 'doctor', 'admin']);
+      var vitalsGate = demoRequireRole(data, ['student', 'parent', 'doctor', 'admin', 'emergency']);
       if (!vitalsGate.ok) return vitalsGate.response;
       var vitalsStudentId = demoResolveStudentId(vitalsGate.auth, urlObj);
       if (!vitalsStudentId) {
@@ -2930,7 +3403,7 @@
     }
 
     if (pathname === '/vitals/generate' && method === 'POST') {
-      var vitalsGenerateGate = demoRequireRole(data, ['doctor', 'admin']);
+      var vitalsGenerateGate = demoRequireRole(data, ['doctor', 'admin', 'emergency']);
       if (!vitalsGenerateGate.ok) return vitalsGenerateGate.response;
       if ((ROLE_PERMISSIONS[vitalsGenerateGate.auth.user.role] || []).indexOf('update.vitals') === -1) {
         return demoJsonResponse(403, { error: 'Permission denied for vitals generation' });
@@ -2963,7 +3436,7 @@
     }
 
     if (pathname === '/vitals/ingest' && method === 'POST') {
-      var vitalsIngestGate = demoRequireRole(data, ['doctor', 'admin']);
+      var vitalsIngestGate = demoRequireRole(data, ['doctor', 'admin', 'emergency']);
       if (!vitalsIngestGate.ok) return vitalsIngestGate.response;
       if ((ROLE_PERMISSIONS[vitalsIngestGate.auth.user.role] || []).indexOf('update.vitals') === -1) {
         return demoJsonResponse(403, { error: 'Permission denied for vitals ingest' });
@@ -3003,7 +3476,7 @@
     }
 
     if (pathname === '/student/overview' && method === 'GET') {
-      var overviewGate = demoRequireRole(data, ['student', 'parent', 'doctor', 'admin']);
+      var overviewGate = demoRequireRole(data, ['student', 'parent', 'doctor', 'admin', 'emergency']);
       if (!overviewGate.ok) return overviewGate.response;
       var studentId = demoResolveStudentId(overviewGate.auth, urlObj);
       if (!studentId) {
@@ -3024,7 +3497,7 @@
     }
 
     if (pathname === '/ai/doctor-support' && method === 'POST') {
-      var aiDoctorGate = demoRequireRole(data, ['doctor', 'admin']);
+      var aiDoctorGate = demoRequireRole(data, ['doctor', 'admin', 'emergency']);
       if (!aiDoctorGate.ok) return aiDoctorGate.response;
       var aiDoctorBody = await body();
       var doctorCaseId = demoText(aiDoctorBody.caseId, '', 60);
